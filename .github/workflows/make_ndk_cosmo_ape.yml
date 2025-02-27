@@ -1,0 +1,206 @@
+name: Make NDK APE
+run-name: Make NDK-r${{inputs.ndk_version}} with llvm-${{inputs.llvm_version}}-ape
+on:
+  workflow_dispatch:
+    inputs:
+      ndk_version:
+        description: "NDK Release version:"
+        default: '28'
+        required: true
+        type: string
+      llvm_version:
+        description: "LLVM Release version:"
+        default: '19.1.7'
+        required: true
+        type: string
+
+jobs:
+  make:
+    name: Make NDK APE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get NDK and LLVM
+        run: |
+          curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
+          curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo-ape/releases/download/llvm-${{inputs.llvm_version}}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape.tar.xz | tar -xJf -
+
+      - name: Make NDK APE
+        run: |
+          NDK="${PWD}/android-ndk-r${{inputs.ndk_version}}"
+          HOST_TOOLCHAIN="${PWD}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape"
+          NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
+
+          find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
+              bname="$(basename "${file}")"
+              if [ -f "${HOST_TOOLCHAIN}/bin/${bname}" ] && file "${file}" | grep -q 'ELF'; then
+                  echo "Replacing ${bname}"
+                  cp "${HOST_TOOLCHAIN}/bin/${bname}" "${file}"
+              elif file "${file}" | grep -q 'Bourne-Again shell script'; then
+                  echo "Replacing SheBang ${bname}"
+                  sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "${file}"
+                  file ${file}
+              fi
+
+              if file "${file}" | grep -q 'ELF'; then
+                  echo "Removing ${bname}"
+                  rm ${file}
+              fi
+          done
+
+          ## Fix: ERROR: Unknown host CPU architecture: aarch64
+          sed -i 's/arm64)/arm64|aarch64)/' "${NDK}/build/tools/ndk_bin_common.sh"
+
+          ## Remove unused resource
+          rm -rf "${NDK_TOOLCHAIN}/python3"
+          rm -rf "${NDK_TOOLCHAIN}/musl"
+          find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
+          find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
+
+          curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
+          mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
+          curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
+
+          mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
+          mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
+
+          rm -rf ${NDK}/shader-tools # TODO: maybe build?
+
+      - name: Archive
+        run: tar -c android-ndk-r${{inputs.ndk_version}} >android-ndk-r${{inputs.ndk_version}}-unfixed.tar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-ndk-r${{inputs.ndk_version}}-unfixed
+          path: android-ndk-r${{inputs.ndk_version}}-unfixed.tar
+
+  windows_fix:
+    needs: make
+    name: Windows Fix
+    runs-on: windows-latest
+    steps:
+      - uses: milliewalky/setup-7-zip@v2
+
+      - name: Get Unfixed NDK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-ndk-r${{inputs.ndk_version}}-unfixed
+          merge-multiple: true
+
+      - name: Extract Unfixed NDK
+        run: '& "C:\Program Files\Git\usr\bin\tar.exe" -xf android-ndk-r${{inputs.ndk_version}}-unfixed.tar'
+
+      - name: Fix Links
+        shell: pwsh
+        run: |
+          function Get-FileType {
+            param ([string]$FilePath)
+            $fileExePath = "C:\Program Files\Git\usr\bin\file.exe"
+            $fileType = & "$fileExePath" $FilePath
+            Write-Host $fileType
+          }
+
+          $NDK = "$PWD/android-ndk-r${{inputs.ndk_version}}"
+          $NDK_TOOLCHAIN = "$NDK/toolchains/llvm/prebuilt/cosmo-universal"
+
+          foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
+            $bname = $file.Name
+            $fileType = Get-FileType $file.FullName
+
+            if ($fileType -match "DOS/MBR boot sector") {
+              Write-Host "Renaming $bname"
+              Rename-Item -Path $file.FullName -NewName "$($file.FullName).exe"
+            }
+            elseif ($fileType -match "Bourne-Again shell script") {
+              # TODO
+              Write-Host "Deleting UNIX file $bname"
+              Remove-Item $file.FullName -Force
+            }
+          }
+
+          cd ${NDK}/toolchains/llvm/prebuilt
+
+          New-Item -ItemType SymbolicLink -Path "windows-x86_64" -Target "cosmo-universal"
+          New-Item -ItemType SymbolicLink -Path "windows-arm64" -Target "cosmo-universal"
+
+          cd ${NDK}/prebuilt
+
+          New-Item -ItemType SymbolicLink -Path "windows-x86_64" -Target "cosmo-universal"
+          New-Item -ItemType SymbolicLink -Path "windows-arm64" -Target "cosmo-universal"
+
+      - name: Archive Fixed NDK
+        run: 7z a -snl -tzip -mx=9 -mm=Deflate64 -mmt=on android-ndk-r${{inputs.ndk_version}}-windows.zip android-ndk-r${{inputs.ndk_version}}
+
+      - name: Upload Fixed NDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ndk-r${{inputs.ndk_version}}-windows
+          path: android-ndk-r${{inputs.ndk_version}}-windows.zip
+
+  unix_fix:
+    needs: make
+    name: Unix Fix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Unfixed NDK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-ndk-r${{inputs.ndk_version}}-unfixed
+          merge-multiple: true
+
+      - name: Extract Unfixed NDK
+        run: tar -xf android-ndk-r${{inputs.ndk_version}}-unfixed.tar
+
+      - name: Fix Links
+        run: |
+          NDK="${PWD}/android-ndk-r${{inputs.ndk_version}}"
+          NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/cosmo-universal"
+
+          cd ${NDK}/toolchains/llvm/prebuilt
+
+          ln -s cosmo-universal linux-x86_64
+          ln -s cosmo-universal linux-arm64
+          ln -s cosmo-universal darwin-x86_64
+          ln -s cosmo-universal darwin-arm64
+
+          cd ${NDK}/prebuilt
+
+          ln -s cosmo-universal linux-x86_64
+          ln -s cosmo-universal linux-arm64
+          ln -s cosmo-universal darwin-x86_64
+          ln -s cosmo-universal darwin-arm64
+
+      - name: Archive Fixed NDK
+        run: tar -cf - android-ndk-r${{inputs.ndk_version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.ndk_version}}-unix.tar.xz
+
+      - name: Upload Fixed NDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ndk-r${{inputs.ndk_version}}-unix
+          path: android-ndk-r${{inputs.ndk_version}}-unix.tar.xz
+
+  release:
+    needs: [unix_fix, windows_fix]
+    name: Release
+    permissions:
+      contents: write
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: geekyeggo/delete-artifact@v5.1.0
+      with:
+        name: android-ndk-r${{inputs.ndk_version}}-unfixed
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+
+    - name: Release
+      uses: ncipollo/release-action@v1.15.0
+      with:
+        tag: "r${{inputs.ndk_version}}"
+        artifacts: android-ndk-r${{inputs.ndk_version}}*
+        allowUpdates: true
+        replacesArtifacts: true
+        body: |
+          [action](${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}})
