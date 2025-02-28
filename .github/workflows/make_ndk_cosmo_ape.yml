@@ -38,7 +38,6 @@ jobs:
               elif file "${file}" | grep -q 'Bourne-Again shell script'; then
                   echo "Replacing SheBang ${bname}"
                   sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "${file}"
-                  file ${file}
               fi
 
               if file "${file}" | grep -q 'ELF'; then
@@ -87,54 +86,77 @@ jobs:
           merge-multiple: true
 
       - name: Extract Unfixed NDK
-        run: '& "C:\Program Files\Git\usr\bin\tar.exe" -xf android-ndk-r${{inputs.ndk_version}}-unfixed.tar'
+        run: 7z x android-ndk-r${{inputs.ndk_version}}-unfixed.tar -aoa
 
       - name: Fix Links
         shell: pwsh
         run: |
           function Get-FileType {
-            param ([string]$FilePath)
-            $fileExePath = "C:\Program Files\Git\usr\bin\file.exe"
-            $fileType = & "$fileExePath" $FilePath
-            Write-Host $fileType
+              param ([string]$FilePath)
+              $fileExePath = "C:\Program Files\Git\usr\bin\file.exe"
+              return & "$fileExePath" $FilePath
           }
 
           $NDK = "$PWD/android-ndk-r${{inputs.ndk_version}}"
           $NDK_TOOLCHAIN = "$NDK/toolchains/llvm/prebuilt/cosmo-universal"
 
           foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
-            $bname = $file.Name
-            $fileType = Get-FileType $file.FullName
+              $bname = $file.Name
+              $fileType = Get-FileType $file.FullName
 
-            if ($fileType -match "DOS/MBR boot sector") {
-              Write-Host "Renaming $bname"
-              Rename-Item -Path $file.FullName -NewName "$($file.FullName).exe"
-            }
-            elseif ($fileType -match "Bourne-Again shell script") {
-              # TODO
-              Write-Host "Deleting UNIX file $bname"
-              Remove-Item $file.FullName -Force
-            }
+              if ($fileType -match "symbolic link to `(.*`)") {
+                  $targetFile = $matches[1].Trim()
+
+                  Write-Host "Hard linking $bname"
+                  Remove-Item $file.FullName -Force
+
+                  $targetPath = "$NDK_TOOLCHAIN\bin\$targetFile"
+                  if (Test-Path "$targetPath") {
+                      Copy-Item -Path "$targetPath" -Destination $file.FullName -Force
+                  } else {
+                      Write-Host "$targetFile does not exist skip"
+                  }
+              }
           }
 
+          foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
+              $bname = $file.Name
+              $fileType = Get-FileType $file.FullName
+
+              if ($fileType -match "DOS/MBR boot sector") {
+                  Write-Host "Renaming $bname"
+                  Rename-Item -Path $file.FullName -NewName "$($file.Name).exe"
+              }
+              elseif ($fileType -match "a sh script") {
+                  Write-Host "Replacing UNIX file $bname"
+                  Remove-Item $file.FullName -Force
+                  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-cosmo-ape/main/windows-extra/$($file.Name)" -OutFile "$($file.FullName)"
+                  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-cosmo-ape/main/windows-extra/$($file.Name).cmd" -OutFile "$($file.FullName).cmd"
+              }
+          }
+
+          Write-Host "Running Windows Exclusive Fixes..."
+          Remove-Item $NDK_TOOLCHAIN\bin\clang-19.exe
+          Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
+          Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
+          Remove-Item $NDK_TOOLCHAIN\bin\lld.exe
+          Remove-Item $NDK\prebuilt\*asm
+          Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\make" -NewName "$NDK\prebuilt\cosmo-universal\bin\make.exe"
+          Rename-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -NewName "$NDK_TOOLCHAIN\python3\bin\python3.exe"
+          Copy-Item -Path "$NDK_TOOLCHAIN\bin\clang.exe" -Destination "$NDK_TOOLCHAIN\bin\clang-cl.exe" -Force
           cd ${NDK}/toolchains/llvm/prebuilt
-
-          New-Item -ItemType SymbolicLink -Path "windows-x86_64" -Target "cosmo-universal"
-          New-Item -ItemType SymbolicLink -Path "windows-arm64" -Target "cosmo-universal"
-
+          Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
           cd ${NDK}/prebuilt
-
-          New-Item -ItemType SymbolicLink -Path "windows-x86_64" -Target "cosmo-universal"
-          New-Item -ItemType SymbolicLink -Path "windows-arm64" -Target "cosmo-universal"
+          Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
 
       - name: Archive Fixed NDK
-        run: 7z a -snl -tzip -mx=9 -mm=Deflate64 -mmt=on android-ndk-r${{inputs.ndk_version}}-windows.zip android-ndk-r${{inputs.ndk_version}}
+        run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.ndk_version}}-windows.7z android-ndk-r${{inputs.ndk_version}}
 
       - name: Upload Fixed NDK
         uses: actions/upload-artifact@v4
         with:
           name: android-ndk-r${{inputs.ndk_version}}-windows
-          path: android-ndk-r${{inputs.ndk_version}}-windows.zip
+          path: android-ndk-r${{inputs.ndk_version}}-windows.7z
 
   unix_fix:
     needs: make
