@@ -52,7 +52,7 @@ jobs:
           ## Remove unused resource
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
-          rm -rf "${NDK}/prebuilt/*asm"
+          rm -rf "${NDK}/prebuilt/linux_x86-64/bin/*asm"
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
