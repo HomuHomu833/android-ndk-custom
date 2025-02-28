@@ -52,6 +52,7 @@ jobs:
           ## Remove unused resource
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
+          rm "${NDK}/prebuilt/*asm"
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
@@ -140,7 +141,6 @@ jobs:
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld.exe
-          Remove-Item $NDK\prebuilt\*asm
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\make" -NewName "$NDK\prebuilt\cosmo-universal\bin\make.exe"
           Rename-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -NewName "$NDK_TOOLCHAIN\python3\bin\python3.exe"
           Copy-Item -Path "$NDK_TOOLCHAIN\bin\clang.exe" -Destination "$NDK_TOOLCHAIN\bin\clang-cl.exe" -Force
