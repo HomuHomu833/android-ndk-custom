@@ -5,7 +5,7 @@ on:
     inputs:
       ndk_version:
         description: "NDK Release version:"
-        default: '28'
+        default: '29-beta1'
         required: true
         type: string
       llvm_version:
