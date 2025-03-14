@@ -1,3 +1,29 @@
+diff --git a/lldb/source/Host/common/Host.cpp b/lldb/source/Host/common/Host.cpp
+index c52e11ad6..58c5aaa39 100644
+--- a/lldb/source/Host/common/Host.cpp
++++ b/lldb/source/Host/common/Host.cpp
+@@ -344,6 +344,12 @@ bool Host::ResolveExecutableInBundle(FileSpec &file) { return false; }
+ 
+ #ifndef _WIN32
+ 
++#ifdef __COSMOPOLITAN__
++FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
++  // Everything is statically linked, so return LLDB itself
++  return FileSpec(GetProgramExecutableName(), FileSpec::Style::native);
++}
++#else
+ FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
+   FileSpec module_filespec;
+   Dl_info info;
+@@ -355,6 +361,8 @@ FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
+   }
+   return module_filespec;
+ }
++#endif
++
+ 
+ #endif
+ 
 diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
 index f5293e866..24704abc8 100644
 --- a/llvm/CMakeLists.txt
