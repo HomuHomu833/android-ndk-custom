@@ -19,13 +19,13 @@ on:
     inputs:
       version:
         description: "Release version:"
-        default: "19.1.7"
+        default: "20.1.0"
         required: true
         type: string
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
-        default: "bolt;clang;clang-tools-extra;lld;lldb"
+        default: "clang;clang-tools-extra;lld"
         required: true
         type: string
 
