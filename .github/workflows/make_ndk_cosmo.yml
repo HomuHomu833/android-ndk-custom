@@ -1,4 +1,4 @@
-name: Make NDK APE
+name: Make NDK Cosmopolitan Libc
 run-name: Make NDK-r${{inputs.ndk_version}} with llvm-${{inputs.llvm_version}}-ape
 on:
   workflow_dispatch:
