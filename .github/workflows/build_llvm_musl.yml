@@ -41,6 +41,7 @@ jobs:
         uses: mlugg/setup-zig@v1.2.1
         with:
           version: 0.13.0
+          use-cache: false
         
       - name: Setup Zig toolchain
         run: |
