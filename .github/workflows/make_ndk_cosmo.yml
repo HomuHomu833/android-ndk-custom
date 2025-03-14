@@ -16,7 +16,7 @@ on:
 
 jobs:
   make:
-    name: Make NDK APE
+    name: Make NDK Cosmo
     runs-on: ubuntu-latest
     steps:
       - name: Get NDK and LLVM
@@ -24,7 +24,7 @@ jobs:
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
           curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo-ape/releases/download/llvm-${{inputs.llvm_version}}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape.tar.xz | tar -xJf -
 
-      - name: Make NDK APE
+      - name: Make NDK Cosmo
         run: |
           NDK="${PWD}/android-ndk-r${{inputs.ndk_version}}"
           HOST_TOOLCHAIN="${PWD}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape"
