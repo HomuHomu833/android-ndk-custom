@@ -151,13 +151,13 @@ jobs:
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
 
       - name: Archive Fixed NDK
-        run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.ndk_version}}-windows.7z android-ndk-r${{inputs.ndk_version}}
+        run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.ndk_version}}-windows-cosmo.7z android-ndk-r${{inputs.ndk_version}}
 
       - name: Upload Fixed NDK
         uses: actions/upload-artifact@v4
         with:
-          name: android-ndk-r${{inputs.ndk_version}}-windows
-          path: android-ndk-r${{inputs.ndk_version}}-windows.7z
+          name: android-ndk-r${{inputs.ndk_version}}-windows-cosmo
+          path: android-ndk-r${{inputs.ndk_version}}-windows-cosmo.7z
 
   unix_fix:
     needs: make
@@ -193,13 +193,13 @@ jobs:
           ln -s cosmo-universal darwin-arm64
 
       - name: Archive Fixed NDK
-        run: tar -cf - android-ndk-r${{inputs.ndk_version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.ndk_version}}-unix.tar.xz
+        run: tar -cf - android-ndk-r${{inputs.ndk_version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.ndk_version}}-unix-cosmo.tar.xz
 
       - name: Upload Fixed NDK
         uses: actions/upload-artifact@v4
         with:
-          name: android-ndk-r${{inputs.ndk_version}}-unix
-          path: android-ndk-r${{inputs.ndk_version}}-unix.tar.xz
+          name: android-ndk-r${{inputs.ndk_version}}-unix-cosmo
+          path: android-ndk-r${{inputs.ndk_version}}-unix-cosmo.tar.xz
 
   release:
     needs: [unix_fix, windows_fix]
