@@ -139,18 +139,6 @@ jobs:
           export AR=${TOOLCHAIN}/bin/ar
           export STRIP=${TOOLCHAIN}/bin/strip
 
-          if [[ "${{ matrix.target }}" == "aarch64-linux-musl" ]]; then
-            LLVM_TARGET="AArch64"
-            LLVM_TRIPLE="aarch64-linux-musl"
-            CMAKE_PROC="aarch64"
-            BOLT_TARGET="AArch64"
-          elif [[ "${{ matrix.target }}" == "x86_64-linux-musl" ]]; then
-            LLVM_TARGET="X86"
-            LLVM_TRIPLE="x86_64-linux-musl"
-            CMAKE_PROC="x86_64"
-            BOLT_TARGET="X86"
-          fi
-
           cmake -S "$ROOTDIR/llvm" -B "${TARGET_BUILD_DIR}" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="${ROOTDIR}/llvm-${{matrix.target}}" \
             -DCMAKE_PREFIX_PATH="${TARGET_INSTALL_DIR}" \
@@ -171,10 +159,6 @@ jobs:
             -DCMAKE_STRIP=""\
             -DCMAKE_INSTALL_DO_STRIP=ON\
             -DBUILD_SHARED_LIBS=OFF\
-            -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" \
-            -DLLVM_DEFAULT_TARGET_TRIPLE="${LLVM_TRIPLE}" \
-            -DCMAKE_SYSTEM_PROCESSOR="${CMAKE_PROC}" \
-            -DBOLT_RUNTIME_TARGETS="${BOLT_TARGET}" \
             -DLLVM_INCLUDE_BENCHMARKS=OFF\
             -DLLVM_BUILD_BENCHMARKS=OFF\
             -DLLVM_INCLUDE_EXAMPLES=OFF\
