@@ -19,11 +19,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
         target: [aarch64-linux-musl, x86_64-linux-musl]
+    runs-on: ${{ matrix.target == 'aarch64-linux-musl' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt install ninja-build binfmt-support qemu-user-static
+          sudo apt install ninja-build
 
       - name: Build dependencies
         run : |
