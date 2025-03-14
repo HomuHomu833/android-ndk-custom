@@ -1,0 +1,222 @@
+name: Build LLVM (musl libc)
+run-name: Build llvm-${{inputs.version}} ${{inputs.projects}} (musl libc)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version:"
+        default: "20.1.0"
+        required: true
+      projects:
+        description: "Projects to build:"
+        # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
+        default: "clang;clang-tools-extra;lld"
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [aarch64-linux-musl, x86_64-linux-musl]
+    env:
+      ROOTDIR: ${{github.workspace}}
+      TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
+      TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
+      ZIG_TARGET: ${{matrix.target}}
+    steps:
+      - name: Checkout llvm-project
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: llvm/llvm-project
+          ref: llvmorg-${{inputs.version}}
+          fetch-depth: 1
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2.2.0
+        with:
+          version: 0.13.0
+          cache: true
+        
+      - name: Setup Zig toolchain
+        run: |
+          git clone https://github.com/zongou/zig-as-llvm
+
+      - name: Install dependencies
+        run: |
+          sudo apt install ninja-build binfmt-support qemu-user-static
+
+      - name: Build dependencies
+        run : |
+          TOOLCHAIN=${PWD}/zig-as-llvm
+          export CC=${TOOLCHAIN}/bin/cc
+          export CXX=${TOOLCHAIN}/bin/c++
+          export LD=${TOOLCHAIN}/bin/ld
+          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
+          export AR=${TOOLCHAIN}/bin/ar
+          export STRIP=${TOOLCHAIN}/bin/strip
+
+          rm -rf build output/ zlib/ zstd/
+
+          if ! test -f "${TARGET_INSTALL_DIR}"/lib/libz.a; then
+              if ! test -d zlib; then
+                  zlib_version=1.3.1
+                  curl https://github.com/madler/zlib/releases/download/v${zlib_version}/zlib-${zlib_version}.tar.xz -LkSs | xz -d | tar -x
+                  mv zlib-${zlib_version} zlib
+              fi
+              mkdir -p "${TARGET_BUILD_DIR}"/zlib
+              (
+                  cd ${ROOTDIR}/zlib
+                  ./configure --prefix="${TARGET_INSTALL_DIR}" --static
+                  make -j"$(nproc --all)" install
+              )
+          fi
+
+          if ! test -f "${TARGET_INSTALL_DIR}"/lib/libzstd.a; then
+              if ! test -d zstd; then
+                  curl https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -LkSs | gzip -d | tar -x
+                  mv zstd-1.5.6 zstd
+              fi
+              # make -C zstd/lib CC="${CC}" CXX="${CXX}" PREFIX="${TARGET_INSTALL_DIR}" install-static
+
+              mkdir -p "${TARGET_INSTALL_DIR}/include"
+              mkdir -p "${TARGET_INSTALL_DIR}/lib"
+              mkdir -p "${TARGET_BUILD_DIR}/zstd"
+
+              cp "${ROOTDIR}/zstd/lib/zstd.h" "$TARGET_INSTALL_DIR/include/zstd.h"
+              cd "${TARGET_BUILD_DIR}/zstd"
+
+              $CC -c \
+                  "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
+                  "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
+                  "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
+                  "${ROOTDIR}/zstd/lib/decompress/huf_decompress_amd64.S" \
+                  "${ROOTDIR}/zstd/lib/decompress/zstd_decompress_block.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstdmt_compress.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_opt.c" \
+                  "${ROOTDIR}/zstd/lib/compress/hist.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_ldm.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_fast.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_compress_literals.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_double_fast.c" \
+                  "${ROOTDIR}/zstd/lib/compress/huf_compress.c" \
+                  "${ROOTDIR}/zstd/lib/compress/fse_compress.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_lazy.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_compress.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_compress_sequences.c" \
+                  "${ROOTDIR}/zstd/lib/compress/zstd_compress_superblock.c" \
+                  "${ROOTDIR}/zstd/lib/deprecated/zbuff_compress.c" \
+                  "${ROOTDIR}/zstd/lib/deprecated/zbuff_decompress.c" \
+                  "${ROOTDIR}/zstd/lib/deprecated/zbuff_common.c" \
+                  "${ROOTDIR}/zstd/lib/common/entropy_common.c" \
+                  "${ROOTDIR}/zstd/lib/common/pool.c" \
+                  "${ROOTDIR}/zstd/lib/common/threading.c" \
+                  "${ROOTDIR}/zstd/lib/common/zstd_common.c" \
+                  "${ROOTDIR}/zstd/lib/common/xxhash.c" \
+                  "${ROOTDIR}/zstd/lib/common/debug.c" \
+                  "${ROOTDIR}/zstd/lib/common/fse_decompress.c" \
+                  "${ROOTDIR}/zstd/lib/common/error_private.c" \
+                  "${ROOTDIR}/zstd/lib/dictBuilder/zdict.c" \
+                  "${ROOTDIR}/zstd/lib/dictBuilder/divsufsort.c" \
+                  "${ROOTDIR}/zstd/lib/dictBuilder/fastcover.c" \
+                  "${ROOTDIR}/zstd/lib/dictBuilder/cover.c"
+
+              $AR rcs "${TARGET_INSTALL_DIR}/lib/libzstd.a" "${TARGET_BUILD_DIR}"/zstd/*.o
+          fi
+
+      - name: Build LLVM
+        run: |
+          TOOLCHAIN=${PWD}/zig-as-llvm
+          export CC=${TOOLCHAIN}/bin/cc
+          export CXX=${TOOLCHAIN}/bin/c++
+          export LD=${TOOLCHAIN}/bin/ld
+          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
+          export AR=${TOOLCHAIN}/bin/ar
+          export STRIP=${TOOLCHAIN}/bin/strip
+
+          cmake -S "$ROOTDIR/llvm" -B "${TARGET_BUILD_DIR}" -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="${ROOTDIR}/llvm-${{matrix.target}}" \
+            -DCMAKE_PREFIX_PATH="${TARGET_INSTALL_DIR}" \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_CROSSCOMPILING=True \
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}" \
+            -DCMAKE_ASM_COMPILER="${CC}" \
+            -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
+            -DLLVM_ENABLE_ZLIB=FORCE_ON \
+            -DLLVM_ENABLE_ZSTD=FORCE_ON \
+            -DLLVM_USE_STATIC_ZSTD=ON \
+            -DLLVM_BUILD_STATIC=ON \
+            -DCLANG_ENABLE_ARCMT=ON \
+            -DLIBCLANG_BUILD_STATIC=ON \
+            -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
+            \
+            -DCMAKE_STRIP=""\
+            -DCMAKE_INSTALL_DO_STRIP=OFF\
+            -DBUILD_SHARED_LIBS=OFF\
+            -DLLVM_INCLUDE_BENCHMARKS=OFF\
+            -DLLVM_BUILD_BENCHMARKS=OFF\
+            -DLLVM_INCLUDE_EXAMPLES=OFF\
+            -DLLVM_BUILD_EXAMPLES=OFF\
+            -DLLVM_BUILD_TOOLS=ON\
+            -DLLVM_INCLUDE_TESTS=OFF\
+            -DLLVM_BUILD_TESTS=OFF\
+            -DCLANG_INCLUDE_TESTS=OFF\
+            -DCLANG_BUILD_TESTS=OFF\
+            -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF\
+            -DCLANG_TOOL_APINOTES_TEST_BUILD=OFF\
+            -DCLANG_TOOL_ARCMT_TEST_BUILD=OFF\
+            -DCLANG_TOOL_C_ARCMT_TEST_BUILD=OFF\
+            -DCLANG_TOOL_C_INDEX_TEST_BUILD=OFF\
+            -DLLVM_TOOL_C_TEST_BUILD=OFF\
+            -DLLVM_PARALLEL_LINK_JOBS=1\
+            -DLLVM_ENABLE_PIC=OFF\
+            -DLLVM_ENABLE_LIBCXX=OFF\
+            -DLLVM_ENABLE_LLVM_LIBC=OFF\
+            -DLLVM_ENABLE_UNWIND_TABLES=OFF\
+            -DLLVM_ENABLE_EH=OFF\
+            -DLLVM_ENABLE_RTTI=OFF\
+            -DLLVM_ENABLE_LTO=OFF\
+            -DLLVM_ENABLE_MODULES=OFF\
+            -DLLVM_ENABLE_PEDANTIC=OFF\
+            -DLLVM_ENABLE_FFI=OFF\
+            -DLLVM_ENABLE_LIBPFM=OFF\
+            -DLLVM_ENABLE_LIBEDIT=OFF\
+            -DLLVM_ENABLE_TERMINFO=OFF\
+            -DLLVM_ENABLE_LIBXML2=OFF\
+            -DLLVM_ENABLE_CURL=OFF\
+            -DLLVM_ENABLE_THREADS=ON
+
+          cmake --build "${TARGET_BUILD_DIR}" --target install
+
+      - name: Check
+        run: |
+          file llvm-${{matrix.target}}/bin/*
+          tree llvm-${{matrix.target}}
+
+      - name: Compress
+        run: |
+          projects=$(echo "${{inputs.projects}}" | tr ";" "+")
+          tarball_name=${projects}-${{inputs.version}}-${{matrix.target}}
+          echo tarball_name=${tarball_name} >> ${GITHUB_ENV}
+          mv llvm-${{matrix.target}} ${tarball_name}
+          tar -c ${tarball_name} | xz -T0 -v >${tarball_name}.tar.xz
+
+      - name: Upload release
+        uses: ncipollo/release-action@v1.15.0
+        with:
+          tag: "llvm"
+          artifacts: ${{env.tarball_name}}.tar.xz
+          allowUpdates: true
+          replacesArtifacts: true
+          body: |
+            [action](${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}})
+      
+      - uses: zongou/run-vscode-server@0.0.3
+        name: Open VS Code server to Handle Failure (Run on any failure)
+        if: ${{ failure() }}
