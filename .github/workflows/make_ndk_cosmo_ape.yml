@@ -10,7 +10,7 @@ on:
         type: string
       llvm_version:
         description: "LLVM Release version:"
-        default: '19.1.7'
+        default: '20.1.0'
         required: true
         type: string
 
@@ -137,7 +137,7 @@ jobs:
           }
 
           Write-Host "Running Extra Fixes..."
-          Remove-Item $NDK_TOOLCHAIN\bin\clang-19.exe
+          Remove-Item $NDK_TOOLCHAIN\bin\clang-20.exe
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld.exe
