@@ -1,5 +1,5 @@
 name: Build LLVM (musl libc)
-run-name: Build llvm-${{inputs.version}} ${{inputs.projects}} (musl libc)
+run-name: Build llvm-${{inputs.version}} ${{inputs.projects}}
 on:
   workflow_dispatch:
     inputs:
