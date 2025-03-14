@@ -1,8 +1,19 @@
 diff --git a/lldb/source/Host/common/Host.cpp b/lldb/source/Host/common/Host.cpp
-index c52e11ad6..58c5aaa39 100644
+index c52e11ad6..d9ce49c15 100644
 --- a/lldb/source/Host/common/Host.cpp
 +++ b/lldb/source/Host/common/Host.cpp
-@@ -344,6 +344,12 @@ bool Host::ResolveExecutableInBundle(FileSpec &file) { return false; }
+@@ -68,6 +68,10 @@
+ #include "lldb/Host/posix/ProcessLauncherPosixFork.h"
+ #endif
+ 
++#if defined(__COSMOPOLITAN__)
++#include <cosmo.h>
++#endif
++
+ #if defined(__APPLE__)
+ #ifndef _POSIX_SPAWN_DISABLE_ASLR
+ #define _POSIX_SPAWN_DISABLE_ASLR 0x0100
+@@ -344,6 +348,12 @@ bool Host::ResolveExecutableInBundle(FileSpec &file) { return false; }
  
  #ifndef _WIN32
  
@@ -15,7 +26,7 @@ index c52e11ad6..58c5aaa39 100644
  FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
    FileSpec module_filespec;
    Dl_info info;
-@@ -355,6 +361,8 @@ FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
+@@ -355,6 +365,8 @@ FileSpec Host::GetModuleFileSpecForHostAddress(const void *host_addr) {
    }
    return module_filespec;
  }
