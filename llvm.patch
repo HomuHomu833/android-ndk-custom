@@ -32,7 +32,7 @@ index c42b5e686..f719d4221 100644
  #elif defined(_AIX)
  #include <sys/machine.h>
 diff --git a/llvm/lib/Support/Unix/Path.inc b/llvm/lib/Support/Unix/Path.inc
-index 6004e007c..5efa32993 100644
+index 6004e007c..ce0bf0c95 100644
 --- a/llvm/lib/Support/Unix/Path.inc
 +++ b/llvm/lib/Support/Unix/Path.inc
 @@ -50,6 +50,8 @@ extern char **environ;
@@ -78,6 +78,15 @@ index 6004e007c..5efa32993 100644
    const char *curproc = "/proc/curproc/file";
    char exe_path[PATH_MAX];
    if (sys::fs::exists(curproc)) {
+@@ -317,7 +320,7 @@ std::string getMainExecutable(const char *argv0, void *MainAddr) {
+       return std::string(real_path);
+     break; // Found entry, but realpath failed.
+   }
+-#elif defined(HAVE_DLOPEN)
++#elif defined(HAVE_DLOPEN) && !defined(__COSMOPOLITAN__)
+   // Use dladdr to get executable path if available.
+   Dl_info DLInfo;
+   int err = dladdr(MainAddr, &DLInfo);
 @@ -329,6 +332,8 @@ std::string getMainExecutable(const char *argv0, void *MainAddr) {
    char link_path[PATH_MAX];
    if (realpath(DLInfo.dli_fname, link_path))
@@ -97,20 +106,10 @@ index 6004e007c..5efa32993 100644
    return !!(STATVFS_F_FLAG(Vfs) & MNT_LOCAL);
  #endif
 diff --git a/llvm/lib/Support/Unix/Signals.inc b/llvm/lib/Support/Unix/Signals.inc
-index 2e7b467a1..4e98a2b4e 100644
+index 2e7b467a1..9f80f21ee 100644
 --- a/llvm/lib/Support/Unix/Signals.inc
 +++ b/llvm/lib/Support/Unix/Signals.inc
-@@ -77,6 +77,9 @@
- #include "llvm/Support/ConvertEBCDIC.h"
- #include <__le_cwi.h>
- #endif
-+#ifdef __COSMOPOLITAN__
-+#include <cosmo.h>
-+#endif
- 
- using namespace llvm;
- 
-@@ -817,7 +820,7 @@ void llvm::sys::PrintStackTrace(raw_ostream &OS, int Depth) {
+@@ -817,7 +817,7 @@ void llvm::sys::PrintStackTrace(raw_ostream &OS, int Depth) {
    OS << "Stack dump without symbol names (ensure you have llvm-symbolizer in "
          "your PATH or set the environment var `LLVM_SYMBOLIZER_PATH` to point "
          "to it):\n";
@@ -119,15 +118,6 @@ index 2e7b467a1..4e98a2b4e 100644
    int width = 0;
    for (int i = 0; i < depth; ++i) {
      Dl_info dlinfo;
-@@ -863,6 +866,8 @@ void llvm::sys::PrintStackTrace(raw_ostream &OS, int Depth) {
-     }
-     OS << '\n';
-   }
-+#elif defined(__COSMOPOLITAN__)
-+  ShowCrashReports();
- #elif defined(HAVE_BACKTRACE)
-   backtrace_symbols_fd(StackTrace, Depth, STDERR_FILENO);
- #endif
 diff --git a/llvm/lib/Support/Unix/Threading.inc b/llvm/lib/Support/Unix/Threading.inc
 index 15a5b0086..17c6a37eb 100644
 --- a/llvm/lib/Support/Unix/Threading.inc
