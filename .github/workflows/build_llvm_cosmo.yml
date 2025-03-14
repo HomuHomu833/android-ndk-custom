@@ -1,4 +1,4 @@
-name: Build LLVM
+name: Build LLVM (Cosmopolitan Libc)
 run-name: Build llvm-${{inputs.version}} ${{inputs.projects}}
 on:
   workflow_call:
