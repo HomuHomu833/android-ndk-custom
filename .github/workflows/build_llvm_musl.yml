@@ -56,6 +56,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
+          export CFLAGS="-I${TARGET_INSTALL_DIR}/include"
+          export CXXFLAGS="-I${TARGET_INSTALL_DIR}/include"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
