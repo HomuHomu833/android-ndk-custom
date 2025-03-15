@@ -23,7 +23,7 @@ jobs:
       fail-fast: true
       matrix:
         target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, arm-linux-musl]
-    runs-on: ${{matrix.target == 'arm-linux-musl' && 'ubuntu-22.04-arm' || 'ubuntu-22.04'}}
+    runs-on: ubuntu-22.04
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
@@ -55,8 +55,8 @@ jobs:
         run : |
           TOOLCHAIN=${PWD}/zig-as-llvm
           if [[ "${{ matrix.target }}" == "arm-linux-musl" ]]; then
-            export CC="${TOOLCHAIN}/bin/cc -mcpu=cortex-a53 -mfloat-abi=hard"
-            export CXX="${TOOLCHAIN}/bin/c++ -mcpu=cortex-a53 -mfloat-abi=hard"
+            export CC="${TOOLCHAIN}/bin/cc -mcpu=cortex-a7 -mfloat-abi=hard"
+            export CXX="${TOOLCHAIN}/bin/c++ -mcpu=cortex-a7 -mfloat-abi=hard"
           else
             export CC=${TOOLCHAIN}/bin/cc
             export CXX=${TOOLCHAIN}/bin/c++
