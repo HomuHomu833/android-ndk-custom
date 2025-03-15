@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, arm-linux-musl]
+        target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl]
     runs-on: ubuntu-22.04
     env:
       ROOTDIR: ${{github.workspace}}
