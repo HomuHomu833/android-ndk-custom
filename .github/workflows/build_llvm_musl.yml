@@ -55,8 +55,8 @@ jobs:
         run : |
           TOOLCHAIN=${PWD}/zig-as-llvm
           if [[ "${{ matrix.target }}" == "arm-linux-musl" ]]; then
-            export CC="${TOOLCHAIN}/bin/cc -mfloat-abi=hard"
-            export CXX="${TOOLCHAIN}/bin/c++ -mfloat-abi=hard"
+            export CC="${TOOLCHAIN}/bin/cc -mcpu=cortex-a53 -mfloat-abi=hard"
+            export CXX="${TOOLCHAIN}/bin/c++ -mcpu=cortex-a53 -mfloat-abi=hard"
           else
             export CC=${TOOLCHAIN}/bin/cc
             export CXX=${TOOLCHAIN}/bin/c++
