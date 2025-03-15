@@ -22,11 +22,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, x86_64-linux-musl, armv7-linux-musleabihf, i686-linux-musl]
-    defaults:
-      run:
-        shell: bash -c "[[ '${{ matrix.target }}' == 'armv7-linux-musleabihf' || '${{ matrix.target }}' == 'i686-linux-musl' ]] && exec linux32 bash || exec bash"
-    runs-on: ${{matrix.target == 'aarch64-linux-musl' || matrix.target == 'armv7-linux-musleabihf' && 'ubuntu-22.04-arm' || 'ubuntu-22.04'}}
+        target: [aarch64-linux-musl, x86_64-linux-musl, armv7a-linux-musleabihf]
+    runs-on: ${{matrix.target == 'aarch64-linux-musl' || matrix.target == 'armv7a-linux-musleabihf' && 'ubuntu-22.04-arm' || 'ubuntu-22.04'}}
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
