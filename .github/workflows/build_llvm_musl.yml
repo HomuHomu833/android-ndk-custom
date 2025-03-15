@@ -56,7 +56,11 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-I${TARGET_INSTALL_DIR}/include"
+          if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
+              export CFLAGS="-fsanitize=undefined -I${TARGET_INSTALL_DIR}/include"
+          else
+              export CFLAGS="-I${TARGET_INSTALL_DIR}/include"
+          fi
           export CXXFLAGS="-I${TARGET_INSTALL_DIR}/include"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
@@ -92,7 +96,7 @@ jobs:
               (
                   cd "${TARGET_BUILD_DIR}/zstd"
 
-                  CFLAGS="-fsanitize=undefined" $CC -c \
+                  $CC -c \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
                       "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
