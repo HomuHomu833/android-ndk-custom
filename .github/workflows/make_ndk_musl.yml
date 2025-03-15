@@ -42,9 +42,7 @@ jobs:
               elif file "${file}" | grep -q 'Bourne-Again shell script'; then
                   echo "Replacing SheBang ${bname}"
                   sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "${file}"
-              fi
-
-              if file "${file}" | grep -q 'ELF'; then
+              else
                   echo "Removing ${bname}"
                   rm ${file}
               fi
