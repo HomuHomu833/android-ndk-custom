@@ -129,6 +129,7 @@ jobs:
               (
                   cd "${ROOTDIR}/libxml2"
                   cmake -S . -B ${TARGET_BUILD_DIR}/libxml2 \
+                      -DCMAKE_BUILD_TYPE=MinSizeRel \
                       -DCMAKE_INSTALL_PREFIX="${TARGET_INSTALL_DIR}" \
                       -DBUILD_SHARED_LIBS=OFF \
                       -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
