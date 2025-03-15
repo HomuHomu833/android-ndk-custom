@@ -152,6 +152,20 @@ jobs:
               )
           fi
 
+          if ! test -f "${TARGET_INSTALL_DIR}"/lib/libpython3.12.a; then
+              if ! test -d python3; then
+                  curl -LkSs https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz | xz -d | tar -x
+                  mv Python-3.12.3 python3
+              fi
+
+               mkdir -p "${TARGET_BUILD_DIR}/python3"
+               (
+                  cd "${TARGET_BUILD_DIR}/python3"
+                  ${ROOTDIR}/python3/configure --prefix=${TARGET_INSTALL_DIR} --enable-static --disable-shared --disable-debug --enable-strip --with-ensurepip=no
+                  make -j"$(nproc --all)" altinstall
+               )
+          fi
+
       - name: Build LLVM
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
@@ -189,6 +203,7 @@ jobs:
             -DLLVM_BUILD_TOOLS=ON\
             -DLLVM_INCLUDE_TESTS=OFF\
             -DLLVM_BUILD_TESTS=OFF\
+            -DLLDB_ENABLE_SWIG=OFF \
             -DCLANG_INCLUDE_TESTS=OFF\
             -DCLANG_BUILD_TESTS=OFF\
             -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF\
