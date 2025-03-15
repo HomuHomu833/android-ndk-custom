@@ -157,7 +157,7 @@ jobs:
             -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
             \
             -DCMAKE_STRIP=""\
-            -DCMAKE_INSTALL_DO_STRIP=ON\
+            -DCMAKE_INSTALL_DO_STRIP=OFF\
             -DBUILD_SHARED_LIBS=OFF\
             -DLLVM_INCLUDE_BENCHMARKS=OFF\
             -DLLVM_BUILD_BENCHMARKS=OFF\
@@ -181,7 +181,7 @@ jobs:
             -DLLVM_ENABLE_UNWIND_TABLES=OFF\
             -DLLVM_ENABLE_EH=OFF\
             -DLLVM_ENABLE_RTTI=OFF\
-            -DLLVM_ENABLE_LTO=Thin\
+            -DLLVM_ENABLE_LTO=OFF\
             -DLLVM_ENABLE_MODULES=OFF\
             -DLLVM_ENABLE_PEDANTIC=OFF\
             -DLLVM_ENABLE_FFI=OFF\
