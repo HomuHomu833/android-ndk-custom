@@ -23,7 +23,7 @@ jobs:
       fail-fast: true
       matrix:
         target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, arm-linux-musl]
-    runs-on: ubuntu-22.04
+    runs-on: ${{matrix.target == 'arm-linux-musl' && 'ubuntu-22.04-arm' || 'ubuntu-22.04'}}
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
