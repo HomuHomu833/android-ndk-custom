@@ -53,6 +53,7 @@ jobs:
 
       - name: Build dependencies
         run : |
+          TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
           export LD=${TOOLCHAIN}/bin/ld
