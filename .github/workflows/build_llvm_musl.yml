@@ -163,7 +163,7 @@ jobs:
                mkdir -p "${TARGET_BUILD_DIR}/python3"
                (
                   cd "${TARGET_BUILD_DIR}/python3"
-                  ${ROOTDIR}/python3/configure --build=${{matrix.target}} --prefix=${TARGET_INSTALL_DIR} --enable-static --disable-shared --enable-optimizations --enable-strip --with-ensurepip=no
+                  ${ROOTDIR}/python3/configure --build=${{matrix.target}} --prefix=${TARGET_INSTALL_DIR} --enable-static --disable-shared --disable-ctypes --enable-optimizations --enable-strip --with-ensurepip=no
                   make -j"$(nproc --all)" altinstall
                )
           fi
