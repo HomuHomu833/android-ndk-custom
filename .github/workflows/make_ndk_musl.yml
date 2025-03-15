@@ -21,12 +21,12 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, x86_64-linux-musl]
+        target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl]
     steps:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo/releases/download/llvm/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-${{matrix.target}}.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo/releases/download/llvm-${{inputs.llvm_version}}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK musl
         run: |
