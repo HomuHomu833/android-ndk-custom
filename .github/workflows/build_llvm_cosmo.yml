@@ -11,7 +11,7 @@ on:
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
-        default: "clang;clang-tools-extra;lld;lldb"
+        default: "clang;clang-tools-extra;lld"
         required: true
         type: string
 
@@ -119,29 +119,6 @@ jobs:
               )
           fi
 
-          if ! test -f "${TARGET_INSTALL_DIR}"/lib/libxml2.a; then
-              if ! test -d libxml2; then
-                  curl -LkSs https://github.com/GNOME/libxml2/archive/refs/tags/v2.9.14.tar.gz | gzip -d | tar -x
-                  mv libxml2-2.9.14 libxml2
-              fi
-
-              mkdir -p "${TARGET_BUILD_DIR}/libxml2"
-              (
-                  cd "${ROOTDIR}/libxml2"
-                  cmake -S . -B ${TARGET_BUILD_DIR}/libxml2 \
-                      -DCMAKE_BUILD_TYPE=MinSizeRel \
-                      -DCMAKE_INSTALL_PREFIX="${TARGET_INSTALL_DIR}" \
-                      -DBUILD_SHARED_LIBS=OFF \
-                      -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
-                      -DCMAKE_C_COMPILER=$CC \
-                      -DCMAKE_CXX_COMPILER=$CXX \
-                      -DLIBXML2_WITH_TESTS=OFF \
-                      -DLIBXML2_WITH_PYTHON=OFF \
-                      -DLIBXML2_WITH_LZMA=OFF
-                  cmake --build ${TARGET_BUILD_DIR}/libxml2 --target install -j"$(nproc --all)"
-              )
-          fi
-
       - name: Patch LLVM source code
         run: curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/llvm.patch | git apply
 
@@ -196,7 +173,7 @@ jobs:
             -DLLVM_ENABLE_LIBPFM=OFF \
             -DLLVM_ENABLE_LIBEDIT=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_ENABLE_LIBXML2=ON \
+            -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_THREADS=ON
 
