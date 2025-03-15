@@ -54,8 +54,13 @@ jobs:
       - name: Build dependencies
         run : |
           TOOLCHAIN=${PWD}/zig-as-llvm
-          export CC=${TOOLCHAIN}/bin/cc
-          export CXX=${TOOLCHAIN}/bin/c++
+          if [[ "${{ matrix.target }}" == "arm-linux-musleabihf" ]]; then
+            export CC="${TOOLCHAIN}/bin/cc -mfloat-abi=hard"
+            export CXX="${TOOLCHAIN}/bin/c++ -mfloat-abi=hard"
+          else
+            export CC=${TOOLCHAIN}/bin/cc
+            export CXX=${TOOLCHAIN}/bin/c++
+          fi
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
