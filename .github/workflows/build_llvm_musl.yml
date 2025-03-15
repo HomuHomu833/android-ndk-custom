@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
+        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, loongarch64-linux-musl]
     runs-on: ubuntu-22.04
     env:
       ROOTDIR: ${{github.workspace}}
@@ -53,14 +53,8 @@ jobs:
 
       - name: Build dependencies
         run : |
-          TOOLCHAIN=${PWD}/zig-as-llvm
-          if [[ "${{ matrix.target }}" == "arm-linux-musl" ]]; then
-            export CC="${TOOLCHAIN}/bin/cc -mcpu=cortex-a7 -mfloat-abi=hard"
-            export CXX="${TOOLCHAIN}/bin/c++ -mcpu=cortex-a7 -mfloat-abi=hard"
-          else
-            export CC=${TOOLCHAIN}/bin/cc
-            export CXX=${TOOLCHAIN}/bin/c++
-          fi
+          export CC=${TOOLCHAIN}/bin/cc
+          export CXX=${TOOLCHAIN}/bin/c++
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
