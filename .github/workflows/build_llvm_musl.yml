@@ -30,6 +30,7 @@ jobs:
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       ZIG_TARGET: ${{matrix.target}}
+      CFLAGS: -funsafe-math-optimizations
     steps:
       - name: Checkout llvm-project
         uses: actions/checkout@v4.1.1
