@@ -56,8 +56,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-fPIC -fsanitize=undefined"
-          export CXXFLAGS="-fPIC -fsanitize=undefined"
+          export CFLAGS="-fPIC -Wl,-z,notext -Wl,-Bsymbolic -fsanitize=undefined"
+          export CXXFLAGS="-fPIC -Wl,-z,notext -Wl,-Bsymbolic -fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
