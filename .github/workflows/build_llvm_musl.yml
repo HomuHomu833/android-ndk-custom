@@ -10,7 +10,7 @@ on:
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
-        default: "clang;clang-tools-extra;lld;lldb"
+        default: "clang;clang-tools-extra;lld"
         required: true
 
 permissions:
@@ -56,8 +56,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-fPIC -Wl,-z,notext -Wl,-Bsymbolic -fsanitize=undefined"
-          export CXXFLAGS="-fPIC -Wl,-z,notext -Wl,-Bsymbolic -fsanitize=undefined"
+          export CFLAGS="-fsanitize=undefined"
+          export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
@@ -78,8 +78,6 @@ jobs:
               )
           fi
 
-          readelf -h "${TARGET_INSTALL_DIR}/lib/libz.a" | grep "Type:"
-
           if ! test -f "${TARGET_INSTALL_DIR}"/lib/libzstd.a; then
               if ! test -d zstd; then
                   curl https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -LkSs | gzip -d | tar -x
@@ -94,7 +92,7 @@ jobs:
               (
                   cd "${TARGET_BUILD_DIR}/zstd"
 
-                  $CC $CFLAGS -c \
+                  $CC -c \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
                       "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
@@ -133,40 +131,13 @@ jobs:
               )
           fi
 
-          readelf -h "${TARGET_INSTALL_DIR}/lib/libzstd.a" | grep "Type:"
-
-          if ! test -f "${TARGET_INSTALL_DIR}"/lib/libxml2.a; then
-              if ! test -d libxml2; then
-                  curl -LkSs https://github.com/GNOME/libxml2/archive/refs/tags/v2.9.14.tar.gz | gzip -d | tar -x
-                  mv libxml2-2.9.14 libxml2
-              fi
-
-              mkdir -p "${TARGET_BUILD_DIR}/libxml2"
-              (
-                  cd "${ROOTDIR}/libxml2"
-                  cmake -S . -B ${TARGET_BUILD_DIR}/libxml2 \
-                      -DCMAKE_BUILD_TYPE=MinSizeRel \
-                      -DCMAKE_INSTALL_PREFIX="${TARGET_INSTALL_DIR}" \
-                      -DBUILD_SHARED_LIBS=OFF \
-                      -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
-                      -DCMAKE_C_COMPILER=$CC \
-                      -DCMAKE_CXX_COMPILER=$CXX \
-                      -DLIBXML2_WITH_TESTS=OFF \
-                      -DLIBXML2_WITH_PYTHON=OFF \
-                      -DLIBXML2_WITH_LZMA=OFF
-                  cmake --build ${TARGET_BUILD_DIR}/libxml2 --target install -j"$(nproc --all)"
-              )
-          fi
-
-          readelf -h "${TARGET_INSTALL_DIR}/lib/libxml2.a" | grep "Type:"
-
       - name: Build LLVM
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-fPIC -fsanitize=undefined"
-          export CXXFLAGS="-fPIC -fsanitize=undefined"
+          export CFLAGS="-fsanitize=undefined"
+          export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
@@ -200,8 +171,6 @@ jobs:
             -DLLVM_BUILD_TOOLS=ON\
             -DLLVM_INCLUDE_TESTS=OFF\
             -DLLVM_BUILD_TESTS=OFF\
-            -DLLDB_ENABLE_PYTHON=OFF\
-            -DLLDB_ENABLE_SWIG=OFF\
             -DCLANG_INCLUDE_TESTS=OFF\
             -DCLANG_BUILD_TESTS=OFF\
             -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF\
