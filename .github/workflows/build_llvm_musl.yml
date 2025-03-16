@@ -23,14 +23,13 @@ jobs:
       fail-fast: true
       matrix:
         # target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl, loongarch64-linux-musl]
-        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, loongarch64-linux-musl]
+        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       ZIG_TARGET: ${{matrix.target}}
-      CFLAGS: -funsafe-math-optimizations
     steps:
       - name: Checkout llvm-project
         uses: actions/checkout@v4.1.1
