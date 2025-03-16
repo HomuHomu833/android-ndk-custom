@@ -78,6 +78,8 @@ jobs:
               )
           fi
 
+          readelf -h "${TARGET_INSTALL_DIR}/lib/libz.a" | grep "Type:"
+
           if ! test -f "${TARGET_INSTALL_DIR}"/lib/libzstd.a; then
               if ! test -d zstd; then
                   curl https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -LkSs | gzip -d | tar -x
@@ -92,7 +94,7 @@ jobs:
               (
                   cd "${TARGET_BUILD_DIR}/zstd"
 
-                  $CC -c \
+                  $CC $CFLAGS -c \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
                       "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
@@ -131,6 +133,8 @@ jobs:
               )
           fi
 
+          readelf -h "${TARGET_INSTALL_DIR}/lib/libzstd.a" | grep "Type:"
+
           if ! test -f "${TARGET_INSTALL_DIR}"/lib/libxml2.a; then
               if ! test -d libxml2; then
                   curl -LkSs https://github.com/GNOME/libxml2/archive/refs/tags/v2.9.14.tar.gz | gzip -d | tar -x
@@ -153,6 +157,8 @@ jobs:
                   cmake --build ${TARGET_BUILD_DIR}/libxml2 --target install -j"$(nproc --all)"
               )
           fi
+
+          readelf -h "${TARGET_INSTALL_DIR}/lib/libxml2.a" | grep "Type:"
 
       - name: Build LLVM
         run: |
