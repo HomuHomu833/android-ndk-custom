@@ -141,7 +141,6 @@ jobs:
             -DCLANG_ENABLE_ARCMT=ON \
             -DLIBCLANG_BUILD_STATIC=ON \
             -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
-            \
             -DCMAKE_STRIP="" \
             -DBUILD_SHARED_LIBS=OFF \
             -DLLVM_INCLUDE_BENCHMARKS=OFF \
