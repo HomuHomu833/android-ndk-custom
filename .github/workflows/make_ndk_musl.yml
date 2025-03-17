@@ -18,11 +18,19 @@ jobs:
   make:
     name: Make NDK musl
     runs-on: ubuntu-latest
+    env:
+      ZIG_TARGET: ${{matrix.target}}
     strategy:
       fail-fast: true
       matrix:
         target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
     steps:
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1.2.1
+        with:
+          version: "0.15.0-dev.62+ea57fb55e"
+          use-cache: false
+
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
@@ -48,24 +56,43 @@ jobs:
               fi
           done
 
-          ## Fix: ERROR: Unknown host CPU architecture: aarch64
-          sed -i 's/arm64)/arm64|aarch64)/' "${NDK}/build/tools/ndk_bin_common.sh"
+          # Fix "Unknown host CPU architecture" in some architectures
+          sed -i -E '/case \$HOST_ARCH in/,/esac/ c\
+          case $HOST_ARCH in\
+            armv7l|armv8l) HOST_ARCH=arm;;\
+            arm64|aarch64) HOST_ARCH=arm64;;\
+            i?86) HOST_ARCH=x86;;\
+            x86_64|amd64) HOST_ARCH=x86_64;;\
+            riscv32|riscv64|loongarch32|loongarch64) HOST_ARCH=$HOST_ARCH;;\
+            *) echo "ERROR: Unknown host CPU architecture: $HOST_ARCH"; exit 1;;\
+          esac' "${NDK}/build/tools/ndk_bin_common.sh"
 
-          ## Remove unused resource
+          # Remove unused resource
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
           rm -rf "${NDK}/prebuilt/linux_x86-64/bin/*asm"
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
-          curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
-          mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
-          curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
+          # TODO: build these including yasm
+          # curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
+          # mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
+          # curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
 
-          if [ "${{ matrix.target }}" = "aarch64-linux-musl" ]; then
-              mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/linux-arm64
-              mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/linux-arm64
-          fi
+          case "${{ matrix.target }}" in
+            aarch64-linux-musl)   ARCH="linux-arm64" ;;
+            arm-linux-musleabihf) ARCH="linux-arm" ;;
+            x86_64-linux-musl)    ARCH="linux-x86_64" ;;
+            x86-linux-musl)       ARCH="linux-x86" ;;
+            riscv64-linux-musl)   ARCH="linux-riscv64" ;;
+            riscv32-linux-musl)   ARCH="linux-riscv32" ;;
+            loongarch64-linux-musl) ARCH="linux-loongarch64" ;;
+            loongarch32-linux-musl) ARCH="linux-loongarch32" ;;
+            *) echo "WARNING: Unknown target triple: ${{ matrix.target }}" && ARCH=linux-x86_64 ;;
+          esac
+
+          mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${ARCH}"
+          mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${ARCH}"
 
           rm -rf ${NDK}/shader-tools # TODO: maybe build?
 
