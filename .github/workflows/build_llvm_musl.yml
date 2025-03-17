@@ -143,7 +143,6 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="${ROOTDIR}/llvm-${{matrix.target}}" \
             -DCMAKE_PREFIX_PATH="${TARGET_INSTALL_DIR}" \
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64;ARM;RISCV" \
-            -DLLVM_TARGET_ARCH="X86;AArch64;ARM;X86;RISCV" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
