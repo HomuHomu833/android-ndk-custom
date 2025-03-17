@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl]
+        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
     steps:
       - name: Get NDK and LLVM
         run: |
