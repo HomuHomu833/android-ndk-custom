@@ -31,6 +31,41 @@ jobs:
           version: "0.15.0-dev.62+ea57fb55e"
           use-cache: false
 
+      - name: Setup Zig Toolchain
+        run: git clone https://github.com/zongou/zig-as-llvm
+
+      - name: Install Dependencies
+        run: sudo apt install ninja-build qemu-user-static
+
+      - name: Build Extra Dependencies
+        run: |
+          TOOLCHAIN=${PWD}/zig-as-llvm
+          export CC=${TOOLCHAIN}/bin/cc
+          export CXX=${TOOLCHAIN}/bin/c++
+          export LD=${TOOLCHAIN}/bin/ld
+          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
+          export AR=${TOOLCHAIN}/bin/ar
+          export STRIP=${TOOLCHAIN}/bin/strip
+
+          # GNU Make
+          curl -LkSs https://ftp.gnu.org/gnu/make/make-4.3.tar.gz | gzip -d | tar -x
+          cd make-4.3
+          ./configure --prefix="${PWD}/build" --build=${{ matrix.target }} --host=x86_64-linux-gnu CFLAGS="-O2 -static" CXXFLAGS="-O2 -static"
+          make -j"$(nproc --all)" install
+          cd ..
+
+          # YASM
+          curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_1.3.0.orig.tar.gz | gzip -d | tar -x
+          cd yasm-1.3.0
+          cd config
+          wget -O config.sub "http://git.savannah.gnu.org/cgit/config.git/plain/config.sub"
+          wget -O config.guess "http://git.savannah.gnu.org/cgit/config.git/plain/config.guess"
+          cd ..
+          ./configure --prefix="${PWD}/build" --build=${{ matrix.target }} --host=x86_64-linux-gnu --disable-nls CFLAGS="-O2 -static -Wno-error=date-time" CXXFLAGS="-O2 -static -Wno-error=date-time" LDFLAGS="-static"
+          make -j"$(nproc --all)" install
+
+          # Python (TODO)
+
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
@@ -74,10 +109,12 @@ jobs:
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
-          # TODO: build these including yasm
-          # curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
-          # mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
-          # curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
+          # Copy compiled binaries
+          cp make-4.3/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
+          cp yasm-1.3.0/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
+          cp yasm-1.3.0/build/bin/yasm ${NDK_TOOLCHAIN}/bin
+          cp yasm-1.3.0/build/bin/ytasm ${NDK}/prebuilt/linux-x86_64/bin
+          cp yasm-1.3.0/build/bin/vsyasm ${NDK}/prebuilt/linux-x86_64/bin
 
           case "${{ matrix.target }}" in
             aarch64-linux-musl)   ARCH="linux-arm64" ;;
