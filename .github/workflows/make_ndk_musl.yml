@@ -35,7 +35,9 @@ jobs:
         run: git clone https://github.com/zongou/zig-as-llvm
 
       - name: Install Dependencies
-        run: sudo apt install ninja-build qemu-user-static
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt install ninja-build qemu-user-static python3.11
 
       - name: Build Extra Dependencies
         run: |
