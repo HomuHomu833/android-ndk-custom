@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl, loongarch64-linux-musl]
+        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
@@ -56,8 +56,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-mcmodel=large -fsanitize=undefined"
-          export CXXFLAGS="-mcmodel=large -fsanitize=undefined"
+          export CFLAGS="-fsanitize=undefined"
+          export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
@@ -136,8 +136,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          export CFLAGS="-mcmodel=large -fsanitize=undefined"
-          export CXXFLAGS="-mcmodel=large -fsanitize=undefined"
+          export CFLAGS="-fsanitize=undefined"
+          export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
