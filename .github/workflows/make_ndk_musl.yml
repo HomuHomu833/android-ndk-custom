@@ -88,8 +88,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static -Wno-error=date-time" \
-          CXXFLAGS="-static -Wno-error=date-time" \
+          CFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
