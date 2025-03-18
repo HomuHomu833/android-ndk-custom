@@ -116,11 +116,11 @@ jobs:
           COSMO=$(dirname "$(dirname "$(command -v cosmocc)")")
 
           mkdir -p /home/runner/build/bin/
-          find /home/runner/build-x86_64-unknown-cosmo/bin -type l,f | while IFS= read -r file; do
+          find /home/runner/extra-deps-x86_64-unknown-cosmo/bin -type l,f | while IFS= read -r file; do
             bname=$(basename "${file}")
 
-            fixupobj "/home/runner/build-x86_64-unknown-cosmo/bin/${bname}"
-            fixupobj "/home/runner/build-aarch64-unknown-cosmo/bin/${bname}"
+            fixupobj "/home/runner/extra-deps-x86_64-unknown-cosmo/bin/${bname}"
+            fixupobj "/home/runner/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
 
             echo "apelink ${bname}"
             apelink -V -1 \
@@ -129,8 +129,8 @@ jobs:
               -M "${COSMO}/bin/ape-m1.c" \
               -o "/home/runner/build/${bname}" \
               -s \
-              "/home/runner/build-x86_64-unknown-cosmo/bin/${bname}" \
-              "/home/runner/build-aarch64-unknown-cosmo/bin/${bname}"
+              "/home/runner/extra-deps-x86_64-unknown-cosmo/bin/${bname}" \
+              "/home/runner/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
           done
 
       - uses: actions/upload-artifact@v4
