@@ -182,8 +182,8 @@ jobs:
           rm -rf "${NDK_TOOLCHAIN}/bin/perf2bolt"
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
-          rm -rf "${NDK}/prebuilt/linux_x86-64/bin/*asm"
-          rm -rf "${NDK}/prebuilt/linux_x86-64/lib"
+          rm -rf "${NDK}/prebuilt/linux-x86_64/bin/*asm"
+          rm -rf "${NDK}/prebuilt/linux-x86_64/lib"
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
@@ -192,9 +192,9 @@ jobs:
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
-          cp /home/runner/extra-deps/yasm "${NDK}/prebuilt/linux_x86-64/bin"
-          cp /home/runner/extra-deps/ytasm "${NDK}/prebuilt/linux_x86-64/bin"
-          cp /home/runner/extra-deps/vsyasm "${NDK}/prebuilt/linux_x86-64/bin"
+          cp /home/runner/extra-deps/yasm "${NDK}/prebuilt/linux-x86_64/bin"
+          cp /home/runner/extra-deps/ytasm "${NDK}/prebuilt/linux-x86_64/bin"
+          cp /home/runner/extra-deps/vsyasm "${NDK}/prebuilt/linux-x86_64/bin"
           cp /home/runner/extra-deps/yasm "${NDK_TOOLCHAIN}/bin
 
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
