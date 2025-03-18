@@ -101,7 +101,6 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          merge-multiple: true
           path: /home/runner
 
       - uses: geekyeggo/delete-artifact@v5.1.0
@@ -115,7 +114,7 @@ jobs:
         run: |
           COSMO=$(dirname "$(dirname "$(command -v cosmocc)")")
 
-          mkdir -p /home/runner/build/bin/
+          mkdir -p /home/runner/build
           find /home/runner/extra-deps-x86_64-unknown-cosmo/bin -type l,f | while IFS= read -r file; do
             bname=$(basename "${file}")
 
@@ -145,8 +144,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          merge-multiple: true
-          path: /home/runner/build
+          path: /home/runner
 
       - uses: geekyeggo/delete-artifact@v5.1.0
         with:
@@ -194,10 +192,10 @@ jobs:
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
-          cp /home/runner/build/yasm "${NDK}/prebuilt/linux_x86-64/bin"
-          cp /home/runner/build/ytasm "${NDK}/prebuilt/linux_x86-64/bin"
-          cp /home/runner/build/vsyasm "${NDK}/prebuilt/linux_x86-64/bin"
-          cp /home/runner/build/yasm "${NDK_TOOLCHAIN}/bin
+          cp /home/runner/extra-deps/yasm "${NDK}/prebuilt/linux_x86-64/bin"
+          cp /home/runner/extra-deps/ytasm "${NDK}/prebuilt/linux_x86-64/bin"
+          cp /home/runner/extra-deps/vsyasm "${NDK}/prebuilt/linux_x86-64/bin"
+          cp /home/runner/extra-deps/yasm "${NDK_TOOLCHAIN}/bin
 
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
