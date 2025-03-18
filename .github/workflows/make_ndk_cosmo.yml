@@ -48,6 +48,7 @@ jobs:
           wget -O config.sub "http://git.savannah.gnu.org/cgit/config.git/plain/config.sub"
           wget -O config.guess "http://git.savannah.gnu.org/cgit/config.git/plain/config.guess"
           cd ..
+          sed -i 's/\bstrsep(\(&[^,]*\), \(.*\))/strtok_r(*\1, \2, \1)/g' libyasm/strsep.c
           ./configure \
           --prefix="/home/runner/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
