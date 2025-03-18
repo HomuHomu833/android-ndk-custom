@@ -54,8 +54,8 @@ jobs:
           --build=${{ matrix.target }} \
           --host=${{ matrix.target }} \
           --disable-nls \
-          CFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time" \
+          CFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time -UHAVE_STRSEP" \
+          CXXFLAGS="-static -fno-strict-overflow -fwrapv -Wno-error=date-time -UHAVE_STRSEP" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
