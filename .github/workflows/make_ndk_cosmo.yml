@@ -195,7 +195,7 @@ jobs:
           cp /home/runner/extra-deps/yasm "${NDK}/prebuilt/linux-x86_64/bin"
           cp /home/runner/extra-deps/ytasm "${NDK}/prebuilt/linux-x86_64/bin"
           cp /home/runner/extra-deps/vsyasm "${NDK}/prebuilt/linux-x86_64/bin"
-          cp /home/runner/extra-deps/yasm "${NDK_TOOLCHAIN}/bin
+          cp /home/runner/extra-deps/yasm "${NDK_TOOLCHAIN}/bin"
 
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
