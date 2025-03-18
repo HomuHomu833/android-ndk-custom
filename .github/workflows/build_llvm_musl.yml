@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl, loongarch64-linux-musl]
+        target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
@@ -55,8 +55,8 @@ jobs:
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
           if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
-              export CFLAGS="-fsanitize=undefined -mcmodel=extreme"
-              export CXXFLAGS="-fsanitize=undefined -mcmodel=extreme"
+              export CFLAGS="-fsanitize=undefined -mcmodel=medium"
+              export CXXFLAGS="-fsanitize=undefined -mcmodel=medium"
           else
               export CFLAGS="-fsanitize=undefined"
               export CXXFLAGS="-fsanitize=undefined"
@@ -149,8 +149,8 @@ jobs:
             -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
             -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/c++" \
             -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=extreme')" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=extreme')" \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium')" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium')" \
             -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
