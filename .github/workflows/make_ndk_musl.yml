@@ -132,7 +132,7 @@ jobs:
           strip -S /home/runner/yasm-1.3.0/build/bin/yasm
           strip -S /home/runner/yasm-1.3.0/build/bin/ytasm
           strip -S /home/runner/yasm-1.3.0/build/bin/vsyasm
-          strip -S /home/runner/Python-3.8.10/build/bin/python3
+          strip -S /home/runner/Python-3.12.3/build/bin/python3
 
       - name: Get NDK and LLVM
         run: |
