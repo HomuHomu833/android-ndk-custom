@@ -98,6 +98,7 @@ jobs:
           curl -LkSs https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz | xz -d | tar -x
           cd Python-3.12.3
           sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
+          sed -i '/Linux\*|GNU\*) .*/d' configure
           ./configure --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
           --host=x86_64-linux-gnu \
