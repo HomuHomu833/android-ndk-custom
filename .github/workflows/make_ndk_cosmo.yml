@@ -48,12 +48,15 @@ jobs:
           sed -i 's/arm64)/arm64|aarch64)/' "${NDK}/build/tools/ndk_bin_common.sh"
 
           ## Remove unused resource
+          rm -rf "${NDK_TOOLCHAIN}/bin/perf2bolt"
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
           rm -rf "${NDK}/prebuilt/linux_x86-64/bin/*asm"
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
+          curl -LkSs https://cosmo.zip/pub/cosmos/bin/cmp > "${NDK}/prebuilt/linux-x86_64/bin/cmp" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/cmp"
+          curl -LkSs https://cosmo.zip/pub/cosmos/bin/echo.ape > "${NDK}/prebuilt/linux-x86_64/bin/echo" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/echo"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/python >"${NDK_TOOLCHAIN}/python3/bin/python3" && chmod +x "${NDK_TOOLCHAIN}/python3/bin/python3"
@@ -139,6 +142,8 @@ jobs:
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld.exe
+          Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\cmp" -NewName "$NDK\prebuilt\cosmo-universal\bin\cmp.exe"
+          Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\echo" -NewName "$NDK\prebuilt\cosmo-universal\bin\echo.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\make" -NewName "$NDK\prebuilt\cosmo-universal\bin\make.exe"
           Rename-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -NewName "$NDK_TOOLCHAIN\python3\bin\python3.exe"
           Rename-Item -Path "$NDK_TOOLCHAIN\bin\ld.lld.exe" -NewName "$NDK_TOOLCHAIN\bin\ld.lld"
