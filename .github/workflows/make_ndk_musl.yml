@@ -128,11 +128,11 @@ jobs:
           make -j"$(nproc --all)" install || true
 
           # Manually strip binaries
-          ${TOOLCHAIN}/bin/strip -S /home/runner/make-4.3/build/bin/make
-          ${TOOLCHAIN}/bin/strip -S /home/runner/yasm-1.3.0/build/bin/yasm
-          ${TOOLCHAIN}/bin/strip -S /home/runner/yasm-1.3.0/build/bin/ytasm
-          ${TOOLCHAIN}/bin/strip -S /home/runner/yasm-1.3.0/build/bin/vsyasm
-          ${TOOLCHAIN}/bin/strip -S /home/runner/Python-3.8.10/build/bin/python3
+          strip -S /home/runner/make-4.3/build/bin/make
+          strip -S /home/runner/yasm-1.3.0/build/bin/yasm
+          strip -S /home/runner/yasm-1.3.0/build/bin/ytasm
+          strip -S /home/runner/yasm-1.3.0/build/bin/vsyasm
+          strip -S /home/runner/Python-3.8.10/build/bin/python3
 
       - name: Get NDK and LLVM
         run: |
