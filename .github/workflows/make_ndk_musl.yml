@@ -99,6 +99,7 @@ jobs:
           cd Python-3.12.3
           sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
           sed -i '/Linux\*|GNU\*) .*/d' configure
+          sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
           ./configure --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
           --host=x86_64-linux-gnu \
