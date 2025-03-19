@@ -128,7 +128,7 @@ jobs:
           --with-ssl-default-suites=python
           make -j"$(nproc --all)" build_all
           make install
-          cp /home/runner/Python-3.12.3/python /home/runner/Python-3.12.3/build/bin/python3 # trust me it works
+          cp -f /home/runner/Python-3.12.3/python /home/runner/Python-3.12.3/build/bin/python3 # trust me it works
 
           # Manually strip binaries
           for file in \
