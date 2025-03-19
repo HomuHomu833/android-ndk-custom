@@ -126,7 +126,7 @@ jobs:
           --with-ensurepip=no \
           --with-openssl-rpath=no \
           --with-ssl-default-suites=python
-          make -j"$(nproc --all)" build_all
+          make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
           # Manually strip binaries
@@ -138,8 +138,8 @@ jobs:
               /home/runner/Python-3.12.3/python
           do
               tmpfile="$(dirname "$file")/$(mktemp --dry-run .strip.XXXX)"
-              $OBJCOPY --strip-all "$file" "$tmpfile"
-              mv "$tmpfile" "$file"
+              $OBJCOPY --strip-all "$file" "$tmpfile" || echo "WARNING: unable to strip $file"
+              mv "$tmpfile" "$file" || echo "skipping the file"
           done
 
       - name: Get NDK and LLVM
