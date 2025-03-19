@@ -27,12 +27,6 @@ jobs:
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       MODE: tiny
-      CC: ${{matrix.target}}-cc
-      CXX: ${{matrix.target}}-c++
-      LD: ${{matrix.target}}-ld
-      OBJCOPY: ${{matrix.target}}-objcopy
-      AR: ${{matrix.target}}-ar
-      STRIP: ${{matrix.target}}-strip
     steps:
       - name: Checkout llvm-project
         uses: actions/checkout@v4.1.1
@@ -49,6 +43,12 @@ jobs:
       
       - name: Build dependencies
         run : |
+          export CC=${{matrix.target}}-cc
+          export CXX=${{matrix.target}}-c++
+          export LD=${{matrix.target}}-ld
+          export OBJCOPY=${{matrix.target}}-objcopy
+          export AR=${{matrix.target}}-ar
+
           rm -rf build output/ zlib/ zstd/
 
           if ! test -f "${TARGET_INSTALL_DIR}"/lib/libz.a; then
@@ -129,10 +129,14 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64;ARM;RISCV" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_CROSSCOMPILING=True \
+            -DCMAKE_SYSTEM_NAME=Unknown \
             -DLLVM_DEFAULT_TARGET_TRIPLE=${{matrix.target}} \
-            -DCMAKE_C_COMPILER="${CC}" \
-            -DCMAKE_CXX_COMPILER="${CXX}" \
-            -DCMAKE_ASM_COMPILER="${CC}" \
+            -DCMAKE_C_COMPILER="${{matrix.target}}-cc" \
+            -DCMAKE_CXX_COMPILER="${{matrix.target}}-c++" \
+            -DCMAKE_ASM_COMPILER="${{matrix.target}}-cc" \
+            -DCMAKE_LINKER="${{matrix.target}}-ld" \
+            -DCMAKE_OBJCOPY="${{matrix.target}}-objcopy" \
+            -DCMAKE_AR="${{matrix.target}}-ar" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
             -DLLVM_ENABLE_ZSTD=FORCE_ON \
@@ -141,16 +145,15 @@ jobs:
             -DCLANG_ENABLE_ARCMT=ON \
             -DLIBCLANG_BUILD_STATIC=ON \
             -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
-            -DCMAKE_STRIP="" \
             -DBUILD_SHARED_LIBS=OFF \
             -DLLVM_INCLUDE_BENCHMARKS=OFF \
             -DLLVM_BUILD_BENCHMARKS=OFF \
             -DLLVM_INCLUDE_EXAMPLES=OFF \
             -DLLVM_BUILD_EXAMPLES=OFF \
+            -DLLVM_BUILD_TESTS=OFF \
             -DLLVM_BUILD_TOOLS=ON \
             -DLLVM_INCLUDE_TESTS=OFF \
             -DCLANG_INCLUDE_TESTS=OFF \
-            -DLLVM_BUILD_TESTS=OFF \
             -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF \
             -DCLANG_TOOL_APINOTES_TEST_BUILD=OFF \
             -DCLANG_TOOL_ARCMT_TEST_BUILD=OFF \
