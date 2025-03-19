@@ -128,7 +128,6 @@ jobs:
           --with-ssl-default-suites=python
           make -j"$(nproc --all)" build_all
           make install
-          cp -f /home/runner/Python-3.12.3/python /home/runner/Python-3.12.3/build/bin/python3 # trust me it works
 
           # Manually strip binaries
           for file in \
@@ -136,7 +135,7 @@ jobs:
               /home/runner/yasm-1.3.0/build/bin/yasm \
               /home/runner/yasm-1.3.0/build/bin/ytasm \
               /home/runner/yasm-1.3.0/build/bin/vsyasm \
-              /home/runner/Python-3.12.3/build/bin/python3
+              /home/runner/Python-3.12.3/python
           do
               tmpfile="$(dirname "$file")/$(mktemp --dry-run .strip.XXXX)"
               $OBJCOPY --strip-all "$file" "$tmpfile"
@@ -199,7 +198,7 @@ jobs:
           cp /home/runner/yasm-1.3.0/build/lib/libyasm.a ${NDK}/prebuilt/linux-x86_64/lib
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
-          cp /home/runner/Python-3.12.3/build/bin/python3 ${NDK_TOOLCHAIN}/python3/bin
+          cp /home/runner/Python-3.12.3/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R /home/runner/Python-3.12.3/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" ]]; then
