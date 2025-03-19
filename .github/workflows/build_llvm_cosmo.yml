@@ -21,7 +21,7 @@ jobs:
       fail-fast: true
       matrix:
         target: [aarch64-unknown-cosmo, x86_64-unknown-cosmo]
-    runs-on: ${{ matrix.target == 'aarch64-unknown-cosmo' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    runs-on: ubuntu-latest
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
@@ -129,7 +129,7 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64;ARM;RISCV" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_CROSSCOMPILING=True \
-            -DCMAKE_SYSTEM_NAME=Unknown \
+            -DCMAKE_SYSTEM_NAME=Linux \
             -DLLVM_DEFAULT_TARGET_TRIPLE=${{matrix.target}} \
             -DCMAKE_C_COMPILER="${{matrix.target}}-cc" \
             -DCMAKE_CXX_COMPILER="${{matrix.target}}-c++" \
