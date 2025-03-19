@@ -121,15 +121,14 @@ jobs:
           --disable-shared \
           --disable-ipv6 \
           --enable-optimizations \
-          --with-build-python \
           --with-pkg-config=no \
           --with-readline=no \
           --with-ensurepip=no \
           --with-openssl-rpath=no \
           --with-ssl-default-suites=python
-          make -j"$(nproc --all)" install || true
-          $CC -c -fno-strict-overflow -DNDEBUG -g -O3 -Wall -static -Wno-error=date-time -static -Wno-error=date-time  -std=c11 -Werror=implicit-function-declaration -fvisibility=hidden  -I./Include/internal  -I. -I./Include    -DPy_BUILD_CORE -o Programs/_freeze_module.o Programs/_freeze_module.c
-          make -j"$(nproc --all)" install
+          make -j"$(nproc --all)" build_all
+          make install
+          cp /home/runner/Python-3.12.3/python /home/runner/Python-3.12.3/build/bin/python3 # trust me it works
 
           # Manually strip binaries
           for file in \
