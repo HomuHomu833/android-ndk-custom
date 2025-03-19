@@ -100,20 +100,24 @@ jobs:
           sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
           sed -i '/Linux\*|GNU\*) .*/d' configure
           sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static -Wno-error=date-time" \
-          CXXFLAGS="-static -Wno-error=date-time" \
-          LDFLAGS="-static" \
-          ac_cv_func_dlopen=no \
-          ac_cv_file__dev_ptmx=no \
-          ac_cv_file__dev_ptc=no ./configure --prefix="${PWD}/build" \
+          sed -i '/#include "pycore_pathconfig.h"/a \
+          PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
+          export CC=${TOOLCHAIN}/bin/cc
+          export CXX=${TOOLCHAIN}/bin/c++
+          export LD=${TOOLCHAIN}/bin/ld
+          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
+          export AR=${TOOLCHAIN}/bin/ar
+          export STRIP=${TOOLCHAIN}/bin/strip
+          export CFLAGS="-static -Wno-error=date-time"
+          export CXXFLAGS="-static -Wno-error=date-time"
+          export LDFLAGS="-static"
+          export ac_cv_func_dlopen=no
+          export ac_cv_file__dev_ptmx=no
+          export ac_cv_file__dev_ptc=no
+          ./configure --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          --target=${{ matrix.target }} \
           --disable-shared \
           --disable-ipv6 \
           --enable-optimizations \
@@ -122,7 +126,9 @@ jobs:
           --with-readline=no \
           --with-ensurepip=no \
           --with-openssl-rpath=no \
-          --with-ssl-default-suites=python \
+          --with-ssl-default-suites=python
+          make -j"$(nproc --all)" install || true
+          $CC -c -fno-strict-overflow -DNDEBUG -g -O3 -Wall -static -Wno-error=date-time -static -Wno-error=date-time  -std=c11 -Werror=implicit-function-declaration -fvisibility=hidden  -I./Include/internal  -I. -I./Include    -DPy_BUILD_CORE -o Programs/_freeze_module.o Programs/_freeze_module.c
           make -j"$(nproc --all)" install || true
 
           # Manually strip binaries
