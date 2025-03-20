@@ -190,9 +190,9 @@ jobs:
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
           # Copy compiled binaries
-          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib/clang"
-          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib/libear"
-          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib/libscanbuild"
+          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
           cp /home/runner/make-4.3/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
           cp /home/runner/yasm-1.3.0/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
           cp /home/runner/yasm-1.3.0/build/bin/yasm ${NDK_TOOLCHAIN}/bin
