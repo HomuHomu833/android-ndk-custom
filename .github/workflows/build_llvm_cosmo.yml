@@ -119,7 +119,9 @@ jobs:
           fi
 
       - name: Patch LLVM source code
-        run: curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/llvm.patch | git apply
+        run: |
+          MAJOR_VERSION=$(echo "${{ github.event.inputs.version }}" | cut -d'.' -f1)
+          curl -LkSs "https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
       - name: Build LLVM
         run: |
