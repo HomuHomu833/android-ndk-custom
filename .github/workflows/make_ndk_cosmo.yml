@@ -187,9 +187,9 @@ jobs:
           find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
           find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
-          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib/clang"
-          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib/libear"
-          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib/libscanbuild"
+          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/cmp > "${NDK}/prebuilt/linux-x86_64/bin/cmp" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/cmp"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/echo.ape > "${NDK}/prebuilt/linux-x86_64/bin/echo" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/echo"
           curl -LkSs https://cosmo.zip/pub/cosmos/bin/make > "${NDK}/prebuilt/linux-x86_64/bin/make" && chmod +x "${NDK}/prebuilt/linux-x86_64/bin/make"
