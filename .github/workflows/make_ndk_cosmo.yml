@@ -153,7 +153,7 @@ jobs:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.ndk_version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/MobilePorting/android-ndk-cosmo-ape/releases/download/llvm-${{inputs.llvm_version}}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/MobilePorting/android-ndk-custom/releases/download/llvm-${{inputs.llvm_version}}/clang+clang-tools-extra+lld-${{inputs.llvm_version}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |
@@ -269,14 +269,15 @@ jobs:
                   Rename-Item -Path $file.FullName -NewName "$($file.Name).exe"
               }
               elseif ($fileType -match "a sh script") {
-                  Write-Host "Replacing UNIX file $bname"
+                  Write-Host "Removing UNIX file $bname"
                   Remove-Item $file.FullName -Force
-                  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-cosmo-ape/main/windows-extra/$($file.Name)" -OutFile "$($file.FullName)"
-                  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-cosmo-ape/main/windows-extra/$($file.Name).cmd" -OutFile "$($file.FullName).cmd"
               }
           }
 
           Write-Host "Running Extra Fixes..."
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-custom/main/windows-extra.zip" -OutFile "windows-extra.zip"
+          7z x windows-extra.zip -aoa
+          rm windows-extra.zip
           Remove-Item $NDK_TOOLCHAIN\bin\clang-20.exe
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
