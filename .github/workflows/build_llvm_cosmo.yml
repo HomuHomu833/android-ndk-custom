@@ -136,7 +136,6 @@ jobs:
             -DCMAKE_ASM_COMPILER="${{matrix.target}}-cc" \
             -DCMAKE_LINKER="${{matrix.target}}-ld" \
             -DCMAKE_OBJCOPY="${{matrix.target}}-objcopy" \
-            -DCMAKE_AR="${{matrix.target}}-ar" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
             -DLLVM_ENABLE_ZSTD=FORCE_ON \
