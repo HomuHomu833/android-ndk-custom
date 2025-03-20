@@ -54,13 +54,8 @@ jobs:
           TOOLCHAIN=${PWD}/zig-as-llvm
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
-          if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
-              export CFLAGS="-fsanitize=undefined -mcmodel=large"
-              export CXXFLAGS="-fsanitize=undefined -mcmodel=large"
-          else
-              export CFLAGS="-fsanitize=undefined"
-              export CXXFLAGS="-fsanitize=undefined"
-          fi
+          export CFLAGS="-fsanitize=undefined"
+          export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
           export OBJCOPY=${TOOLCHAIN}/bin/objcopy
           export AR=${TOOLCHAIN}/bin/ar
