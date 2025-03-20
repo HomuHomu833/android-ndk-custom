@@ -133,8 +133,8 @@ jobs:
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
           if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
-              export CFLAGS="-fsanitize=undefined -mcmodel=large"
-              export CXXFLAGS="-fsanitize=undefined -mcmodel=large"
+              export CFLAGS="-fsanitize=undefined -mcmodel=medium"
+              export CXXFLAGS="-fsanitize=undefined -mcmodel=medium"
           else
               export CFLAGS="-fsanitize=undefined"
               export CXXFLAGS="-fsanitize=undefined"
