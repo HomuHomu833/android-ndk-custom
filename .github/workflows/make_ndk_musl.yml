@@ -218,16 +218,16 @@ jobs:
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${ARCH}"
             mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${ARCH}"
-          fi
 
-          for file in \
-              ${NDK}/ndk-gdb \
-              ${NDK}/ndk-lldb \
-              ${NDK}/ndk-stack \
-              ${NDK}/ndk-which
-          do
-              sed -i "s|linux-x86_64|${ARCH}|g" $file
-          done
+            for file in \
+                ${NDK}/ndk-gdb \
+                ${NDK}/ndk-lldb \
+                ${NDK}/ndk-stack \
+                ${NDK}/ndk-which
+            do
+                sed -i "s|linux-x86_64|${ARCH}|g" $file
+            done
+          fi
 
           rm -rf ${NDK}/shader-tools # TODO: maybe build?
 
