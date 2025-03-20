@@ -138,8 +138,11 @@ jobs:
               /home/runner/Python-3.12.3/python
           do
               tmpfile="$(dirname "$file")/$(mktemp --dry-run .strip.XXXX)"
-              $OBJCOPY --strip-all "$file" "$tmpfile" || echo "WARNING: unable to strip $file"
-              mv "$tmpfile" "$file" || echo "skipping the file"
+              if $OBJCOPY --strip-all "$file" "$tmpfile"; then
+                  mv "$tmpfile" "$file"
+              else
+                  echo "WARNING: unable to strip $file"
+              fi
           done
 
       - name: Get NDK and LLVM
