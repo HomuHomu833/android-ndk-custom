@@ -280,8 +280,8 @@ jobs:
           Remove-Item "$NDK\ndk-lldb"
           Remove-Item "$NDK\ndk-stack"
           Remove-Item "$NDK\ndk-which"
-          Remove-Item "$NDK\prebuilt\cosmo-universal\ndk-gdb"
-          Remove-Item "$NDK\prebuilt\cosmo-universal\ndk-stack"
+          Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb"
+          Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-stack"
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-custom/main/windows-extra.zip" -OutFile "windows-extra.zip"
           7z x windows-extra.zip -aoa
           Remove-Item windows-extra.zip
