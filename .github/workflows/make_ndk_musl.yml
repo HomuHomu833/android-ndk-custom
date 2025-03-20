@@ -177,7 +177,7 @@ jobs:
             aarch64) HOST_ARCH=arm64;;\
             i?86) HOST_ARCH=x86;;\
             amd64) HOST_ARCH=x86_64;;\
-            arm64|x86_64|riscv32|riscv64|loongarch32|loongarch64) HOST_ARCH=$HOST_ARCH;;\
+            arm64|x86_64|riscv32|riscv64) HOST_ARCH=$HOST_ARCH;;\
             *) echo "ERROR: Unknown host CPU architecture: $HOST_ARCH"; exit 1;;\
           esac' "${NDK}/build/tools/ndk_bin_common.sh"
 
@@ -211,8 +211,6 @@ jobs:
               x86-linux-musl)       ARCH="linux-x86" ;;
               riscv64-linux-musl)   ARCH="linux-riscv64" ;;
               riscv32-linux-musl)   ARCH="linux-riscv32" ;;
-              loongarch64-linux-musl) ARCH="linux-loongarch64" ;;
-              loongarch32-linux-musl) ARCH="linux-loongarch32" ;;
               *) echo "WARNING: Unknown target triple: ${{ matrix.target }}" && ARCH="linux-x86_64" ;;
             esac
 
