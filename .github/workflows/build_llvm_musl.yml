@@ -55,8 +55,8 @@ jobs:
           export CC=${TOOLCHAIN}/bin/cc
           export CXX=${TOOLCHAIN}/bin/c++
           if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
-              export CFLAGS="-fsanitize=undefined -mcmodel=large -fno-optimize-sibling-calls"
-              export CXXFLAGS="-fsanitize=undefined -mcmodel=large -fno-optimize-sibling-calls"
+              export CFLAGS="-fsanitize=undefined -mcmodel=large"
+              export CXXFLAGS="-fsanitize=undefined -mcmodel=large"
           else
               export CFLAGS="-fsanitize=undefined"
               export CXXFLAGS="-fsanitize=undefined"
@@ -137,6 +137,13 @@ jobs:
       - name: Build LLVM
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
+          if [[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]]; then
+              export CFLAGS="-fsanitize=undefined -mcmodel=large"
+              export CXXFLAGS="-fsanitize=undefined -mcmodel=large"
+          else
+              export CFLAGS="-fsanitize=undefined"
+              export CXXFLAGS="-fsanitize=undefined"
+          fi
 
           cmake -S "$ROOTDIR/llvm" -B "${TARGET_BUILD_DIR}" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="${ROOTDIR}/llvm-${{matrix.target}}" \
@@ -149,8 +156,6 @@ jobs:
             -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
             -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/c++" \
             -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=large -fno-optimize-sibling-calls" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=large -fno-optimize-sibling-calls" \
             -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
