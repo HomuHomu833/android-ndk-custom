@@ -240,6 +240,11 @@ jobs:
             fi
           done
 
+          cp -R llvm-x86_64-unknown-cosmo/include llvm-ape
+          cp -R llvm-x86_64-unknown-cosmo/lib llvm-ape
+          cp -R llvm-x86_64-unknown-cosmo/libexec llvm-ape
+          cp -R llvm-x86_64-unknown-cosmo/share llvm-ape
+
       - name: Compress
         run: |
           projects=$(echo "${{inputs.projects}}" | tr ";" "+")
