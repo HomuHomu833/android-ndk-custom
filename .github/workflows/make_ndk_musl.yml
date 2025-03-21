@@ -101,7 +101,7 @@ jobs:
           curl -LkSs https://github.com/KhronosGroup/glslang/archive/refs/tags/11.12.0.tar.gz | gzip -d | tar -x
           mkdir -p shaderc-2023.3/build shaderc-2023.3/install
           cd $HOME/SPIRV-Tools-2022.4
-          curl -LkSs "https://github.com/MobilePorting/android-ndk-custom/raw/refs/heads/main/patches/shaderc/full_static.patch" | patch -up1
+          curl -LkSs "https://github.com/MobilePorting/android-ndk-custom/raw/refs/heads/main/patches/spirv/full_static.patch" | patch -up1
           cd $HOME
           cmake -S "shaderc-2023.3" -B "shaderc-2023.3/build" -G Ninja \
           -DCMAKE_INSTALL_PREFIX="shaderc-2023.3/install" \
