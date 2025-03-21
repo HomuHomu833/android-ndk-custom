@@ -274,7 +274,7 @@ jobs:
 
           $NDK = "$PWD/android-ndk-r${{inputs.ndk_version}}"
           $NDK_TOOLCHAIN = "$NDK/toolchains/llvm/prebuilt/cosmo-universal"
-          $MajorVersion = "${{ inputs.version }}" -split '\.' | Select-Object -First 1
+          $MajorVersion = "${{ inputs.llvm_version }}" -split '\.' | Select-Object -First 1
 
           foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
               $bname = $file.Name
