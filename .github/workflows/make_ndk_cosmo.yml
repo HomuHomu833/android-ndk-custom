@@ -233,7 +233,7 @@ jobs:
              bname="$(basename "${file}")"
 
              echo "Replacing ${bname}"
-             cp "$HOME/extra-deps/install/bin/${bname}" "${file}" || true
+             cp "$HOME/extra-deps/${bname}" "${file}" || true
           done
 
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
