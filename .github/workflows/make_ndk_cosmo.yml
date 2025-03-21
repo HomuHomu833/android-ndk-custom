@@ -10,7 +10,7 @@ on:
         type: string
       llvm_version:
         description: "LLVM Release version:"
-        default: '20.1.0'
+        default: '20.1.1'
         required: true
         type: string
 
