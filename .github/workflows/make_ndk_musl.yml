@@ -112,6 +112,9 @@ jobs:
           -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
           -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
           -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
+          -DCMAKE_C_FLAGS="-static" \
+          -DCMAKE_CXX_FLAGS="-static" \
+          -DCMAKE_EXE_LINKER_FLAGS="-static" \
           -DSHADERC_SKIP_TESTS=ON \
           -DSHADERC_SKIP_EXAMPLES=ON \
           -DSHADERC_SPIRV_TOOLS_DIR="$HOME/SPIRV-Tools-2022.4" \
@@ -229,6 +232,12 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/Python-3.12.3/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/Python-3.12.3/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
+          find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
+             bname="$(basename "${file}")"
+
+             echo "Replacing ${bname}"
+             cp "$HOME/shaderc-2023.3/install/bin/${bname}" "${file}" || true
+          done
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" ]]; then
             case "${{ matrix.target }}" in
@@ -242,6 +251,7 @@ jobs:
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${ARCH}"
             mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${ARCH}"
+            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/${ARCH}"
 
             for file in \
                 ${NDK}/ndk-gdb \
@@ -252,8 +262,6 @@ jobs:
                 sed -i "s|linux-x86_64|${ARCH}|g" $file
             done
           fi
-
-          rm -rf ${NDK}/shader-tools # TODO: maybe build?
 
       - name: Archive
         run: tar -cf - android-ndk-r${{inputs.ndk_version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.ndk_version}}-${{matrix.target}}.tar.xz
