@@ -98,6 +98,7 @@ jobs:
           curl -LkSs https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/sdk-1.3.231.1.tar.gz | gzip -d | tar -x
           curl -LkSs https://github.com/KhronosGroup/glslang/archive/refs/tags/11.12.0.tar.gz | gzip -d | tar -x
           mkdir -p shaderc-2023.3/build shaderc-2023.3/install
+          sed -i 's/set\s*(CMAKE_CXX_STANDARD 17)/set(CMAKE_CXX_STANDARD 14)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)/' $HOME/shaderc-2023.3/CMakeLists.txt
           cmake -S "shaderc-2023.3" -B "shaderc-2023.3/build" -G Ninja \
           -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
           -DCMAKE_BUILD_TYPE=MinSizeRel \
