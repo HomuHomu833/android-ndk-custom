@@ -42,6 +42,7 @@ jobs:
       - name: Build Extra Dependencies
         run: |
           cd $HOME
+          # GNU Make
           curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_1.3.0.orig.tar.gz | gzip -d | tar -x
           cd yasm-1.3.0
           cd config
@@ -90,6 +91,26 @@ jobs:
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
+          cd $HOME
+          # SPIRV-Tools and shaderc
+          curl -LkSs https://github.com/google/shaderc/archive/refs/tags/v2023.3.tar.gz | gzip -d | tar -x
+          curl -LkSs https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags/v2022.4.tar.gz | gzip -d | tar -x
+          curl -LkSs https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/sdk-1.3.231.1.tar.gz | gzip -d | tar -x
+          curl -LkSs https://github.com/KhronosGroup/glslang/archive/refs/tags/11.12.0.tar.gz | gzip -d | tar -x
+          mkdir -p shaderc-2023.3/build shaderc-2023.3/install
+          cmake -S "shaderc-2023.3" -B "shaderc-2023.3/build" -G Ninja \
+          -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
+          -DCMAKE_BUILD_TYPE=MinSizeRel \
+          -DCMAKE_C_FLAGS="-static" \
+          -DCMAKE_CXX_FLAGS="-static" \
+          -DCMAKE_EXE_LINKER_FLAGS="-static" \
+          -DSHADERC_SKIP_TESTS=ON \
+          -DSHADERC_SKIP_EXAMPLES=ON \
+          -DSHADERC_SPIRV_TOOLS_DIR="$HOME/SPIRV-Tools-2022.4" \
+          -DSHADERC_SPIRV_HEADERS_DIR="$HOME/SPIRV-Headers-sdk-1.3.231.1" \
+          -DSHADERC_GLSLANG_DIR="$HOME/glslang-11.12.0"
+          cmake --build "shaderc-2023.3/build" --target install
+
       - uses: actions/upload-artifact@v4
         with:
           name: extra-deps-${{ matrix.target }}
@@ -118,18 +139,21 @@ jobs:
           find $HOME/extra-deps-x86_64-unknown-cosmo/bin -type l,f | while IFS= read -r file; do
             bname=$(basename "${file}")
 
-            fixupobj "$HOME/extra-deps-x86_64-unknown-cosmo/bin/${bname}"
-            fixupobj "$HOME/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
+            if ! file "${file}" | grep -q "ASCII text executable"; then
+              # echo "fixupobj ${bname}"
+              fixupobj "$HOME/extra-deps-x86_64-unknown-cosmo/bin/${bname}"
+              fixupobj "$HOME/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
 
-            echo "apelink ${bname}"
-            apelink -V -1 \
-              -l "${COSMO}/bin/ape-x86_64.elf" \
-              -l "${COSMO}/bin/ape-aarch64.elf" \
-              -M "${COSMO}/bin/ape-m1.c" \
-              -o "$HOME/build/${bname}" \
-              -s \
-              "$HOME/extra-deps-x86_64-unknown-cosmo/bin/${bname}" \
-              "$HOME/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
+              echo "apelink ${bname}"
+              apelink -V -1 \
+                -l "${COSMO}/bin/ape-x86_64.elf" \
+                -l "${COSMO}/bin/ape-aarch64.elf" \
+                -M "${COSMO}/bin/ape-m1.c" \
+                -o "$HOME/build/${bname}" \
+                -s \
+                "$HOME/extra-deps-x86_64-unknown-cosmo/bin/${bname}" \
+                "$HOME/extra-deps-aarch64-unknown-cosmo/bin/${bname}"
+            fi
           done
 
       - uses: actions/upload-artifact@v4
@@ -199,11 +223,15 @@ jobs:
           cp $HOME/extra-deps/ytasm "${NDK}/prebuilt/linux-x86_64/bin"
           cp $HOME/extra-deps/vsyasm "${NDK}/prebuilt/linux-x86_64/bin"
           cp $HOME/extra-deps/yasm "${NDK_TOOLCHAIN}/bin"
+          find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
+             bname="$(basename "${file}")"
+
+             echo "Replacing ${bname}"
+             cp "$HOME/extra-deps/install/bin/${bname}" "${file}" || true
+          done
 
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
-
-          rm -rf ${NDK}/shader-tools # TODO: maybe build?
 
       - name: Archive
         run: tar -c android-ndk-r${{inputs.ndk_version}} >android-ndk-r${{inputs.ndk_version}}-unfixed.tar
