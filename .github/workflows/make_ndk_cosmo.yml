@@ -101,6 +101,8 @@ jobs:
           sed -i 's/set\s*(CMAKE_CXX_STANDARD 17)/set(CMAKE_CXX_STANDARD 20)/' $HOME/shaderc-2023.3/CMakeLists.txt
           cd $HOME/SPIRV-Tools-2022.4
           curl -LkSs "https://github.com/MobilePorting/android-ndk-custom/raw/refs/heads/main/patches/spirv/full_static.patch" | patch -up1
+          cd $HOME/shaderc-2023.3
+          curl -LkSs "https://github.com/MobilePorting/android-ndk-custom/raw/refs/heads/main/patches/shaderc/full_static.patch" | patch -up1
           cd $HOME
           cmake -S "shaderc-2023.3" -B "shaderc-2023.3/build" -G Ninja \
           -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
@@ -108,7 +110,6 @@ jobs:
           -DCMAKE_C_FLAGS="-static" \
           -DCMAKE_CXX_FLAGS="-static" \
           -DCMAKE_EXE_LINKER_FLAGS="-static" \
-          -DSHADERC_ENABLE_SHARED_CRT=OFF \
           -DSHADERC_SKIP_TESTS=ON \
           -DSHADERC_SKIP_EXAMPLES=ON \
           -DSHADERC_SPIRV_TOOLS_DIR="$HOME/SPIRV-Tools-2022.4" \
