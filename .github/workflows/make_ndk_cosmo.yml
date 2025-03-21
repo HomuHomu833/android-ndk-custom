@@ -120,7 +120,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: extra-deps-${{ matrix.target }}
-          path: "$HOME/build-${{ matrix.target }}"
+          path: "~/build-${{ matrix.target }}"
 
   ape-link:
     needs: [build-extra]
@@ -128,7 +128,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: "$HOME"
+          path: "~/"
 
       - uses: geekyeggo/delete-artifact@v5.1.0
         with:
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: extra-deps
-          path: "$HOME/build/*"
+          path: "~/build/*"
 
   make:
     needs: [ape-link]
@@ -174,7 +174,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: "$HOME"
+          path: "~/"
 
       - uses: geekyeggo/delete-artifact@v5.1.0
         with:
