@@ -10,7 +10,7 @@ on:
         type: string
       llvm_version:
         description: "LLVM Release version:"
-        default: '20.1.0'
+        default: '20.1.1'
         required: true
         type: string
 
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v1.2.1
         with:
-          version: "0.15.0-dev.74+5105c3c7f"
+          version: "0.15.0-dev.77+aa8aa6625"
           use-cache: false
 
       - name: Setup Zig Toolchain
