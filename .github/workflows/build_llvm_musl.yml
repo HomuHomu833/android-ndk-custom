@@ -78,7 +78,11 @@ jobs:
 
           for PATCH in ${PATCHES[@]}; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$ROOTDIR/llvm" apply --rej "$ROOTDIR/../llvm_android/$PATCH" || true
+              if [[ -f "$ROOTDIR/../llvm_android/$PATCH" ]]; then
+                  git -C "$ROOTDIR/llvm" apply --rej "$ROOTDIR/../llvm_android/$PATCH" || true
+              elif [[ -f "$ROOTDIR/../llvm_android/cherry/$PATCH" ]]; then
+                  git -C "$ROOTDIR/llvm" apply --rej "$ROOTDIR/../llvm_android/cherry/$PATCH" || true
+              fi
           done
 
           rm -rf "$ROOTDIR/../llvm_android"
