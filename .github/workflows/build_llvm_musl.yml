@@ -58,8 +58,10 @@ jobs:
           echo "llvm_android revision: $ANDROID_REV"
 
           echo "Cloning LLVM revision from llvm-project..."
-          git clone "$LLVM_REPO_URL" . --depth=1 --shallow-submodules --recursive
+          git clone "$LLVM_REPO_URL" llvm --depth=1 --shallow-submodules --recursive
+          cd llvm
           git checkout $BASE_REV
+          cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
           git clone "$ANDROID_REPO_URL" ../llvm_android --depth=1 --shallow-submodules --recursive
@@ -73,7 +75,7 @@ jobs:
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$BASE_DIR" apply "$PATCH";
+              git -C "$BASE_DIR/llvm" apply "$PATCH";
           done
 
           rm -rf "$BASE_DIR/../llvm_android"
