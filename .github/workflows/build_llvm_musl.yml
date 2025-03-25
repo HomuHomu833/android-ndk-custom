@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version:"
-        default: "20.1.1"
+        description: "NDK Release version:"
+        default: "29-beta1"
         required: true
       projects:
         description: "Projects to build:"
@@ -30,12 +30,53 @@ jobs:
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       ZIG_TARGET: ${{matrix.target}}
     steps:
-      - name: Checkout llvm-project
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: llvm/llvm-project
-          ref: llvmorg-${{inputs.version}}
-          fetch-depth: 1
+      - name: Checkout llvm-project and apply android patches
+        run: |
+          cd ${{ runner.temp }}
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
+          unzip -qq android-ndk.zip
+          cd $ROOTDIR
+
+          LLVM_REPO_URL="https://github.com/llvm/llvm-project.git"
+          ANDROID_REPO_URL="https://android.googlesource.com/toolchain/llvm_android"
+          CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
+          BASE_DIR=$ROOTDIR
+          BASE_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
+          ANDROID_REV=$(grep -oP '(?<=/toolchain/llvm_android/\+)[0-9a-f]{40}' "$CLANG_SOURCE" | head -n 1)
+
+          if [[ -z "$BASE_REV" ]]; then
+              echo "Failed to extract base revision."
+              exit 1
+          fi
+
+          if [[ -z "$ANDROID_REV" ]]; then
+              echo "Failed to extract llvm_android revision."
+              exit 1
+          fi
+
+          echo "LLVM Base revision: $BASE_REV"
+          echo "llvm_android revision: $ANDROID_REV"
+
+          echo "Cloning LLVM base revision from llvm-project..."
+          cd "$BASE_DIR"
+          git clone "$LLVM_REPO_URL" -b $BASE_REV --depth=1 --shallow-submodules --recursive
+
+          echo "Cloning llvm_android at commit $ANDROID_REV..."
+          cd "$BASE_DIR"
+          git clone "$ANDROID_REPO_URL" ../llvm_android -b $ANDROID_REV --depth=1 --shallow-submodules --recursive
+
+          echo "Applying patches from llvm_android..."
+
+          PATCHES=$(find "$BASE_DIR/../llvm_android/patches" -name "*.patch")
+
+          for PATCH in $PATCHES; do
+              echo "📌 Applying $(basename "$PATCH")..."
+              git -C "$BASE_DIR" apply "$PATCH";
+          done
+
+          rm -rf "$BASE_DIR/../llvm_android"
+
+          echo "All patches applied successfully."
 
       - name: Setup Zig
         uses: mlugg/setup-zig@v1.2.1
@@ -139,7 +180,7 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64;ARM;RISCV" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_CROSSCOMPILING=True \
-            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_NAME=Android \
             -DLLVM_DEFAULT_TARGET_TRIPLE=${{matrix.target}} \
             -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
             -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/c++" \
@@ -199,7 +240,7 @@ jobs:
       - name: Compress
         run: |
           projects=$(echo "${{inputs.projects}}" | tr ";" "+")
-          tarball_name=${projects}-${{inputs.version}}-${{matrix.target}}
+          tarball_name=${projects}-r${{inputs.version}}-${{matrix.target}}
           echo tarball_name=${tarball_name} >> ${GITHUB_ENV}
           mv llvm-${{matrix.target}} ${tarball_name}
           tar -c ${tarball_name} | xz -T0 -v >${tarball_name}.tar.xz
@@ -207,7 +248,7 @@ jobs:
       - name: Upload release
         uses: ncipollo/release-action@v1.15.0
         with:
-          tag: "llvm-${{inputs.version}}"
+          tag: "llvm-r${{inputs.version}}"
           artifacts: ${{env.tarball_name}}.tar.xz
           allowUpdates: true
           replacesArtifacts: true
