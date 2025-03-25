@@ -37,10 +37,8 @@ jobs:
           unzip -qq android-ndk.zip
           cd $ROOTDIR
 
-          ANDROID_REPO_URL="https://android.googlesource.com/toolchain/llvm_android"
-          CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
-          LLVM_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
-          ANDROID_REV=$(grep 'llvm_android/+/.*' "$CLANG_SOURCE" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
+          LLVM_REV=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang --version | sed -E 's/.*llvm-project ([a-f0-9]{40}).*/\1/' | head -n 1)
+          ANDROID_REV=$(grep 'llvm_android/+/.*' "${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
 
           if [[ -z "$LLVM_REV" ]]; then
               echo "Failed to extract base revision."
@@ -69,8 +67,8 @@ jobs:
           cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
-          git clone "$ANDROID_REPO_URL" ../llvm_android
-          cd ../llvm_android
+          git clone https://android.googlesource.com/toolchain/llvm_android
+          cd llvm_android
           git checkout $ANDROID_REV
           cd $ROOTDIR 
 
