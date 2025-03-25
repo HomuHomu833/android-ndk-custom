@@ -42,7 +42,7 @@ jobs:
           CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
           BASE_DIR=$ROOTDIR
           BASE_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
-          ANDROID_REV=$(grep -oP '(?<=/toolchain/llvm_android/\+)[0-9a-f]{40}' "$CLANG_SOURCE" | head -n 1)
+          ANDROID_REV=$(grep -oP '(?<=\+)[0-9a-f]{40}' "$CLANG_SOURCE" | head -n 1)
 
           if [[ -z "$BASE_REV" ]]; then
               echo "Failed to extract base revision."
@@ -54,10 +54,10 @@ jobs:
               exit 1
           fi
 
-          echo "LLVM Base revision: $BASE_REV"
+          echo "LLVM revision: $BASE_REV"
           echo "llvm_android revision: $ANDROID_REV"
 
-          echo "Cloning LLVM base revision from llvm-project..."
+          echo "Cloning LLVM revision from llvm-project..."
           cd "$BASE_DIR"
           git clone "$LLVM_REPO_URL" -b $BASE_REV --depth=1 --shallow-submodules --recursive
 
@@ -70,7 +70,7 @@ jobs:
           PATCHES=$(find "$BASE_DIR/../llvm_android/patches" -name "*.patch")
 
           for PATCH in $PATCHES; do
-              echo "📌 Applying $(basename "$PATCH")..."
+              echo "Applying $(basename "$PATCH")..."
               git -C "$BASE_DIR" apply "$PATCH";
           done
 
