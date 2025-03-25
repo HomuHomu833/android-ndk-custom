@@ -63,7 +63,7 @@ jobs:
           git add README.md
           git commit -m "first commit"
           git branch -M main
-          git remote add origin https://github.com/HomuHomu833/android-ndk-custom
+          git remote add origin https://github.com/HomuHomu833/llvm-project-secret
           cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
@@ -78,7 +78,7 @@ jobs:
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$ROOTDIR/llvm" apply --rej "$PATCH";
+              git -C "$ROOTDIR/llvm" apply --rej "$PATCH" || true
           done
 
           rm -rf "$ROOTDIR/llvm_android"
