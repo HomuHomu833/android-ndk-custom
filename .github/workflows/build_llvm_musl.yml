@@ -37,11 +37,11 @@ jobs:
           unzip -qq android-ndk.zip
           cd $ROOTDIR
 
-          LLVM_REV=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang --version | sed -E 's/.*llvm-project ([a-f0-9]{40}).*/\1/' | head -n 1)
+          LLVM_REV=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | sed -E 's/.*llvm-project ([a-f0-9]{40}).*/\1/' | head -n 1)
           ANDROID_REV=$(grep 'llvm_android/+/.*' "${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
 
           if [[ -z "$LLVM_REV" ]]; then
-              echo "Failed to extract base revision."
+              echo "Failed to extract Google LLVM revision."
               exit 1
           fi
 
