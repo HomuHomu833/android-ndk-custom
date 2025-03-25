@@ -80,7 +80,7 @@ jobs:
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$ROOTDIR/llvm" apply --rej "$PATCH";
+              git -C "$ROOTDIR/llvm" apply --rej "$PATCH" || true
           done
 
           rm -rf "$ROOTDIR/llvm_android"
