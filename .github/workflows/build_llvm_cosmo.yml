@@ -28,12 +28,67 @@ jobs:
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       MODE: tiny
     steps:
-      - name: Checkout llvm-project
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: llvm/llvm-project
-          ref: llvmorg-${{inputs.version}}
-          fetch-depth: 1
+      - name: Checkout llvm-project and apply android patches
+        run: |
+          cd ${{ runner.temp }}
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
+          unzip -qq android-ndk.zip
+          cd $ROOTDIR
+
+          LLVM_REV=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | sed -E 's/.*llvm-project ([a-f0-9]{40}).*/\1/' | head -n 1)
+          ANDROID_REV=$(grep 'llvm_android/+/.*' "${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
+
+          if [[ -z "$LLVM_REV" ]]; then
+              echo "Failed to extract Google LLVM revision."
+              exit 1
+          fi
+
+          if [[ -z "$ANDROID_REV" ]]; then
+              echo "Failed to extract llvm_android revision."
+              exit 1
+          fi
+
+          echo "Google LLVM revision: $LLVM_REV"
+          echo "llvm_android revision: $ANDROID_REV"
+
+          echo "Downloading source of Google LLVM revision from llvm-project..."
+          mkdir $ROOTDIR/llvm
+          cd $ROOTDIR/llvm
+          curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
+          tar -xf llvm-project.tar.gz
+          rm llvm-project.tar.gz
+          git config --global user.name "Github Actions"
+          git config --local user.email "actions@github.com"
+          git init
+          git add README.md
+          git commit -m "first commit"
+          git branch -M main
+          git remote add origin https://github.com/HomuHomu833/android-ndk-custom
+          cd $ROOTDIR
+
+          echo "Cloning llvm_android at commit $ANDROID_REV..."
+          git clone https://android.googlesource.com/toolchain/llvm_android
+          cd llvm_android
+          git checkout $ANDROID_REV
+          cd $ROOTDIR 
+
+          echo "Applying patches from llvm_android..."
+
+          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
+
+          for PATCH in $PATCHES; do
+              echo "Applying $(basename "$PATCH")..."
+              git -C "$ROOTDIR/llvm" apply "$PATCH";
+          done
+
+          rm -rf "$ROOTDIR/../llvm_android"
+
+          cd $ROOTDIR/llvm
+
+          MAJOR_VERSION=$(echo "${{ github.event.inputs.version }}" | cut -d'.' -f1)
+          curl -LkSs "https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
+
+          echo "All patches applied successfully."
           
       - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
@@ -42,7 +97,7 @@ jobs:
         run: sudo apt install ninja-build
       
       - name: Build dependencies
-        run : |
+        run: |
           export CC=${{matrix.target}}-cc
           export CXX=${{matrix.target}}-c++
           export LD=${{matrix.target}}-ld
@@ -117,11 +172,6 @@ jobs:
                   $AR rcs "${TARGET_INSTALL_DIR}/lib/libzstd.a" "${TARGET_BUILD_DIR}"/zstd/*.o
               )
           fi
-
-      - name: Patch LLVM source code
-        run: |
-          MAJOR_VERSION=$(echo "${{ github.event.inputs.version }}" | cut -d'.' -f1)
-          curl -LkSs "https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
       - name: Build LLVM
         run: |
