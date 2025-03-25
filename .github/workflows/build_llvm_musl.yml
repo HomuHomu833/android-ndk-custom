@@ -37,14 +37,13 @@ jobs:
           unzip -qq android-ndk.zip
           cd $ROOTDIR
 
-          LLVM_REPO_URL="https://github.com/llvm/llvm-project.git"
           ANDROID_REPO_URL="https://android.googlesource.com/toolchain/llvm_android"
           CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
           BASE_DIR=$ROOTDIR
-          BASE_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
+          LLVM_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
           ANDROID_REV=$(grep 'llvm_android/+/.*' "$CLANG_SOURCE" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
 
-          if [[ -z "$BASE_REV" ]]; then
+          if [[ -z "$LLVM_REV" ]]; then
               echo "Failed to extract base revision."
               exit 1
           fi
@@ -54,15 +53,19 @@ jobs:
               exit 1
           fi
 
-          echo "LLVM revision: $BASE_REV"
+          echo "Google LLVM revision: $LLVM_REV"
           echo "llvm_android revision: $ANDROID_REV"
 
-          echo "Downloading source of LLVM revision from llvm-project..."
-          curl -sSfL -o llvm-project.zip https://github.com/llvm/llvm-project/archive/$BASE_REV.zip
-          unzip -qq llvm-project.zip
-          mv llvm-project-$BASE_REV llvm
+          echo "Downloading source of Google LLVM revision from llvm-project..."
+          curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
+          tar -xf llvm-project.tar.gz
+          mv llvm-project-$LLVM_REV llvm
           cd $ROOTDIR/llvm
           git init
+          git add README.md
+          git commit -m "first commit"
+          git branch -M main
+          git remote add origin https://github.com/HomuHomu833/llvm-project-secret
           cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
