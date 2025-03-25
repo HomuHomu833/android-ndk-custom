@@ -291,7 +291,7 @@ jobs:
       - name: Compress
         run: |
           projects=$(echo "${{inputs.projects}}" | tr ";" "+")
-          tarball_name=${projects}-${{inputs.version}}-ape
+          tarball_name=${projects}-r${{inputs.version}}-ape
           echo tarball_name=${tarball_name} >> ${GITHUB_ENV}
           mv llvm-ape ${tarball_name}
           tar -c ${tarball_name} | xz -T0 -v >${tarball_name}.tar.xz
