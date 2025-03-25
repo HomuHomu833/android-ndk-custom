@@ -57,10 +57,12 @@ jobs:
           echo "LLVM revision: $BASE_REV"
           echo "llvm_android revision: $ANDROID_REV"
 
-          echo "Cloning LLVM revision from llvm-project..."
-          git clone "$LLVM_REPO_URL" llvm
-          cd llvm
-          git checkout $BASE_REV
+          echo "Downloading source of LLVM revision from llvm-project..."
+          curl -sSfL -o llvm-project.zip https://github.com/llvm/llvm-project/archive/$BASE_REV.zip
+          unzip -qq llvm-project.zip
+          mv llvm-project-$BASE_REV llvm
+          cd $ROOTDIR/llvm
+          git init
           cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
