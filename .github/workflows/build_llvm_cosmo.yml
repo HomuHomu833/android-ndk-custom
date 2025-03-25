@@ -78,7 +78,7 @@ jobs:
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$ROOTDIR/llvm" apply "$PATCH";
+              git -C "$ROOTDIR/llvm" apply --rej "$PATCH";
           done
 
           rm -rf "$ROOTDIR/llvm_android"
