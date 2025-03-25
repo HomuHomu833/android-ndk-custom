@@ -65,7 +65,7 @@ jobs:
           git add README.md
           git commit -m "first commit"
           git branch -M main
-          git remote add origin https://github.com/HomuHomu833/llvm-project-secret
+          git remote add origin https://github.com/HomuHomu833/android-ndk-custom
           cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
