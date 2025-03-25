@@ -59,6 +59,8 @@ jobs:
           curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
           tar -xf llvm-project.tar.gz
           rm llvm-project.tar.gz
+          git config --global user.name "Github Actions"
+          git config --local user.email "actions@github.com"
           git init
           git add README.md
           git commit -m "first commit"
