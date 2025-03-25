@@ -26,6 +26,11 @@ jobs:
       TARGET_INSTALL_DIR: ${{github.workspace}}/output/${{matrix.target}}
       MODE: tiny
     steps:
+      - name: Checkout android-ndk-custom
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}
+
       - name: Checkout llvm-project and apply android patches
         run: |
           cd ${{ runner.temp }}
@@ -54,13 +59,6 @@ jobs:
           curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
           tar -xf llvm-project.tar.gz
           rm llvm-project.tar.gz
-          git config --global user.name "Github Actions"
-          git config --global user.email "actions@github.com"
-          git init
-          git add README.md
-          git commit -m "first commit"
-          git branch -M main
-          git remote add origin https://github.com/HomuHomu833/android-ndk-custom
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
           git clone https://android.googlesource.com/toolchain/llvm_android ../llvm_android
