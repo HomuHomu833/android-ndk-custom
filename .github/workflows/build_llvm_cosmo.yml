@@ -70,11 +70,11 @@ jobs:
 
           echo "Applying patches from llvm_android..."
 
-          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
+          mapfile -t PATCHES < <(grep -oP 'patches/\S+' "${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md" | sed 's/)$//')
 
-          for PATCH in $PATCHES; do
+          for PATCH in ${PATCHES[@]}; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$ROOTDIR/llvm" apply --rej "$PATCH" || true
+              git -C "$ROOTDIR/llvm" apply --rej "../llvm_android/$PATCH" || true
           done
 
           rm -rf "$ROOTDIR/../llvm_android"
