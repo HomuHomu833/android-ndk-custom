@@ -80,7 +80,7 @@ jobs:
           rm -rf "$ROOTDIR/../llvm_android"
 
           MAJOR_VERSION=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | sed -n 's/.*clang version \([0-9]\+\).*/\1/p')
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/${{ github.head_ref }}/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
           echo "All patches applied successfully."
 
