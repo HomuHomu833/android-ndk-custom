@@ -39,7 +39,6 @@ jobs:
 
           ANDROID_REPO_URL="https://android.googlesource.com/toolchain/llvm_android"
           CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
-          BASE_DIR=$ROOTDIR
           LLVM_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
           ANDROID_REV=$(grep 'llvm_android/+/.*' "$CLANG_SOURCE" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
 
@@ -57,10 +56,11 @@ jobs:
           echo "llvm_android revision: $ANDROID_REV"
 
           echo "Downloading source of Google LLVM revision from llvm-project..."
+          mkdir $ROOTDIR/llvm
+          cd $ROOTDIR/llvm
           curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
           tar -xf llvm-project.tar.gz
-          mv llvm-project-$LLVM_REV llvm
-          cd $ROOTDIR/llvm
+          rm llvm-project.tar.gz
           git init
           git add README.md
           git commit -m "first commit"
@@ -76,14 +76,14 @@ jobs:
 
           echo "Applying patches from llvm_android..."
 
-          PATCHES=$(find "$BASE_DIR/../llvm_android/patches" -name "*.patch")
+          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
-              git -C "$BASE_DIR/llvm" apply "$PATCH";
+              git -C "$ROOTDIR/llvm" apply "$PATCH";
           done
 
-          rm -rf "$BASE_DIR/../llvm_android"
+          rm -rf "$ROOTDIR/../llvm_android"
 
           echo "All patches applied successfully."
 
