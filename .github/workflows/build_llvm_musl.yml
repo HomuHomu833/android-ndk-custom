@@ -54,8 +54,7 @@ jobs:
           echo "llvm_android revision: $ANDROID_REV"
 
           echo "Downloading source of Google LLVM revision from llvm-project..."
-          mkdir $ROOTDIR/llvm
-          cd $ROOTDIR/llvm
+          cd $ROOTDIR
           curl -sSfL -o llvm-project.tar.gz https://android.googlesource.com/toolchain/llvm-project/+archive/$LLVM_REV.tar.gz
           tar -xf llvm-project.tar.gz
           rm llvm-project.tar.gz
@@ -66,24 +65,23 @@ jobs:
           git commit -m "first commit"
           git branch -M main
           git remote add origin https://github.com/HomuHomu833/llvm-project-secret
-          cd $ROOTDIR
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
-          git clone https://android.googlesource.com/toolchain/llvm_android
-          cd llvm_android
+          git clone https://android.googlesource.com/toolchain/llvm_android ../llvm_android
+          cd ../llvm_android
           git checkout $ANDROID_REV
           cd $ROOTDIR 
 
           echo "Applying patches from llvm_android..."
 
-          PATCHES=$(find "$ROOTDIR/llvm_android/patches" -name "*.patch")
+          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
               git -C "$ROOTDIR/llvm" apply --rej "$PATCH" || true
           done
 
-          rm -rf "$ROOTDIR/llvm_android"
+          rm -rf "$ROOTDIR/../llvm_android"
 
           echo "All patches applied successfully."
 
