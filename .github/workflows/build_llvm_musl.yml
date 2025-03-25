@@ -76,14 +76,14 @@ jobs:
 
           echo "Applying patches from llvm_android..."
 
-          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
+          PATCHES=$(find "$ROOTDIR/llvm_android/patches" -name "*.patch")
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
               git -C "$ROOTDIR/llvm" apply "$PATCH";
           done
 
-          rm -rf "$ROOTDIR/../llvm_android"
+          rm -rf "$ROOTDIR/llvm_android"
 
           echo "All patches applied successfully."
 
