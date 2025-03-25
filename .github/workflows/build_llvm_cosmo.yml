@@ -1,19 +1,17 @@
 name: Build LLVM (Cosmopolitan Libc)
-run-name: Build llvm-${{inputs.version}} ${{inputs.projects}}
+run-name: Build LLVM for r${{inputs.version}} ${{inputs.projects}}
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version:"
-        default: "20.1.1"
+        description: "NDK Release version:"
+        default: "29-beta1"
         required: true
-        type: string
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
         default: "clang;clang-tools-extra;lld"
         required: true
-        type: string
 
 jobs:
   build:
@@ -21,7 +19,7 @@ jobs:
       fail-fast: true
       matrix:
         target: [aarch64-unknown-cosmo, x86_64-unknown-cosmo]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
@@ -86,15 +84,15 @@ jobs:
           curl -LkSs "https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
           echo "All patches applied successfully."
-          
+
       - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
-      
+
       - name: Install dependencies
         run: sudo apt install ninja-build
-      
+
       - name: Build dependencies
-        run: |
+        run : |
           export CC=${{matrix.target}}-cc
           export CXX=${{matrix.target}}-c++
           export LD=${{matrix.target}}-ld
@@ -105,7 +103,7 @@ jobs:
 
           if ! test -f "${TARGET_INSTALL_DIR}"/lib/libz.a; then
               if ! test -d zlib; then
-                  curl https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz -LkSs | xz -d | tar -x
+                  curl -LkSs https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz | xz -d | tar -x
                   mv zlib-1.3.1 zlib
               fi
               mkdir -p "${TARGET_BUILD_DIR}"/zlib
@@ -121,7 +119,6 @@ jobs:
                   curl https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -LkSs | gzip -d | tar -x
                   mv zstd-1.5.6 zstd
               fi
-              # make -C zstd/lib CC="${CC}" CXX="${CXX}" PREFIX="${TARGET_INSTALL_DIR}" install-static
 
               mkdir -p "${TARGET_INSTALL_DIR}/include"
               mkdir -p "${TARGET_INSTALL_DIR}/lib"
@@ -231,11 +228,10 @@ jobs:
         run: |
           file llvm-${{matrix.target}}/bin/*
           tree llvm-${{matrix.target}}
-          
+
       - name: Archive
         run: |
           tar -c llvm-${{matrix.target}} >llvm-${{matrix.target}}.tar
-
       - uses: actions/upload-artifact@v4
         with:
           name: llvm-${{matrix.target}}
@@ -259,7 +255,6 @@ jobs:
             tar -xvf llvm-${target}.tar
             rm llvm-${target}.tar
           done
-
       - name: Install cosmocc
         uses: bjia56/setup-cosmocc@v0.0.3
 
@@ -289,7 +284,6 @@ jobs:
               "llvm-aarch64-unknown-cosmo/bin/${bname}"
             fi
           done
-
           cp -R llvm-x86_64-unknown-cosmo/include llvm-ape
           cp -R llvm-x86_64-unknown-cosmo/lib llvm-ape
           cp -R llvm-x86_64-unknown-cosmo/libexec llvm-ape
@@ -306,7 +300,7 @@ jobs:
       - name: Upload release
         uses: ncipollo/release-action@v1.15.0
         with:
-          tag: llvm-${{inputs.version}}
+          tag: "llvm-r${{inputs.version}}"
           artifacts: ${{env.tarball_name}}.tar.xz
           allowUpdates: true
           replacesArtifacts: true
