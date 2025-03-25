@@ -42,7 +42,7 @@ jobs:
           CLANG_SOURCE="${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
           BASE_DIR=$ROOTDIR
           BASE_REV=$(grep -oP '(?<=Base revision: \[)[0-9a-f]{40}' "$CLANG_SOURCE")
-          ANDROID_REV=$(grep -oP '(?<=\+)[0-9a-f]{40}' "$CLANG_SOURCE" | head -n 1)
+          ANDROID_REV=$(grep 'llvm_android/+/.*' "clang_source_info.md" | sed -n 's/.*llvm_android\/\+//; s/\/patches.*//p' | sed 's/\/\+//g; s/^\+//g' | head -n 1)
 
           if [[ -z "$BASE_REV" ]]; then
               echo "Failed to extract base revision."
