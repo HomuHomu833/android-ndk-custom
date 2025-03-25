@@ -58,12 +58,14 @@ jobs:
           echo "llvm_android revision: $ANDROID_REV"
 
           echo "Cloning LLVM revision from llvm-project..."
-          cd "$BASE_DIR"
-          git clone "$LLVM_REPO_URL" -b $BASE_REV --depth=1 --shallow-submodules --recursive
+          git clone "$LLVM_REPO_URL" . --depth=1 --shallow-submodules --recursive
+          git checkout $BASE_REV
 
           echo "Cloning llvm_android at commit $ANDROID_REV..."
-          cd "$BASE_DIR"
-          git clone "$ANDROID_REPO_URL" ../llvm_android -b $ANDROID_REV --depth=1 --shallow-submodules --recursive
+          git clone "$ANDROID_REPO_URL" ../llvm_android --depth=1 --shallow-submodules --recursive
+          cd ../llvm_android
+          git checkout $ANDROID_REV
+          cd $ROOTDIR 
 
           echo "Applying patches from llvm_android..."
 
