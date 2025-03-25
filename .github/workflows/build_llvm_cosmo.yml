@@ -74,17 +74,16 @@ jobs:
 
           echo "Applying patches from llvm_android..."
 
-          PATCHES=$(find "$ROOTDIR/../llvm_android/patches" -name "*.patch")
+          PATCHES=$(find "$ROOTDIR/llvm_android/patches" -name "*.patch")
 
           for PATCH in $PATCHES; do
               echo "Applying $(basename "$PATCH")..."
               git -C "$ROOTDIR/llvm" apply "$PATCH";
           done
 
-          rm -rf "$ROOTDIR/../llvm_android"
+          rm -rf "$ROOTDIR/llvm_android"
 
           cd $ROOTDIR/llvm
-
           MAJOR_VERSION=$(echo "${{ github.event.inputs.version }}" | cut -d'.' -f1)
           curl -LkSs "https://github.com/MobilePorting/android-ndk-cosmo/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
