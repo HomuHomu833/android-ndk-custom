@@ -45,7 +45,11 @@ jobs:
           unzip -qq android-ndk.zip -d ${{ runner.temp }}
       
       - name: Install Dependencies
-        run: sudo apt install ninja-build qemu-user-static
+        run: |
+          sudo apt install -y ninja-build
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-cosmo" ]]; then
+            sudo apt install -y qemu-user-static libc6-amd64-cross
+          fi
 
       - name: Build Extra Dependencies
         run: |
@@ -57,6 +61,10 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-cosmo" ]]; then
+            sudo ln -s /usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+          endif
 
           cd $HOME
           # YASM
