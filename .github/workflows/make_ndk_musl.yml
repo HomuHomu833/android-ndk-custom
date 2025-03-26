@@ -20,6 +20,11 @@ jobs:
       matrix:
         target: [aarch64-linux-musl, arm-linux-musleabihf, x86_64-linux-musl, x86-linux-musl, riscv64-linux-musl, riscv32-linux-musl]
     steps:
+      - name: Checkout android-ndk-custom
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}
+
       - name: Setup Zig
         uses: mlugg/setup-zig@v1.2.1
         with:
