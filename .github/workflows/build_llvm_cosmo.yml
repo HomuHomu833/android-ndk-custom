@@ -209,7 +209,6 @@ jobs:
             -DLLVM_BUILD_TESTS=OFF \
             -DLLVM_BUILD_TOOLS=ON \
             -DLLVM_INCLUDE_TESTS=OFF \
-            -DCLANG_VENDOR="Android" \
             -DCLANG_INCLUDE_TESTS=OFF \
             -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF \
             -DCLANG_TOOL_APINOTES_TEST_BUILD=OFF \
@@ -231,7 +230,9 @@ jobs:
             -DLLVM_ENABLE_LIBEDIT=OFF \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
-            -DLLVM_ENABLE_THREADS=ON
+            -DLLVM_ENABLE_THREADS=ON \
+            -DLLVM_VERSION_SUFFIX="" \
+            -DCLANG_VENDOR="Android"
 
           cmake --build "${TARGET_BUILD_DIR}" --target install
 
