@@ -13,7 +13,7 @@ index 9fb5fb7..ad9eada 100644
  
  component("libshaderc") {
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 633c244..8d0263b 100644
+index 3bf9d16..073f6e8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -111,23 +111,6 @@ add_custom_target(add-copyright
@@ -60,7 +60,7 @@ index 31ad381..c7f8343 100644
  include $(LOCAL_PATH)/../Android.mk
  $(call import-module,android/native_app_glue)
 diff --git a/cmake/setup_build.cmake b/cmake/setup_build.cmake
-index 994de9f..31ab5d2 100644
+index 5dab384..bab4145 100644
 --- a/cmake/setup_build.cmake
 +++ b/cmake/setup_build.cmake
 @@ -31,14 +31,6 @@ if (NOT ASCIIDOCTOR_EXE)
@@ -78,54 +78,8 @@ index 994de9f..31ab5d2 100644
  if (ANDROID)
  # For android let's preemptively find the correct packages so that
  # child projects (glslang, googletest) do not fail to find them.
-diff --git a/cmake/utils.cmake b/cmake/utils.cmake
-index d64757d..e53c487 100644
---- a/cmake/utils.cmake
-+++ b/cmake/utils.cmake
-@@ -41,14 +41,12 @@ function(shaderc_default_c_compile_options TARGET)
-       # requires clang to be built with compiler-rt.
-       target_link_libraries(${TARGET} PRIVATE --coverage)
-     endif()
--    if (NOT SHADERC_ENABLE_SHARED_CRT)
--      if (WIN32)
--        # For MinGW cross compile, statically link to the libgcc runtime.
--        # But it still depends on MSVCRT.dll.
--        set_target_properties(${TARGET} PROPERTIES
--          LINK_FLAGS "-static -static-libgcc")
--      endif(WIN32)
--    endif(NOT SHADERC_ENABLE_SHARED_CRT)
-+    if (WIN32)
-+      # For MinGW cross compile, statically link to the libgcc runtime.
-+      # But it still depends on MSVCRT.dll.
-+      set_target_properties(${TARGET} PROPERTIES
-+        LINK_FLAGS "-static -static-libgcc")
-+    endif(WIN32)
-   else()
-     # disable warning C4800: 'int' : forcing value to bool 'true' or 'false'
-     # (performance warning)
-@@ -60,14 +58,12 @@ function(shaderc_default_compile_options TARGET)
-   shaderc_default_c_compile_options(${TARGET})
-   if (NOT "${MSVC}")
-     target_compile_options(${TARGET} PRIVATE -std=c++11)
--    if (NOT SHADERC_ENABLE_SHARED_CRT)
--      if (WIN32)
--        # For MinGW cross compile, statically link to the C++ runtime.
--        # But it still depends on MSVCRT.dll.
--        set_target_properties(${TARGET} PROPERTIES
--          LINK_FLAGS "-static -static-libgcc -static-libstdc++")
--      endif(WIN32)
--    endif(NOT SHADERC_ENABLE_SHARED_CRT)
-+    if (WIN32)
-+      # For MinGW cross compile, statically link to the libgcc runtime.
-+      # But it still depends on MSVCRT.dll.
-+      set_target_properties(${TARGET} PROPERTIES
-+        LINK_FLAGS "-static -static-libgcc -static-libstdc++")
-+    endif(WIN32)
-   endif()
- endfunction(shaderc_default_compile_options)
- 
 diff --git a/libshaderc/CMakeLists.txt b/libshaderc/CMakeLists.txt
-index 2cced9e..c78c699 100644
+index 3ada419..c78c699 100644
 --- a/libshaderc/CMakeLists.txt
 +++ b/libshaderc/CMakeLists.txt
 @@ -31,18 +31,6 @@ target_include_directories(shaderc
@@ -147,7 +101,7 @@ index 2cced9e..c78c699 100644
  if(SHADERC_ENABLE_INSTALL)
    install(
      FILES
-@@ -53,12 +41,6 @@ if(SHADERC_ENABLE_INSTALL)
+@@ -53,11 +41,6 @@ if(SHADERC_ENABLE_INSTALL)
        include/shaderc/shaderc.hpp
      DESTINATION
        ${CMAKE_INSTALL_INCLUDEDIR}/shaderc)
@@ -155,12 +109,11 @@ index 2cced9e..c78c699 100644
 -  install(TARGETS shaderc shaderc_shared
 -    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 -    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
--    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
 -    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
  endif(SHADERC_ENABLE_INSTALL)
  
  find_package(Threads)
-@@ -70,7 +52,6 @@ set(SHADERC_LIBS
+@@ -69,7 +52,6 @@ set(SHADERC_LIBS
  )
  
  target_link_libraries(shaderc PRIVATE ${SHADERC_LIBS})
@@ -168,7 +121,7 @@ index 2cced9e..c78c699 100644
  
  shaderc_add_tests(
    TEST_PREFIX shaderc
-@@ -83,17 +64,6 @@ shaderc_add_tests(
+@@ -82,17 +64,6 @@ shaderc_add_tests(
      shaderc_cpp
      shaderc_private)
  
@@ -187,14 +140,13 @@ index 2cced9e..c78c699 100644
  
  if(SHADERC_ENABLE_INSTALL)
 diff --git a/libshaderc/include/shaderc/visibility.h b/libshaderc/include/shaderc/visibility.h
-index 88ec151..a6aecd2 100644
+index 88ec151..e5cef00 100644
 --- a/libshaderc/include/shaderc/visibility.h
 +++ b/libshaderc/include/shaderc/visibility.h
-@@ -15,23 +15,6 @@
- #ifndef SHADERC_VISIBILITY_H_
+@@ -16,22 +16,6 @@
  #define SHADERC_VISIBILITY_H_
  
--// SHADERC_EXPORT tags symbol that will be exposed by the shared libraries.
+ // SHADERC_EXPORT tags symbol that will be exposed by the shared libraries.
 -#if defined(SHADERC_SHAREDLIB)
 -#if defined(_WIN32)
 -#if defined(SHADERC_IMPLEMENTATION)
