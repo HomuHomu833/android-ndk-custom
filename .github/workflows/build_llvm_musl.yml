@@ -270,5 +270,4 @@ jobs:
           artifacts: ${{env.tarball_name}}.tar.xz
           allowUpdates: true
           replacesArtifacts: true
-          body: |
-            [action](${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}})
+          body: ''
