@@ -115,7 +115,7 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+archive/$SPIRV_TOOLS_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools/external"
           mkdir -p spirv-headers
-          cd spirv-Headers
+          cd spirv-headers
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+archive/$SPIRV_HEADERS_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party"
           mkdir -p glslang
