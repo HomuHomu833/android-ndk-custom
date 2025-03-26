@@ -106,7 +106,7 @@ jobs:
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
-          mkdir -p $HOME/shaderc
+          mkdir -p "$HOME/shaderc"
           cd "$HOME/shaderc"
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+archive/$SHADERC_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party"
