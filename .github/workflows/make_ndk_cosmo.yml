@@ -297,7 +297,7 @@ jobs:
         run: |
           echo "Downloading NDK r${{inputs.version}}..."
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-windows.zip"
-          "C:\Program Files\Git\usr\bin\unzip.exe" -qq android-ndk.zip -d ${{ runner.temp }}
+          & "C:\Program Files\Git\usr\bin\unzip.exe" -qq android-ndk.zip -d ${{ runner.temp }}
 
       - name: Fix Links
         shell: pwsh
