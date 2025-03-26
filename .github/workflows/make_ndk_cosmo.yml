@@ -106,7 +106,7 @@ jobs:
 
           cd $HOME
           # SPIRV-Tools and shaderc
-          mkdir -p shaderc
+          mkdir -p "$HOME/shaderc"
           cd "$HOME/shaderc"
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+archive/$SHADERC_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party"
