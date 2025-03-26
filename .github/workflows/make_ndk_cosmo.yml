@@ -128,11 +128,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/spirv/full_static.patch" | git apply
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "$ROOTDIR" branch --show-current)/patches/spirv/full_static.patch" | git apply
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/shaderc/full_static.patch" | git apply
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "$ROOTDIR" branch --show-current)/patches/shaderc/full_static.patch" | git apply
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
