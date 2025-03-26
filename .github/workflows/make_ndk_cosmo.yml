@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
+        with:
+          version: "4.0.2"
 
       - name: Get NDK
         run: |
@@ -150,8 +152,10 @@ jobs:
         with:
           name: extra-deps-*
 
-      - name: Install cosmocc
+      - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
+        with:
+          version: "4.0.2"
 
       - name: Link APE
         run: |
