@@ -64,7 +64,7 @@ jobs:
 
           if [[ "${{ matrix.target }}" == "aarch64-unknown-cosmo" ]]; then
             sudo ln -s /usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-          endif
+          fi
 
           cd $HOME
           # YASM
