@@ -413,5 +413,4 @@ jobs:
         artifacts: android-ndk-r${{inputs.ndk_version}}*
         allowUpdates: true
         replacesArtifacts: true
-        body: |
-          [action](${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}})
+        body: ''
