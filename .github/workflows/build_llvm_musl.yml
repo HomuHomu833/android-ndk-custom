@@ -92,7 +92,7 @@ jobs:
         run: git clone https://github.com/zongou/zig-as-llvm
 
       - name: Install dependencies
-        run: sudo apt install ninja-build
+        run: sudo apt install -y ninja-build
 
       - name: Build dependencies
         run : |
