@@ -279,6 +279,12 @@ jobs:
       - name: Extract Unfixed NDK
         run: 7z x android-ndk-r${{inputs.version}}-unfixed.tar -aoa
 
+      - name: Get NDK
+        run: |
+          echo "Downloading NDK r${{inputs.version}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-windows.zip"
+          C:\Program Files\Git\usr\bin\unzip.exe -qq android-ndk.zip -d ${{ runner.temp }}
+
       - name: Fix Links
         shell: pwsh
         run: |
@@ -288,8 +294,8 @@ jobs:
               return & "$fileExePath" $FilePath
           }
 
-          $NDK = "$PWD/android-ndk-r${{inputs.version}}"
-          $NDK_TOOLCHAIN = "$NDK/toolchains/llvm/prebuilt/cosmo-universal"
+          $NDK = "$PWD\android-ndk-r${{inputs.version}}"
+          $NDK_TOOLCHAIN = "$NDK\toolchains\llvm\prebuilt\cosmo-universal"
           $MajorVersion = "${{ inputs.llvm_version }}" -split '\.' | Select-Object -First 1
 
           foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
@@ -317,25 +323,30 @@ jobs:
 
               if ($fileType -match "DOS/MBR boot sector") {
                   Write-Host "Renaming $bname"
-                  Rename-Item -Path $file.FullName -NewName "$($file.Name).exe"
+                  Rename-Item -Path $file.FullName -NewName "$($file.FullName).exe"
               }
               elseif ($fileType -match "a sh script") {
-                  Write-Host "Removing Shell Script file $bname"
-                  Remove-Item $file.FullName -Force
+                  Write-Host "Replacing Shell Script file $bname"
+                  Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\$file.Name -Destination $file.FullName -Force
+                  Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\$($file.Name).cmd -Destination $($file.FullName).cmd -Force 
               }
           }
 
           Write-Host "Running Extra Fixes..."
           Remove-Item "$NDK\ndk-build"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-build.cmd" -Destination "$NDK\ndk-build.cmd" -Force 
           Remove-Item "$NDK\ndk-gdb"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-gdb.cmd" -Destination "$NDK\ndk-gdb.cmd" -Force 
           Remove-Item "$NDK\ndk-lldb"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-lldb.cmd" -Destination "$NDK\ndk-lldb.cmd" -Force
           Remove-Item "$NDK\ndk-stack"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-stack.cmd" -Destination "$NDK\ndk-stack.cmd" -Force
           Remove-Item "$NDK\ndk-which"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-which.cmd" -Destination "$NDK\ndk-which.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb"
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-stack"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/MobilePorting/android-ndk-custom/main/windows-extra.zip" -OutFile "windows-extra.zip"
-          7z x windows-extra.zip -aoa
-          Remove-Item windows-extra.zip
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
           Remove-Item $NDK_TOOLCHAIN\bin\clang-$MajorVersion.exe
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
@@ -346,12 +357,12 @@ jobs:
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\yasm" -NewName "$NDK\prebuilt\cosmo-universal\bin\yasm.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\ytasm" -NewName "$NDK\prebuilt\cosmo-universal\bin\ytasm.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\vsyasm" -NewName "$NDK\prebuilt\cosmo-universal\bin\vsyasm.exe"
-          Rename-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -NewName "$NDK_TOOLCHAIN\python3\bin\python3.exe"
+          Rename-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -NewName "$NDK_TOOLCHAIN\python3\python.exe"
           Rename-Item -Path "$NDK_TOOLCHAIN\bin\ld.lld.exe" -NewName "$NDK_TOOLCHAIN\bin\ld.lld"
           Copy-Item -Path "$NDK_TOOLCHAIN\bin\clang.exe" -Destination "$NDK_TOOLCHAIN\bin\clang-cl.exe" -Force
-          cd ${NDK}/toolchains/llvm/prebuilt
+          cd ${NDK}\toolchains\llvm\prebuilt
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
-          cd ${NDK}/prebuilt
+          cd ${NDK}\prebuilt
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
 
       - name: Archive Fixed NDK
