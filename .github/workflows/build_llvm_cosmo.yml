@@ -92,7 +92,7 @@ jobs:
           version: "4.0.2"
 
       - name: Install dependencies
-        run: sudo apt install ninja-build
+        run: sudo apt install -y ninja-build
 
       - name: Build dependencies
         run : |
