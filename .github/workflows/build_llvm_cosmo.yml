@@ -67,7 +67,7 @@ jobs:
           cd $ROOTDIR
 
           if [[ "${{ inputs.version }}" =~ 27 ]]; then
-              curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/google/patches/cosmo/gcc-14-arm-fix.patch" | git apply
+              curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/google/patches/cosmo/gcc-14-arm-fix.patch" | git -C "$ROOTDIR/llvm" apply 
           fi
 
           echo "Applying patches from llvm_android..."
