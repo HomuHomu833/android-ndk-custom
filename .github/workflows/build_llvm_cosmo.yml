@@ -88,6 +88,8 @@ jobs:
 
       - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
+        with:
+          version: "4.0.2"
 
       - name: Install dependencies
         run: sudo apt install ninja-build
@@ -257,8 +259,11 @@ jobs:
             tar -xvf llvm-${target}.tar
             rm llvm-${target}.tar
           done
-      - name: Install cosmocc
+
+      - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
+        with:
+          version: "4.0.2"
 
       - name: Link APE
         run: |
