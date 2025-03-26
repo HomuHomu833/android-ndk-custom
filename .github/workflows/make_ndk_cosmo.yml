@@ -134,6 +134,7 @@ jobs:
           git init --quiet
           curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "$ROOTDIR" branch --show-current)/patches/shaderc/full_static.patch" | git apply
           rm -rf .git
+          sed -i 's/std::alignment_of<T>::value/alignof(T)/g' $HOME/shaderc/third_party/spirv-tools/source/util/small_vector.h
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
