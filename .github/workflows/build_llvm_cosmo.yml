@@ -84,8 +84,8 @@ jobs:
           MAJOR_VERSION=$(${{ runner.temp }}/android-ndk-r${{inputs.version}}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | sed -n 's/.*clang version \([0-9]\+\).*/\1/p')
           curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/main/patches/cosmo/llvm-${MAJOR_VERSION}.patch" | git apply
 
-          if [ "${{ inputs.version }}" == "27c" ]; then
-              sed -i 's/kw_ \##/kw_##/g' $ROOTDIR/clang/include/clang/Basic/TokenKinds.def
+          if [[ "${{ inputs.version }}" =~ 27 ]]; then
+              curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/google/patches/cosmo/gcc-14-arm-fix.patch" | git apply
           fi
 
           echo "All patches applied successfully."
