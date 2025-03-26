@@ -122,9 +122,13 @@ jobs:
           cd glslang
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/spirv/full_static.patch" | patch -p1
+          git init --quiet
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/spirv/full_static.patch" | git apply
+          rm -rf .git
           cd "$HOME/shaderc"
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/shaderc/full_static.patch" | patch -p1
+          git init --quiet
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/shaderc/full_static.patch" | git apply
+          rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
