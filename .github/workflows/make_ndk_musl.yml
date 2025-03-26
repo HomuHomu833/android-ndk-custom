@@ -51,7 +51,7 @@ jobs:
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
-          SHADER_TOOLS_BIN="$NDK_DIR/linux-x86_64"
+          SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
           MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
           YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
