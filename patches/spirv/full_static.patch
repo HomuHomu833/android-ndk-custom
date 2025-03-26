@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1b8fe92..760ce2b 100644
+index 1b8fe92..c857a96 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -147,20 +147,13 @@ endif()
@@ -27,13 +27,12 @@ index 1b8fe92..760ce2b 100644
  #
  # * SPIRV_TOOLS_FULL_VISIBILITY - "${SPIRV_TOOLS}-static" or "${SPIRV_TOOLS}"
  #   Evaluates to the SPIRV_TOOLS target library name that has no hidden symbols.
-@@ -169,18 +162,15 @@ endif()
+@@ -169,18 +162,14 @@ endif()
  #
  # Ideally, all of these will go away - see https://github.com/KhronosGroup/SPIRV-Tools/issues/3909.
  option(ENABLE_EXCEPTIONS_ON_MSVC "Build SPIRV-TOOLS with c++ exceptions enabled in MSVC" ON)
 -option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static or ${SPIRV_TOOLS}-shared based on BUILD_SHARED_LIBS" ON)
 +option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static." ON)
-+ if(SPIRV_TOOLS_BUILD_STATIC)
  if(SPIRV_TOOLS_BUILD_STATIC)
    set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
    set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
@@ -49,7 +48,7 @@ index 1b8fe92..760ce2b 100644
    endif()
  endif(SPIRV_TOOLS_BUILD_STATIC)
  
-@@ -360,7 +350,6 @@ if (NOT "${SPIRV_SKIP_TESTS}")
+@@ -360,7 +349,6 @@ if (NOT "${SPIRV_SKIP_TESTS}")
  endif()
  
  set(SPIRV_LIBRARIES "-lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link")
@@ -57,7 +56,7 @@ index 1b8fe92..760ce2b 100644
  
  # Build pkg-config file
  # Use a first-class target so it's regenerated when relevant files are updated.
-@@ -375,24 +364,12 @@ add_custom_target(spirv-tools-pkg-config ALL
+@@ -375,24 +363,12 @@ add_custom_target(spirv-tools-pkg-config ALL
                        -DSPIRV_LIBRARIES=${SPIRV_LIBRARIES}
                        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
          DEPENDS "CHANGES" "cmake/SPIRV-Tools.pc.in" "cmake/write_pkg_config.cmake")
