@@ -28,6 +28,11 @@ jobs:
       AR: ${{matrix.target}}-ar
       STRIP: ${{matrix.target}}-strip
     steps:
+      - name: Checkout android-ndk-custom
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}
+
       - name: Setup cosmo toolchain
         uses: bjia56/setup-cosmocc@v0.0.3
         with:
@@ -196,11 +201,6 @@ jobs:
     name: Make NDK Cosmo
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout android-ndk-custom
-        uses: actions/checkout@v4
-        with:
-          path: ${{github.workspace}}
-
       - uses: actions/download-artifact@v4
         with:
           path: "~/"
