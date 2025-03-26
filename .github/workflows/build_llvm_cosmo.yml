@@ -80,9 +80,9 @@ jobs:
           for PATCH in ${PATCHES[@]}; do
               echo "Applying $(basename "$PATCH")..."
               if [[ -f "$ROOTDIR/../llvm_android/$PATCH" ]]; then
-                  git -C "$ROOTDIR/llvm" apply --rej "$ROOTDIR/../llvm_android/$PATCH" || true
+                  git apply --rej "$ROOTDIR/../llvm_android/$PATCH" || true
               elif [[ -f "$ROOTDIR/../llvm_android/cherry/$PATCH" ]]; then
-                  git -C "$ROOTDIR/llvm" apply --rej "$ROOTDIR/../llvm_android/cherry/$PATCH" || true
+                  git apply --rej "$ROOTDIR/../llvm_android/cherry/$PATCH" || true
               fi
           done
 
