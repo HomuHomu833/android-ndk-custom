@@ -43,7 +43,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
-          sudo apt install ninja-build qemu-user-static python3.12 \
+          sudo apt install -y ninja-build qemu-user-static python3.12 \
               build-essential libssl-dev libbz2-dev libdb-dev libgdbm-dev \
               liblzma-dev libsqlite3-dev libreadline-dev libncurses5-dev \
               libncursesw5-dev tk-dev uuid-dev libffi-dev \
