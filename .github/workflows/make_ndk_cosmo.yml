@@ -43,7 +43,7 @@ jobs:
       - name: Build Extra Dependencies
         run: |
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
-          SHADER_TOOLS_BIN="$NDK_DIR/linux-x86_64"
+          SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
           YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
           SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
