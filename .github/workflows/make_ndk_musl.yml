@@ -91,8 +91,8 @@ jobs:
           mv yasm-$YASM_VERSION yasm
           cd yasm
           cd config
-          wget -O config.sub "http://git.savannah.gnu.org/cgit/config.git/plain/config.sub"
-          wget -O config.guess "http://git.savannah.gnu.org/cgit/config.git/plain/config.guess"
+          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
+          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
           cd ..
           ./configure \
           --prefix="${PWD}/build" \
