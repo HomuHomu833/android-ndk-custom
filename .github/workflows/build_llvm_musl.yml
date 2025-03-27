@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64-macos-none, aarch64-windows-gnu, aarch64_be-linux-musl, m68k-linux-musl, mips-linux-musleabi, mips-linux-musleabihf, mipsel-linux-musleabi, mipsel-linux-musleabihf, mips64-linux-muslabi64, mips64el-linux-muslabi64, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86-windows-gnu, x86_64-linux-musl, x86_64-macos-none, x86_64-windows-gnu]
+        target: [arm-linux-musleabihf, armeb-linux-musleabihf, aarch64-linux-musl, aarch64-macos-none, aarch64-windows-gnu, aarch64_be-linux-musl, m68k-linux-musl, mips-linux-musleabihf, mipsel-linux-musleabihf, mips64-linux-muslabi64, mips64el-linux-muslabi64, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86-windows-gnu, x86_64-linux-musl, x86_64-macos-none, x86_64-windows-gnu]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
