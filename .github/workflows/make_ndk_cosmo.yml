@@ -340,7 +340,7 @@ jobs:
                   Rename-Item -Path $file.FullName -NewName "$($file.FullName).exe"
               }
               elseif ($fileType -match "a sh script") {
-                  Write-Host "Replacing Shell Script file $bname"
+                  Write-Host "Replacing Shell Script $bname"
                   Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name) -Destination $file.FullName -Force
                   Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name).cmd -Destination $($file.FullName).cmd -Force 
               }
@@ -358,9 +358,9 @@ jobs:
           Remove-Item "$NDK\ndk-which"
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-which.cmd" -Destination "$NDK\ndk-which.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-stack"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
           Remove-Item $NDK_TOOLCHAIN\bin\clang-$MajorVersion.exe
           Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
           Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
