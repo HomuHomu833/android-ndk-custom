@@ -266,6 +266,7 @@ jobs:
              cp "$HOME/extra-deps/${bname}" "${file}" || true
           done
 
+          mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
 
@@ -361,10 +362,10 @@ jobs:
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-stack"
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
-          Remove-Item $NDK_TOOLCHAIN\bin\clang-$MajorVersion.exe
-          Remove-Item $NDK_TOOLCHAIN\bin\ld64.lld.exe
-          Remove-Item $NDK_TOOLCHAIN\bin\lld-link.exe
-          Remove-Item $NDK_TOOLCHAIN\bin\lld.exe
+          Remove-Item "$NDK_TOOLCHAIN\bin\clang-$MajorVersion.exe"
+          Remove-Item "$NDK_TOOLCHAIN\bin\ld64.lld.exe"
+          Remove-Item "$NDK_TOOLCHAIN\bin\lld-link.exe"
+          Remove-Item "$NDK_TOOLCHAIN\bin\lld.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\cmp" -NewName "$NDK\prebuilt\cosmo-universal\bin\cmp.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\echo" -NewName "$NDK\prebuilt\cosmo-universal\bin\echo.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\make" -NewName "$NDK\prebuilt\cosmo-universal\bin\make.exe"
@@ -378,6 +379,8 @@ jobs:
           cd ${NDK}\toolchains\llvm\prebuilt
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
           cd ${NDK}\prebuilt
+          Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
+          cd ${NDK}\shader-tools
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
 
       - name: Archive Fixed NDK
@@ -416,6 +419,13 @@ jobs:
           ln -s cosmo-universal darwin-arm64
 
           cd ${NDK}/prebuilt
+
+          ln -s cosmo-universal linux-x86_64
+          ln -s cosmo-universal linux-arm64
+          ln -s cosmo-universal darwin-x86_64
+          ln -s cosmo-universal darwin-arm64
+
+          cd ${NDK}/shader-tools
 
           ln -s cosmo-universal linux-x86_64
           ln -s cosmo-universal linux-arm64
