@@ -38,7 +38,7 @@ jobs:
         with:
           version: "4.0.2"
 
-      - name: Get NDK
+      - name: Get Official NDK
         run: |
           echo "Downloading NDK r${{inputs.version}}..."
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
@@ -293,7 +293,7 @@ jobs:
       - name: Extract Unfixed NDK
         run: 7z x android-ndk-r${{inputs.version}}-unfixed.tar -aoa
 
-      - name: Get NDK
+      - name: Get Official NDK
         run: |
           echo "Downloading NDK r${{inputs.version}}..."
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-windows.zip"
