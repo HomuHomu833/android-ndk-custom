@@ -19,16 +19,16 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
     - Linux
     - Android
   - **Architectures**:
-    - **RISC-V**: `riscv32`, `riscv64`
     - **X**: `x86`, `x86_64`
     - **ARM**: `armhf`, `arm64`
+    - **RISC-V**: `riscv32`, `riscv64`
     - **LoongArch**: `loongarch64` **(Planned)**
 
 - **Cosmopolitan Environment**
   - **Platforms**:
     - Windows
-    - macOS
     - Linux
+    - macOS
     - Android
     - NetBSD(?)
     - FreeBSD(?)
