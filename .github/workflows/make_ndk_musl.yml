@@ -34,7 +34,7 @@ jobs:
       - name: Setup Zig Toolchain
         run: git clone https://github.com/zongou/zig-as-llvm
 
-      - name: Get NDK
+      - name: Get Official NDK
         run: |
           echo "Downloading NDK r${{inputs.version}}..."
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
