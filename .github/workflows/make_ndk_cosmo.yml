@@ -342,7 +342,7 @@ jobs:
               elseif ($fileType -match "a sh script") {
                   Write-Host "Replacing Shell Script $bname"
                   Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name) -Destination $file.FullName -Force
-                  Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name).cmd -Destination $($file.FullName).cmd -Force 
+                  Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name).cmd" -Destination "$($file.FullName).cmd" -Force 
               }
           }
 
