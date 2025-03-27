@@ -347,6 +347,16 @@ jobs:
               }
           }
 
+          foreach ($file in Get-ChildItem -Path "$NDK\shader-tools\bin" -File) {
+              $bname = $file.Name
+              $fileType = Get-FileType $file.FullName
+
+              if ($fileType -match "DOS/MBR boot sector" -and -not ($fileType -match "a sh script")) {
+                  Write-Host "Renaming $bname"
+                  Rename-Item -Path $file.FullName -NewName "$($file.FullName).exe"
+              }
+          }
+
           Write-Host "Running Extra Fixes..."
           Remove-Item "$NDK\ndk-build"
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-build.cmd" -Destination "$NDK\ndk-build.cmd" -Force 
