@@ -16,8 +16,6 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
 
 - **Zig-based Environment**
   - **Platforms**:
-    - Windows **(Planned)**
-    - macOS **(Planned)**
     - Linux
     - Android
   - **Architectures**:
