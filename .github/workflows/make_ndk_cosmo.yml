@@ -347,7 +347,7 @@ jobs:
               }
           }
 
-          foreach ($file in Get-ChildItem -Path "$NDK\shader-tools\bin" -File) {
+          foreach ($file in Get-ChildItem -Path "$NDK\shader-tools\cosmo-universal" -File) {
               $bname = $file.Name
               $fileType = Get-FileType $file.FullName
 
