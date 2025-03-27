@@ -6,12 +6,12 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
 
 - **Musl and Cosmopolitan libc** support for enhanced portability.  
 - **Custom LLVM** build, sourced from Google's repositories.  
-- Built using [Zig](https://ziglang.org) and [Cosmopolitan](https://justine.lol/cosmopolitan) for better cross-compilation.  
+- Built using Zig and Cosmopolitan.
 - **Additional Tools Built**:  
   - **Shaderc**  
   - **Python** (downloaded via from [Cosmopolitan repository](https://cosmo.zip/pub/cosmos/bin), built in Zig)  
-  - **Make** (from GNU source)  
-  - **Yasm** (from Debian source)  
+  - **Make** (downloaded via from [Cosmopolitan repository](https://cosmo.zip/pub/cosmos/bin), built in Zig)  
+  - **Yasm**
 
 ### Architecture Support  
 
