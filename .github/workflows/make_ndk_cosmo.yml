@@ -372,7 +372,7 @@ jobs:
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\ytasm" -NewName "$NDK\prebuilt\cosmo-universal\bin\ytasm.exe"
           Rename-Item -Path "$NDK\prebuilt\cosmo-universal\bin\vsyasm" -NewName "$NDK\prebuilt\cosmo-universal\bin\vsyasm.exe"
           Copy-Item -Path "$NDK_TOOLCHAIN\python3\bin\python3" -Destination "$NDK_TOOLCHAIN\python3\python.exe" -Force
-          Remove-Item "$NDK_TOOLCHAIN\python3\bin"
+          Remove-Item "$NDK_TOOLCHAIN\python3\bin" -Recurse -Force
           Rename-Item -Path "$NDK_TOOLCHAIN\bin\ld.lld.exe" -NewName "$NDK_TOOLCHAIN\bin\ld.lld"
           Copy-Item -Path "$NDK_TOOLCHAIN\bin\clang.exe" -Destination "$NDK_TOOLCHAIN\bin\clang-cl.exe" -Force
           cd ${NDK}\toolchains\llvm\prebuilt
