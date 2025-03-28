@@ -52,6 +52,14 @@ jobs:
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
               libdb5.3-dev libnsl-dev gawk
 
+      - name: aarch64_be workaround
+        if: matrix.target == 'aarch64_be-linux-musl'
+        run: |
+          # took from https://packages.debian.org/trixie/amd64/qemu-user
+          echo ":qemu-aarch64_be:M::\x7f\x45\x4c\x46\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/libexec/qemu-binfmt/aarch64_be-binfmt-P:OCPF" | sudo tee /usr/lib/binfmt.d/qemu-aarch64_be.conf
+          sudo ln -s /usr/bin/qemu-aarch64_be-static /usr/libexec/qemu-binfmt/aarch64_be-binfmt-P
+          sudo systemctl restart systemd-binfmt.service
+
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
