@@ -16,27 +16,25 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
 
 - **Zig-based Environment**
   - **Platforms**:
-    - Windows **(Planned)**
-    - macOS **(Planned)**
     - Linux
     - Android
   - **Architectures**:
-    - **RISC-V**: `riscv32`, `riscv64` (Linux and Android only)
-    - **x86**: `x86`, `x86_64`
+    - **X**: `x86`, `x86_64`
     - **ARM**: `armhf`, `arm64`
-    - **LoongArch**: `loongarch64` **(Planned)** (Linux only)
+    - **RISC-V**: `riscv32`, `riscv64`
+    - **LoongArch**: `loongarch64` **(Planned)**
 
 - **Cosmopolitan Environment**
   - **Platforms**:
     - Windows
-    - macOS
     - Linux
+    - macOS
     - Android
     - NetBSD(?)
     - FreeBSD(?)
     - OpenBSD 7.3(?)
   - **Architectures**:
-    - **x86**: `x86_64`
+    - **X**: `x86_64`
     - **ARM**: `arm64`
 
 ## Usage
