@@ -245,6 +245,7 @@ jobs:
             armv7l|armv8l) HOST_ARCH=arm;;\
             aarch64) HOST_ARCH=arm64;;\
             aarch64_be) HOST_ARCH=arm64_be;;\
+            loongarch64) HOST_ARCH=loong64;;\
             i?86) HOST_ARCH=x86;;\
             amd64) HOST_ARCH=x86_64;;\
             arm64|x86_64|riscv32|riscv64|ppc|ppc64|ppc64le|mips|mipsel|s390x) HOST_ARCH=$HOST_ARCH;;\
@@ -287,6 +288,7 @@ jobs:
             case "$ARCH" in
                 aarch64)     ARCH="arm64" ;;
                 aarch64_be)  ARCH="arm64_be" ;;
+                loongarch64) ARCH="loong64" ;;
                 powerpc64le) ARCH="ppc64le" ;;
                 powerpc64)   ARCH="ppc64" ;;
                 powerpc)     ARCH="ppc" ;;
