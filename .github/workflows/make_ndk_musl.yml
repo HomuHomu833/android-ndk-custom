@@ -244,9 +244,10 @@ jobs:
           case $HOST_ARCH in\
             armv7l|armv8l) HOST_ARCH=arm;;\
             aarch64) HOST_ARCH=arm64;;\
+            aarch64_be) HOST_ARCH=arm64_be;;\
             i?86) HOST_ARCH=x86;;\
             amd64) HOST_ARCH=x86_64;;\
-            arm64|x86_64|riscv32|riscv64) HOST_ARCH=$HOST_ARCH;;\
+            arm64|x86_64|riscv32|riscv64|ppc|ppc64|ppc64le|mips|mipsel|s390x) HOST_ARCH=$HOST_ARCH;;\
             *) echo "ERROR: Unknown host CPU architecture: $HOST_ARCH"; exit 1;;\
           esac' "${NDK}/build/tools/ndk_bin_common.sh"
 
@@ -280,18 +281,19 @@ jobs:
           done
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" ]]; then
-            case "${{ matrix.target }}" in
-              aarch64-linux-musl)   ARCH="linux-arm64" ;;
-              arm-linux-musleabihf) ARCH="linux-arm" ;;
-              x86-linux-musl)       ARCH="linux-x86" ;;
-              riscv64-linux-musl)   ARCH="linux-riscv64" ;;
-              riscv32-linux-musl)   ARCH="linux-riscv32" ;;
-              *) echo "WARNING: Unknown target triple: ${{ matrix.target }}" && ARCH="linux-x86_64" ;;
+            ARCH="${{ matrix.target }%%-*}"
+
+            case "$ARCH" in
+                aarch64)     ARCH="arm64" ;;
+                aarch64_be)  ARCH="arm64_be" ;;
+                powerpc64le) ARCH="ppc64le" ;;
+                powerpc64)   ARCH="ppc64" ;;
+                powerpc)     ARCH="ppc" ;;
             esac
 
-            mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${ARCH}"
-            mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${ARCH}"
-            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/${ARCH}"
+            mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
+            mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/linux-${ARCH}"
+            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/linux-${ARCH}"
 
             for file in \
                 ${NDK}/ndk-gdb \
@@ -299,7 +301,7 @@ jobs:
                 ${NDK}/ndk-stack \
                 ${NDK}/ndk-which
             do
-                sed -i "s|linux-x86_64|${ARCH}|g" $file
+                sed -i "s|linux-x86_64|linux-${ARCH}|g" $file
             done
           fi
 
