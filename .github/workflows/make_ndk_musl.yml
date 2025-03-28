@@ -52,7 +52,7 @@ jobs:
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
               libdb5.3-dev libnsl-dev gawk
 
-      - name: aarch64_be workaround
+      - name: aarch64_be Workaround
         if: matrix.target == 'aarch64_be-linux-musl'
         run: |
           # took from https://packages.debian.org/trixie/amd64/qemu-user
