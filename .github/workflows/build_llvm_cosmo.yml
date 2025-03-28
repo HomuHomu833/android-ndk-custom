@@ -27,7 +27,7 @@ jobs:
       MODE: tiny
     steps:
       - name: Maximize build space
-        uses: easimon/maximize-build-space@master
+        uses: easimon/maximize-build-space@v10
         with:
           remove-dotnet: true
           remove-android: true
@@ -42,14 +42,14 @@ jobs:
 
       - name: Checkout llvm-project and apply android patches
         run: |
-          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
+          NDK_DIR="$ROOTDIR/android-ndk-r${{inputs.version}}"
           LLVM_BIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin"
           CLANG_VERSION_CMD="$LLVM_BIN/clang --version"
           CLANG_SOURCE_INFO="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/clang_source_info.md"
 
           echo "Downloading NDK r${{inputs.version}}..."
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
-          unzip -qq android-ndk.zip -d ${{ runner.temp }}
+          unzip -qq android-ndk.zip -d $ROOTDIR
 
           LLVM_VERSION=$($CLANG_VERSION_CMD | sed -n 's/.*clang version \([0-9][0-9.]*[a-zA-Z0-9]*\).*/\1/p')
           LLVM_REV=$($CLANG_VERSION_CMD | sed -E 's/.*llvm-project ([a-f0-9]{40}).*/\1/' | head -n 1)
