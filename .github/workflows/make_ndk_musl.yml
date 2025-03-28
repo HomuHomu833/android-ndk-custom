@@ -281,7 +281,8 @@ jobs:
           done
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" ]]; then
-            ARCH="${{ matrix.target }%%-*}"
+            ARCH="${{ matrix.target }}"
+            ARCH="${ARCH%%-*}"
 
             case "$ARCH" in
                 aarch64)     ARCH="arm64" ;;
