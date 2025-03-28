@@ -282,7 +282,7 @@ jobs:
              cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
           done
 
-          if [[ "${{ matrix.target }}" != "x86_64-linux-musl" ]]; then
+          if [[ "${{ matrix.target }}" != "x86_64-linux-musl" && "${{ matrix.target }}" != "x86_64-linux-muslx32" ]]; then
             ARCH="${{ matrix.target }}"
             ARCH="${ARCH%%-*}"
 
@@ -292,6 +292,7 @@ jobs:
                 loongarch64) ARCH="loong64" ;;
                 powerpc64le) ARCH="ppc64le" ;;
                 powerpc64)   ARCH="ppc64" ;;
+                powerpcle)   ARCH="ppcle" ;;
                 powerpc)     ARCH="ppc" ;;
             esac
 
