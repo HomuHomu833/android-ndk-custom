@@ -203,10 +203,10 @@ jobs:
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
             -DCMAKE_C_FLAGS="-fsanitize=undefined \
-                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium') \
+                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=extreme') \
                  $([[ "${{ matrix.target }}" == "x86_64-linux-muslx32" ]] && echo '-ftls-model=initial-exec')" \
             -DCMAKE_CXX_FLAGS="-fsanitize=undefined \
-                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium') \
+                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=extreme') \
                  $([[ "${{ matrix.target }}" == "x86_64-linux-muslx32" ]] && echo '-ftls-model=initial-exec')" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
