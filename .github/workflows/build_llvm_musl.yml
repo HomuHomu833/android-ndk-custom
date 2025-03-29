@@ -202,14 +202,18 @@ jobs:
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined" \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined \
+                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium') \
+                 $([[ "${{ matrix.target }}" == "x86_64-linux-muslx32" ]] && echo '-ftls-model=initial-exec')" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined \
+                 $([[ "${{ matrix.target }}" == "loongarch64-linux-musl" ]] && echo '-mcmodel=medium') \
+                 $([[ "${{ matrix.target }}" == "x86_64-linux-muslx32" ]] && echo '-ftls-model=initial-exec')" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
             -DLLVM_ENABLE_ZSTD=FORCE_ON \
             -DLLVM_USE_STATIC_ZSTD=ON \
             -DLLVM_BUILD_STATIC=ON \
-            -DCLANG_ENABLE_ARCMT=ON \
+            -DCLANG_ENABLE_ARCMT=OFF \
             -DLIBCLANG_BUILD_STATIC=ON \
             -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
             -DBUILD_SHARED_LIBS=OFF \
