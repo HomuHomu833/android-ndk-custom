@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [arm-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, mips-linux-musleabihf, mipsel-linux-musleabihf, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
+        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, mips-linux-musleabihf, mipsel-linux-musleabihf, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
-          sudo apt install -y ninja-build qemu-user-static python3.12 \
+          sudo apt install -y ninja-build python3.12 \
               build-essential libssl-dev libbz2-dev libdb-dev libgdbm-dev \
               liblzma-dev libsqlite3-dev libreadline-dev libncurses5-dev \
               libncursesw5-dev tk-dev uuid-dev libffi-dev \
@@ -51,14 +51,6 @@ jobs:
               libexpat1-dev libc6-dev-i386 libbluetooth-dev \
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
               libdb5.3-dev libnsl-dev gawk
-
-      - name: aarch64_be Workaround
-        if: matrix.target == 'aarch64_be-linux-musl'
-        run: |
-          # took from https://packages.debian.org/trixie/amd64/qemu-user
-          echo ":qemu-aarch64_be:M::\x7f\x45\x4c\x46\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff:/usr/libexec/qemu-binfmt/aarch64_be-binfmt-P:OCPF" | sudo tee /usr/lib/binfmt.d/qemu-aarch64_be.conf
-          sudo ln -s /usr/bin/qemu-aarch64_be-static /usr/libexec/qemu-binfmt/aarch64_be-binfmt-P
-          sudo systemctl restart systemd-binfmt.service
 
       - name: Build Extra Dependencies
         run: |
@@ -171,30 +163,29 @@ jobs:
           sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
           sed -i '/#include "pycore_pathconfig.h"/a \
           PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
-          export CC=${TOOLCHAIN}/bin/cc
-          export CXX=${TOOLCHAIN}/bin/c++
-          export LD=${TOOLCHAIN}/bin/ld
-          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
-          export AR=${TOOLCHAIN}/bin/ar
-          export STRIP=${TOOLCHAIN}/bin/strip
-          export CFLAGS="-static -Wno-error=date-time"
-          export CXXFLAGS="-static -Wno-error=date-time"
-          export LDFLAGS="-static"
-          export ac_cv_func_dlopen=no
-          export ac_cv_file__dev_ptmx=no
-          export ac_cv_file__dev_ptc=no
           ./configure --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=${{ matrix.target }} \
-          --target=${{ matrix.target }} \
+          --host=x86_64-linux-gnu \
           --disable-shared \
           --disable-ipv6 \
+          --without-pymalloc \
           --enable-optimizations \
           --with-pkg-config=no \
           --with-readline=no \
           --with-ensurepip=no \
           --with-openssl-rpath=no \
-          --with-ssl-default-suites=python
+          --with-ssl-default-suites=python \
+          --with-build-python \
+          CC=${TOOLCHAIN}/bin/cc \
+          CXX=${TOOLCHAIN}/bin/c++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          AR=${TOOLCHAIN}/bin/ar \
+          STRIP=${TOOLCHAIN}/bin/strip \
+          CFLAGS="-static -Wno-error=date-time" \
+          CXXFLAGS="-static -Wno-error=date-time" \
+          LDFLAGS="-static" \
+          ac_cv_func_dlopen=no ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
