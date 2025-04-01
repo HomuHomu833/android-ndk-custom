@@ -45,7 +45,7 @@ jobs:
           unzip -qq android-ndk.zip -d ${{ runner.temp }}
       
       - name: Install Dependencies
-        run: sudo apt install -y ninja-build qemu-user-static
+        run: sudo apt update && sudo apt install -y ninja-build cmake qemu-user-static
 
       - name: Build Extra Dependencies
         run: |
