@@ -50,7 +50,7 @@ jobs:
               libxml2-dev libxmlsec1-dev zlib1g-dev libcrypt-dev \
               libexpat1-dev libc6-dev-i386 libbluetooth-dev \
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
-              libdb5.3-dev libnsl-dev gawk
+              libdb5.3-dev libnsl-dev gawk cmake
 
       - name: Build Extra Dependencies
         run: |
@@ -308,7 +308,7 @@ jobs:
         uses: ncipollo/release-action@v1.15.0
         with:
           tag: "r${{inputs.version}}"
-          artifacts: android-ndk-r${{inputs.version}}.tar.xz
+          artifacts: android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
           allowUpdates: true
           replacesArtifacts: true
           body: ''
