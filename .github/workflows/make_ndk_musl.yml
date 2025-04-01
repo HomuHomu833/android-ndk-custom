@@ -151,7 +151,8 @@ jobs:
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
             -DSHADERC_SKIP_TESTS=ON \
-            -DSHADERC_SKIP_EXAMPLES=ON
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           cmake --build "$HOME/shaderc/build" --target install
 
           cd $HOME
