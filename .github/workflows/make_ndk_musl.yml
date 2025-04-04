@@ -200,7 +200,7 @@ jobs:
               $HOME/python/python
           do
               tmpfile="$(dirname "$file")/$(mktemp --dry-run .strip.XXXX)"
-              $OBJCOPY -S "$file" "$tmpfile"
+              ${TOOLCHAIN}/bin/objcopy -S "$file" "$tmpfile" || true
               if [[ $? -eq 0 && -s "$tmpfile" && "$(file -b --mime-type "$tmpfile")" == "application/x-executable" ]]; then
                   mv "$tmpfile" "$file"
               else
