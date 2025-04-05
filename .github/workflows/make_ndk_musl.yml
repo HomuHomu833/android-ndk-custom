@@ -32,7 +32,7 @@ jobs:
           use-cache: false
 
       - name: Setup Zig Toolchain
-        run: git clone https://github.com/zongou/zig-as-llvm
+        run: git clone https://github.com/HomuHomu833/zig-as-llvm
 
       - name: Get Official NDK
         run: |
@@ -200,7 +200,7 @@ jobs:
               $HOME/python/python
           do
               tmpfile="$(dirname "$file")/$(mktemp --dry-run .strip.XXXX)"
-              ${TOOLCHAIN}/bin/objcopy -S "$file" "$tmpfile" || true
+              ${TOOLCHAIN}/bin/strip "$file" "$tmpfile" || true
               if [[ $? -eq 0 && -s "$tmpfile" && "$(file -b --mime-type "$tmpfile")" == "application/x-executable" ]]; then
                   mv "$tmpfile" "$file"
               else
