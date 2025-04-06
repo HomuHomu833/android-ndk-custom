@@ -225,6 +225,8 @@ jobs:
             -DLLVM_BUILD_TOOLS=ON \
             -DLLVM_INCLUDE_TESTS=OFF \
             -DCLANG_INCLUDE_TESTS=OFF \
+            -DCLANG_BUILD_TESTS=OFF \
+            -DLLVM_TOOL_C_TEST_BUILD=OFF \
             -DCLANG_TOOL_CLANG_IMPORT_TEST_BUILD=OFF \
             -DCLANG_TOOL_APINOTES_TEST_BUILD=OFF \
             -DCLANG_TOOL_ARCMT_TEST_BUILD=OFF \
@@ -238,6 +240,7 @@ jobs:
             -DLLVM_ENABLE_EH=OFF \
             -DLLVM_ENABLE_RTTI=OFF \
             -DLLVM_ENABLE_LTO=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_ENABLE_MODULES=OFF \
             -DLLVM_ENABLE_PEDANTIC=OFF \
             -DLLVM_ENABLE_FFI=OFF \
