@@ -85,7 +85,7 @@ jobs:
 
           rm -rf "$ROOTDIR/../llvm_android"
 
-          echo "Applying base.patch..."
+          echo "Applying $LLVM_VERSION.patch..."
           curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/cosmo/llvm/$LLVM_VERSION.patch" | git apply
 
           if [[ "${{ inputs.version }}" =~ 27 ]]; then
