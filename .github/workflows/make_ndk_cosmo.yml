@@ -137,7 +137,7 @@ jobs:
           sed -i 's/std::alignment_of<T>::value/alignof(T)/g' $HOME/shaderc/third_party/spirv-tools/source/util/small_vector.h
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
             -DCMAKE_C_FLAGS="-static" \
             -DCMAKE_CXX_FLAGS="-static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
