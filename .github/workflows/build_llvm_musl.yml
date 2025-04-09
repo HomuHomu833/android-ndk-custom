@@ -193,7 +193,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="${ROOTDIR}/llvm-${{matrix.target}}" \
             -DCMAKE_PREFIX_PATH="${TARGET_INSTALL_DIR}" \
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64;ARM;RISCV" \
-            -DCMAKE_BUILD_TYPE="$([[ "${{ matrix.target }}" == "arm-linux-musleabihf" ]] && echo Release || echo MinSizeRel)" \
+            -DCMAKE_BUILD_TYPE="$([[ "${{ matrix.target }}" == "arm-linux-musleabihf" || "${{ matrix.target }}" == "armeb-linux-musleabihf" ]] && echo Release || echo MinSizeRel)" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DLLVM_DEFAULT_TARGET_TRIPLE=${{matrix.target}} \
