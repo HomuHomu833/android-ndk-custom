@@ -92,7 +92,7 @@ jobs:
 
           if [[ "${{ inputs.version }}" =~ 27 ]]; then
             echo "Applying gcc-14-arm-fix.patch..."
-            curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/cosmo/llvm/cosmo/extra/$LLVM_VERSION/gcc-14-arm-fix.patch" | git apply
+            curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/cosmo/llvm/extra/$LLVM_VERSION/gcc-14-arm-fix.patch" | git apply
           fi
 
           echo "All patches applied successfully."
