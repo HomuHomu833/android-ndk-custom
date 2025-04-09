@@ -100,7 +100,7 @@ jobs:
           use-cache: false
         
       - name: Setup Zig toolchain
-        run: git clone https://github.com/zongou/zig-as-llvm
+        run: git clone https://github.com/HomuHomu833/zig-as-llvm
 
       - name: Install dependencies
         run: sudo apt install -y ninja-build
