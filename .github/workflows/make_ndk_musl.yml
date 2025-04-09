@@ -137,7 +137,7 @@ jobs:
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
-            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_FLAGS="-static" \
             -DCMAKE_CXX_FLAGS="-static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
