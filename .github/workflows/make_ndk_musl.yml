@@ -18,17 +18,29 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, mips-linux-musleabihf, mipsel-linux-musleabihf, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
+        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, mips-linux-musleabihf, mipsel-linux-musleabihf, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}
 
+      - name: Set Zig Version
+        id: zig_version
+        run: |
+          case "${{ matrix.target }}" in
+            arm-linux-musleabihf|armeb-linux-musleabihf|s390x-linux-musl)
+              echo "version=0.15.0-dev.137+db7db4802" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "version=0.15.0-dev.263+d8153fa74" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
       - name: Setup Zig
         uses: mlugg/setup-zig@v1.2.1
         with:
-          version: "0.15.0-dev.263+d8153fa74"
+          version: "${{ steps.zig_version.outputs.version }}"
           use-cache: false
 
       - name: Setup Zig Toolchain
