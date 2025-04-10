@@ -105,7 +105,6 @@ jobs:
               ;;
           esac
 
-
       - name: Setup Zig
         uses: mlugg/setup-zig@v1.2.1
         with:
