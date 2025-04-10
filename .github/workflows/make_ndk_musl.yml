@@ -83,6 +83,10 @@ jobs:
           curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
+          cd build-aux
+          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
+          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
+          cd ..
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
