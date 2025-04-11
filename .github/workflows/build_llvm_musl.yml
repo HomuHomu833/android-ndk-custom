@@ -10,7 +10,7 @@ on:
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
-        default: "bolt;clang;clang-tools-extra;lld"
+        default: "bolt;clang;clang-tools-extra;lld;lldb"
         required: true
 
 permissions:
@@ -20,7 +20,7 @@ permissions:
 jobs:
   build:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
     runs-on: ubuntu-24.04
@@ -89,10 +89,12 @@ jobs:
               fi
           done
 
+          rm -rf "$ROOTDIR/../llvm_android"
+
           echo "Applying BOLT-32-bits-fix.patch..."
           curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/llvm/musl/$LLVM_VERSION/BOLT-32-bits-fix.patch" | git apply
 
-          rm -rf "$ROOTDIR/../llvm_android"
+          sed -i 's/add_lldb_library(liblldb SHARED/add_lldb_library(liblldb STATIC/' lldb/source/API/CMakeLists.txt
 
           echo "All patches applied successfully."
 
@@ -264,6 +266,13 @@ jobs:
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_THREADS=ON \
+            -DLLDB_ENABLE_LIBEDIT=OFF \
+            -DLLDB_ENABLE_CURSES=OFF \
+            -DLLDB_ENABLE_LZMA=OFF \
+            -DLLDB_ENABLE_LIBXML2=OFF \
+            -DLLDB_ENABLE_PYTHON=OFF \
+            -DLLDB_ENABLE_LUA=OFF \
+            -DLLDB_BUILD_FRAMEWORK=OFF \
             -DLLVM_VERSION_SUFFIX="" \
             -DCLANG_VENDOR="Android"
 
