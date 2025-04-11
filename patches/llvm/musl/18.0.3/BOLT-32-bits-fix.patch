@@ -1,0 +1,48 @@
+diff --git a/bolt/include/bolt/Core/DebugData.h b/bolt/include/bolt/Core/DebugData.h
+index 31a636ba2..95f9eeb32 100644
+--- a/bolt/include/bolt/Core/DebugData.h
++++ b/bolt/include/bolt/Core/DebugData.h
+@@ -127,6 +127,8 @@ inline raw_ostream &operator<<(raw_ostream &OS,
+ 
+ using DebugLocationsVector = SmallVector<DebugLocationEntry, 4>;
+ 
++static std::vector<DebugLineTableRowRef> DebugRowStorage;
++
+ /// References a row in a DWARFDebugLine::LineTable by the DWARF
+ /// Context index of the DWARF Compile Unit that owns the Line Table and the row
+ /// index. This is tied to our IR during disassembly so that we can later update
+@@ -148,21 +150,34 @@ struct DebugLineTableRowRef {
+   }
+ 
+   static DebugLineTableRowRef fromSMLoc(const SMLoc &Loc) {
++#if UINTPTR_MAX < 0xFFFFFFFFFFFFFFFF
++    // 32-bit system: use global storage to store and retrieve the row ref by index
++    auto index = reinterpret_cast<uintptr_t>(Loc.getPointer());
++    return DebugRowStorage.at(index); 
++#else
+     union {
+       decltype(Loc.getPointer()) Ptr;
+       DebugLineTableRowRef Ref;
+     } U;
+     U.Ptr = Loc.getPointer();
+     return U.Ref;
++#endif
+   }
+ 
+   SMLoc toSMLoc() const {
++#if UINTPTR_MAX < 0xFFFFFFFFFFFFFFFF
++    // 32-bit system: store the row ref in global storage and return its index as a pointer
++    DebugRowStorage.push_back(*this);
++    uintptr_t index = DebugRowStorage.size() - 1;
++    return SMLoc::getFromPointer(reinterpret_cast<const char *>(index));
++#else
+     union {
+       decltype(SMLoc().getPointer()) Ptr;
+       DebugLineTableRowRef Ref;
+     } U;
+     U.Ref = *this;
+     return SMLoc::getFromPointer(U.Ptr);
++#endif
+   }
+ };
+ 

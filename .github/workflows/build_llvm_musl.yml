@@ -89,6 +89,9 @@ jobs:
               fi
           done
 
+          echo "Applying BOLT-32-bits-fix.patch..."
+          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/llvm/musl/$LLVM_VERSION/BOLT-32-bits-fix.patch" | git apply
+
           rm -rf "$ROOTDIR/../llvm_android"
 
           echo "All patches applied successfully."
