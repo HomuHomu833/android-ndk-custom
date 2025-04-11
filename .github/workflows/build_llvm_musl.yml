@@ -10,7 +10,7 @@ on:
       projects:
         description: "Projects to build:"
         # bolt;clang;clang-tools-extra;compiler-rt;cross-project-tests;libc;libclc;lld;lldb;mlir;openmp;polly;pstl;flang
-        default: "clang;clang-tools-extra;lld"
+        default: "bolt;clang;clang-tools-extra;lld"
         required: true
 
 permissions:
@@ -216,14 +216,16 @@ jobs:
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined" \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
             -DLLVM_ENABLE_ZSTD=FORCE_ON \
             -DLLVM_USE_STATIC_ZSTD=ON \
             -DLLVM_BUILD_STATIC=ON \
             -DCLANG_ENABLE_ARCMT=OFF \
+            -DLLVM_LINK_LLVM_DYLIB=OFF \
             -DLIBCLANG_BUILD_STATIC=ON \
             -DCMAKE_SKIP_INSTALL_RPATH=TRUE \
             -DBUILD_SHARED_LIBS=OFF \

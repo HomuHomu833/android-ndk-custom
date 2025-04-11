@@ -214,7 +214,7 @@ jobs:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/MobilePorting/android-ndk-custom/releases/download/llvm-r${{inputs.version}}/clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/MobilePorting/android-ndk-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |
@@ -240,7 +240,6 @@ jobs:
           sed -i 's/arm64)/arm64|aarch64)/' "${NDK}/build/tools/ndk_bin_common.sh"
 
           ## Remove unused resource
-          rm -rf "${NDK_TOOLCHAIN}/bin/perf2bolt"
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
           rm -rf "${NDK}/prebuilt/linux-x86_64/bin/*asm"
