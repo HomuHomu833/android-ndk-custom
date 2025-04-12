@@ -24,7 +24,8 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
     - **RISC-V**: `riscv32`, `riscv64`
     - **LoongArch**: `loongarch64`
     - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
-    - **Other**: `mips`, `mipsel`, `s390x`
+    - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
+    - **Other**: `hexagon`(?), `s390x`
 
 - **Cosmopolitan Environment**
   - **Platforms**:
