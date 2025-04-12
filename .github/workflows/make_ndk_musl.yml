@@ -33,7 +33,7 @@ jobs:
               echo "version=0.15.0-dev.137+db7db4802" >> $GITHUB_OUTPUT
               ;;
             *)
-              echo "version=0.15.0-dev.263+d8153fa74" >> $GITHUB_OUTPUT
+              echo "version=0.15.0-dev.300+9e21ba12d" >> $GITHUB_OUTPUT
               ;;
           esac
 
