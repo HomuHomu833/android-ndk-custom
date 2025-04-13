@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, hexagon-linux-musl, loongarch64-linux-musl, mips-linux-musleabihf, mips64-linux-muslabin32, mipsel-linux-musleabihf, mips64el-linux-muslabin32, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
+        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, mips-linux-musleabihf, mips64-linux-muslabin32, mipsel-linux-musleabihf, mips64el-linux-muslabin32, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
