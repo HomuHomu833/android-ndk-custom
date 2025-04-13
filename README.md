@@ -25,7 +25,7 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
     - **LoongArch**: `loongarch64`
     - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
     - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
-    - **Other**: `hexagon`(?), `s390x`
+    - **Other**: `s390x`
 
 - **Cosmopolitan Environment**
   - **Platforms**:
@@ -33,9 +33,9 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
     - Linux
     - macOS
     - Android
-    - NetBSD(?)
-    - FreeBSD(?)
-    - OpenBSD 7.3(?)
+    - NetBSD
+    - FreeBSD
+    - OpenBSD 7.3
   - **Architectures**:
     - **X**: `x86_64`
     - **ARM**: `aarch64`
