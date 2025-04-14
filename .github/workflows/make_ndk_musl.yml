@@ -226,7 +226,7 @@ jobs:
       - name: Make NDK musl
         run: |
           NDK="${PWD}/android-ndk-r${{inputs.version}}"
-          HOST_TOOLCHAIN="${PWD}/clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
