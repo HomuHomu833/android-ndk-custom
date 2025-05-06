@@ -2,18 +2,11 @@
 
 set -euo pipefail
 
-PATHS=(
-  "/data/data/com.termux/files/usr/bin/lldb"
-  "/usr/local/bin/lldb"
-  "/usr/bin/lldb"
-  "/bin/lldb"
-)
+LLDB_PATH=$(command -v lldb || true)
 
-for path in "${PATHS[@]}"; do
-  if [[ -x "$path" ]]; then
-    exec "$path" "$@"
-  fi
-done
-
-echo "Error: lldb not found. Please install it using your package manager." >&2
-exit 1
+if [ -x "$LLDB_PATH" ]; then
+  exec "$LLDB_PATH" "$@"
+else
+  echo "Error: lldb not found in PATH. Please install it using your package manager." >&2
+  exit 1
+fi
