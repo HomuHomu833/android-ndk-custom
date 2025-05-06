@@ -278,6 +278,8 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
+          curl -LkSs https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/patches/llvm/musl/lldb > ${NDK_TOOLCHAIN}/bin/lldb
+          chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
           find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
              bname="$(basename "${file}")"
 
