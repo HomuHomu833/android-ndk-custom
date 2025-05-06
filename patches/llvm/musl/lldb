@@ -7,6 +7,6 @@ LLDB_PATH=$(command -v lldb || true)
 if [ -x "$LLDB_PATH" ]; then
   exec "$LLDB_PATH" "$@"
 else
-  echo "Error: lldb not found in PATH. Please install it using your package manager." >&2
+  echo "Error: lldb not found. Please install it using your package manager." >&2
   exit 1
 fi
