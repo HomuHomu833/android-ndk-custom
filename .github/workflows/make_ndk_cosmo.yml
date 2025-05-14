@@ -421,9 +421,6 @@ jobs:
           NDK="${PWD}/android-ndk-r${{inputs.version}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/cosmo-universal"
 
-          curl -LkSs https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/main/patches/llvm/musl/lldb > ${NDK_TOOLCHAIN}/bin/lldb
-          chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
-
           cd ${NDK}/toolchains/llvm/prebuilt
 
           ln -s cosmo-universal linux-x86_64
