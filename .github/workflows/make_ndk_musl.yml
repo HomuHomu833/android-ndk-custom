@@ -319,7 +319,10 @@ jobs:
           fi
 
       - name: Archive
-        run: tar -cf - android-ndk-r${{inputs.version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
+        run: |
+          cd ${{ runner.temp }}
+          tar -cf - android-ndk-r${{inputs.version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
+          mv android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
 
       - name: Release
         uses: ncipollo/release-action@v1.16.0
