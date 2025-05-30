@@ -69,7 +69,7 @@ jobs:
           wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
           cd ..
           ./configure \
-          --prefix="${PWD}/build" \
+          --prefix="${PWD}/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
           --host=${{ matrix.target }} \
           CC=${TOOLCHAIN}/bin/cc \
