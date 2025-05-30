@@ -119,7 +119,7 @@ jobs:
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --host=$HOST \
           --disable-nls \
           CC=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
