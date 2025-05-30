@@ -72,7 +72,7 @@ jobs:
           ./configure \
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
-          --host=${{ matrix.target }} \
+          --host=x86_64-linux-gnu \
           CC=${TOOLCHAIN}/bin/${{ matrix.target }}-cc \
           CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-c++ \
           LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
@@ -128,7 +128,7 @@ jobs:
           ./configure \
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
-          --host=${{ matrix.target }} \
+          --host=x86_64-linux-gnu \
           --disable-nls \
           CC=${TOOLCHAIN}/bin/${{ matrix.target }}-cc \
           CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-c++ \
