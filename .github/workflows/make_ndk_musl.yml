@@ -38,19 +38,13 @@ jobs:
           esac
 
       - name: Setup Zig
-        uses: mlugg/setup-zig@v1.2.1
+        uses: mlugg/setup-zig@v2
         with:
           version: "${{ steps.zig_version.outputs.version }}"
           use-cache: false
 
       - name: Setup Zig Toolchain
         run: git clone https://github.com/HomuHomu833/zig-as-llvm
-
-      - name: Get Official NDK
-        run: |
-          echo "Downloading NDK r${{inputs.version}}..."
-          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
-          unzip -qq android-ndk.zip -d ${{ runner.temp }}
 
       - name: Install Dependencies
         run: |
@@ -63,34 +57,33 @@ jobs:
               libxml2-dev libxmlsec1-dev zlib1g-dev libcrypt-dev \
               libexpat1-dev libc6-dev-i386 libbluetooth-dev \
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
-              libdb5.3-dev libnsl-dev gawk cmake
+              libdb5.3-dev libnsl-dev gawk cmake autopoint \
+              qemu-user-static
 
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
-          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
-          SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
-          PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
-          MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
-          YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
-          SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
-          SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
-          SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
-          GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          MAKE_HASH=$(curl -LkSs "https://android.googlesource.com/toolchain/make/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/toolchain/make/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/toolchain\/make\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          YASM_HASH=$(curl -LkSs "https://android.googlesource.com/toolchain/yasm/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/toolchain/yasm/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/toolchain\/yasm\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          $(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/ndk-r${{inputs.version}}" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
 
           cd $HOME
           # GNU Make
-          curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
-          mv make-$MAKE_VERSION make
-          cd make
+          mkdir make
+          curl -LkSs "https://android.googlesource.com/toolchain/make/+archive/$MAKE_HASH.tar.gz" | tar -xz
           cd build-aux
           wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
           wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
           cd ..
+          touch doc/INSTALL # so weird
+          ./bootstrap
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           CC=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
           LD=${TOOLCHAIN}/bin/ld \
@@ -104,9 +97,8 @@ jobs:
 
           cd $HOME
           # YASM
-          curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_$YASM_VERSION.orig.tar.gz | gzip -d | tar -x
-          mv yasm-$YASM_VERSION yasm
-          cd yasm
+          mkdir yasm
+          curl -LkSs "https://android.googlesource.com/toolchain/yasm/+archive/$YASM_HASH.tar.gz" | tar -xz
           cd config
           wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
           wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
