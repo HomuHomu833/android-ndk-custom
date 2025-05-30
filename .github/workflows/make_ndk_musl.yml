@@ -80,7 +80,7 @@ jobs:
 
           HOST="${{ matrix.target }}"
           if [[ "$HOST" == aarch64_be-* ]]; then
-            HOST="aarch64-${host#aarch64_be-}"
+            HOST="aarch64-${HOST#aarch64_be-}"
           fi
 
           cd $HOME
