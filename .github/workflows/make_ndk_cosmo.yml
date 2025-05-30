@@ -73,7 +73,7 @@ jobs:
           CFLAGS="-static" \
           CXXFLAGS="-static" \
           LDFLAGS="-static"
-          make -j"$(nproc --all)" install
+          make -j"$(nproc --all)" -k install
 
           cd $HOME
           # YASM
