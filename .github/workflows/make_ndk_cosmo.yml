@@ -58,7 +58,7 @@ jobs:
           wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
           wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
           cd ..
-          touch doc/INSTALL # so weird
+          sed -i '/doc\/INSTALL/d' ./bootstrap
           ./bootstrap
           ./configure \
           --prefix="${PWD}/build-${{ matrix.target }}" \
