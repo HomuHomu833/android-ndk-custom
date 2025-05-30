@@ -313,6 +313,51 @@ jobs:
             done
           fi
 
+          sed -i -E '/^if\(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux\)$/,/^endif\(\)$/c\
+          if(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux OR CMAKE_HOST_SYSTEM_NAME STREQUAL Android)\
+              execute_process(\
+                  COMMAND uname -m\
+                  OUTPUT_VARIABLE HOST_ARCH\
+                  OUTPUT_STRIP_TRAILING_WHITESPACE\
+              )\
+          \
+              # Normalize uname -m to Android NDK host tags\
+              if(HOST_ARCH STREQUAL "aarch64")\
+                  set(ARCH "arm64")\
+              elseif(HOST_ARCH MATCHES "^armv[0-9]+l$")\
+                  set(ARCH "arm")\
+              elseif(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")\
+                  set(ARCH "arm64")\
+              elseif(HOST_ARCH STREQUAL "aarch64_be")\
+                  set(ARCH "arm64_be")\
+              elseif(HOST_ARCH STREQUAL "loongarch64")\
+                  set(ARCH "loong64")\
+              elseif(HOST_ARCH STREQUAL "riscv64")\
+                  set(ARCH "riscv64")\
+              elseif(HOST_ARCH STREQUAL "powerpc64le")\
+                  set(ARCH "ppc64le")\
+              elseif(HOST_ARCH STREQUAL "powerpc64")\
+                  set(ARCH "ppc64")\
+              elseif(HOST_ARCH STREQUAL "powerpcle")\
+                  set(ARCH "ppcle")\
+              elseif(HOST_ARCH STREQUAL "powerpc")\
+                  set(ARCH "ppc")\
+              elseif(HOST_ARCH STREQUAL "amd64")\
+                  set(ARCH "x86_64")\
+              elseif(HOST_ARCH MATCHES "^i[3-6]86$")\
+                  set(ARCH "x86")\
+              else()\
+                  set(ARCH "${HOST_ARCH}")\
+              endif()\
+          \
+              set(ANDROID_HOST_TAG "linux-${ARCH}")\
+          \
+          elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)\
+              set(ANDROID_HOST_TAG "darwin-x86_64")\
+          elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
+              set(ANDROID_HOST_TAG "windows-x86_64")\
+          endif()' "${NDK}/build/cmake/android.toolchain.cmake" "${NDK}/build/cmake/android-legacy.toolchain.cmake"
+
       - name: Archive
         run: |
           cd ${{ runner.temp }}
