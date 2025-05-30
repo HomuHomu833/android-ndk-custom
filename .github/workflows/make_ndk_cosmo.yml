@@ -49,6 +49,7 @@ jobs:
 
       - name: Build Extra Dependencies
         run: |
+          TOOLCHAIN="${{ runner.temp }}/cosmocc-4.0.2"
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
@@ -72,12 +73,12 @@ jobs:
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
           --host=${{ matrix.target }} \
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          STRIP=${TOOLCHAIN}/bin/strip \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-cc \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-c++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
           CFLAGS="-static" \
           CXXFLAGS="-static" \
           LDFLAGS="-static"
@@ -129,6 +130,12 @@ jobs:
           --build=${{ matrix.target }} \
           --host=${{ matrix.target }} \
           --disable-nls \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-cc \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-c++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
           CFLAGS="-static" \
           CXXFLAGS="-static" \
           LDFLAGS="-static"
