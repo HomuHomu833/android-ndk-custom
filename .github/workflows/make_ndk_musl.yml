@@ -304,11 +304,11 @@ jobs:
             mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/linux-${ARCH}"
 
             cd ${NDK}/toolchains/llvm/prebuilt
-            ln -s linux-x86_64 linux-${ARCH}
+            ln -s linux-${ARCH} linux-x86_64
             cd ${NDK}/prebuilt
-            ln -s linux-x86_64 linux-${ARCH}
+            ln -s linux-${ARCH} linux-x86_64
             cd ${NDK}/shader-tools
-            ln -s linux-x86_64 linux-${ARCH}
+            ln -s linux-${ARCH} linux-x86_64
 
             for file in \
                 ${NDK}/ndk-gdb \
