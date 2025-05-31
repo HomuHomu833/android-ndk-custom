@@ -303,6 +303,13 @@ jobs:
             mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/linux-${ARCH}"
             mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/linux-${ARCH}"
 
+            cd ${NDK}/toolchains/llvm/prebuilt
+            ln -s linux-x86_64 linux-${ARCH}
+            cd ${NDK}/prebuilt
+            ln -s linux-x86_64 linux-${ARCH}
+            cd ${NDK}/shader-tools
+            ln -s linux-x86_64 linux-${ARCH}
+
             for file in \
                 ${NDK}/ndk-gdb \
                 ${NDK}/ndk-lldb \
