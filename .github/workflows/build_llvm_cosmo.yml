@@ -87,13 +87,10 @@ jobs:
 
           rm -rf "$ROOTDIR/../llvm_android"
 
-          echo "Applying base.patch..."
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/llvm/cosmo/$LLVM_VERSION/base.patch" | git apply
-
-          if [[ "${{ inputs.version }}" =~ 27 ]]; then
-            echo "Applying gcc-14-arm-fix.patch..."
-            curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git branch --show-current)/patches/llvm/cosmo/$LLVM_VERSION/gcc-14-arm-fix.patch" | git apply
-          fi
+          for PATCH in $ROOTDIR/patches/llvm/cosmo/$LLVM_VERSION/*.patch; do
+            echo "Applying $(basename "$PATCH")..."
+            git apply "$PATCH"
+          done
 
           echo "All patches applied successfully."
 
@@ -112,6 +109,8 @@ jobs:
           export LD=${{matrix.target}}-ld
           export OBJCOPY=${{matrix.target}}-objcopy
           export AR=${{matrix.target}}-ar
+          export CFLAGS="-fstack-protector-strong"
+          export CXXFLAGS="-fstack-protector-strong"
 
           rm -rf build output/ zlib/ zstd/
 
@@ -142,7 +141,7 @@ jobs:
               (
                   cd "${TARGET_BUILD_DIR}/zstd"
 
-                  $CC -c \
+                  $CC $CFLAGS -c \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
                       "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
@@ -196,8 +195,8 @@ jobs:
             -DCMAKE_ASM_COMPILER="${{matrix.target}}-cc" \
             -DCMAKE_LINKER="${{matrix.target}}-ld" \
             -DCMAKE_OBJCOPY="${{matrix.target}}-objcopy" \
-            -DCMAKE_C_FLAGS="-static" \
-            -DCMAKE_CXX_FLAGS="-static" \
+            -DCMAKE_C_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \

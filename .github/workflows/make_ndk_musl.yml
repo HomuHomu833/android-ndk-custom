@@ -97,8 +97,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-fstack-protector-strong -static" \
+          CXXFLAGS="-fstack-protector-strong -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -122,8 +122,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-static -fwrapv -Wno-error=date-time" \
+          CFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -154,8 +154,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -static" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -200,8 +200,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static -Wno-error=date-time" \
-          CXXFLAGS="-static -Wno-error=date-time" \
+          CFLAGS="-fstack-protector-strong -static -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -static -Wno-error=date-time" \
           LDFLAGS="-static" \
           ac_cv_func_dlopen=no ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
@@ -219,7 +219,7 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/HomuHomu833/android-ndk-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository }}releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK musl
         run: |
@@ -276,7 +276,7 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
-          curl -LkSs https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/patches/llvm/musl/lldb > ${NDK_TOOLCHAIN}/bin/lldb
+          cp ${{ github.workspace }}/patches/musl/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
           find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
              bname="$(basename "${file}")"

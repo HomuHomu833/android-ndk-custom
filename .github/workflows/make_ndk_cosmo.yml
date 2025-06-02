@@ -79,8 +79,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-fstack-protector-strong -static" \
+          CXXFLAGS="-fstack-protector-strong -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -136,8 +136,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-fstack-protector-strong -static" \
+          CXXFLAGS="-fstack-protector-strong -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -170,8 +170,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-static" \
-            -DCMAKE_CXX_FLAGS="-static" \
+            -DCMAKE_C_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
@@ -246,7 +246,7 @@ jobs:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/HomuHomu833/android-ndk-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/${{ github.repository }}/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |
@@ -395,7 +395,6 @@ jobs:
           Remove-Item "$NDK\ndk-gdb"
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-gdb.cmd" -Destination "$NDK\ndk-gdb.cmd" -Force 
           Remove-Item "$NDK\ndk-lldb"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-lldb.cmd" -Destination "$NDK\ndk-lldb.cmd" -Force
           Remove-Item "$NDK\ndk-stack"
           Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-stack.cmd" -Destination "$NDK\ndk-stack.cmd" -Force
           Remove-Item "$NDK\ndk-which"

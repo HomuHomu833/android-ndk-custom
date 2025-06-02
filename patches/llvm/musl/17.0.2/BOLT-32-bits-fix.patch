@@ -1,0 +1,87 @@
+diff --git a/bolt/include/bolt/Core/DebugData.h b/bolt/include/bolt/Core/DebugData.h
+index 31a636ba2..f1b1be46d 100644
+--- a/bolt/include/bolt/Core/DebugData.h
++++ b/bolt/include/bolt/Core/DebugData.h
+@@ -147,22 +147,41 @@ struct DebugLineTableRowRef {
+     return !(*this == Rhs);
+   }
+ 
++#if UINTPTR_MAX < 0xFFFFFFFFFFFFFFFF
++  static std::vector<DebugLineTableRowRef>& getDebugRowStorage() {
++    static std::vector<DebugLineTableRowRef> Storage;
++    return Storage;
++  }
++#endif
++
+   static DebugLineTableRowRef fromSMLoc(const SMLoc &Loc) {
++#if UINTPTR_MAX < 0xFFFFFFFFFFFFFFFF
++    auto index = reinterpret_cast<uintptr_t>(Loc.getPointer());
++    return getDebugRowStorage().at(index);
++#else
+     union {
+       decltype(Loc.getPointer()) Ptr;
+       DebugLineTableRowRef Ref;
+     } U;
+     U.Ptr = Loc.getPointer();
+     return U.Ref;
++#endif
+   }
+ 
+   SMLoc toSMLoc() const {
++#if UINTPTR_MAX < 0xFFFFFFFFFFFFFFFF
++    auto &storage = getDebugRowStorage();
++    storage.push_back(*this);
++    uintptr_t index = storage.size() - 1;
++    return SMLoc::getFromPointer(reinterpret_cast<const char *>(index));
++#else
+     union {
+       decltype(SMLoc().getPointer()) Ptr;
+       DebugLineTableRowRef Ref;
+     } U;
+     U.Ref = *this;
+     return SMLoc::getFromPointer(U.Ptr);
++#endif
+   }
+ };
+ 
+diff --git a/bolt/lib/Core/BinaryFunction.cpp b/bolt/lib/Core/BinaryFunction.cpp
+index 0ac47a53a..e0ea9a377 100644
+--- a/bolt/lib/Core/BinaryFunction.cpp
++++ b/bolt/lib/Core/BinaryFunction.cpp
+@@ -186,9 +186,11 @@ static SMLoc findDebugLineInformationForInstructionAt(
+   // We use the pointer in SMLoc to store an instance of DebugLineTableRowRef,
+   // which occupies 64 bits. Thus, we can only proceed if the struct fits into
+   // the pointer itself.
++#if UINTPTR_MAX >= 0xFFFFFFFFFFFFFFFF
+   static_assert(
+       sizeof(decltype(SMLoc().getPointer())) >= sizeof(DebugLineTableRowRef),
+       "Cannot fit instruction debug line information into SMLoc's pointer");
++#endif
+ 
+   SMLoc NullResult = DebugLineTableRowRef::NULL_ROW.toSMLoc();
+   uint32_t RowIndex = LineTable->lookupAddress(
+@@ -200,11 +202,22 @@ static SMLoc findDebugLineInformationForInstructionAt(
+          "Line Table lookup returned invalid index.");
+ 
+   decltype(SMLoc().getPointer()) Ptr;
+-  DebugLineTableRowRef *InstructionLocation =
+-      reinterpret_cast<DebugLineTableRowRef *>(&Ptr);
+ 
++#if UINTPTR_MAX >= 0xFFFFFFFFFFFFFFFF
++  DebugLineTableRowRef *InstructionLocation = reinterpret_cast<DebugLineTableRowRef *>(&Ptr);
+   InstructionLocation->DwCompileUnitIndex = Unit->getOffset();
+   InstructionLocation->RowIndex = RowIndex + 1;
++#else
++  DebugLineTableRowRef Row;
++  Row.DwCompileUnitIndex = Unit->getOffset();
++  Row.RowIndex = RowIndex + 1;
++
++  auto &storage = DebugLineTableRowRef::getDebugRowStorage();
++  storage.push_back(Row);
++  uintptr_t index = storage.size() - 1;
++
++  Ptr = reinterpret_cast<decltype(SMLoc().getPointer())>(&index);
++#endif
+ 
+   return SMLoc::getFromPointer(Ptr);
+ }
