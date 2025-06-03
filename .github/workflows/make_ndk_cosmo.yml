@@ -79,8 +79,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-fstack-protector-strong -static" \
-          CXXFLAGS="-fstack-protector-strong -static" \
+          CFLAGS="-static" \
+          CXXFLAGS="-static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -136,8 +136,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-fstack-protector-strong -static" \
-          CXXFLAGS="-fstack-protector-strong -static" \
+          CFLAGS="-static" \
+          CXXFLAGS="-static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -170,8 +170,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/build-${{ matrix.target }}" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fstack-protector-strong -static" \
-            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_C_FLAGS="-static" \
+            -DCMAKE_CXX_FLAGS="-static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
