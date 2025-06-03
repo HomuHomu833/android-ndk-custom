@@ -18,8 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [aarch64-unknown-cosmo, x86_64-unknown-cosmo]
-    runs-on: ubuntu-24.04
+        include:
+          - target: aarch64-unknown-cosmo
+            os: ubuntu-24.04-arm
+          - target: x86_64-unknown-cosmo
+            os: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     env:
       ROOTDIR: ${{github.workspace}}
       TARGET_BUILD_DIR: ${{github.workspace}}/build/${{matrix.target}}
