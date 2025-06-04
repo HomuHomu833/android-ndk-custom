@@ -109,8 +109,6 @@ jobs:
           export LD=${{matrix.target}}-ld
           export OBJCOPY=${{matrix.target}}-objcopy
           export AR=${{matrix.target}}-ar
-          export CFLAGS="-fstack-protector-strong"
-          export CXXFLAGS="-fstack-protector-strong"
 
           rm -rf build output/ zlib/ zstd/
 
@@ -141,7 +139,7 @@ jobs:
               (
                   cd "${TARGET_BUILD_DIR}/zstd"
 
-                  $CC $CFLAGS -c \
+                  $CC -c \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_ddict.c" \
                       "${ROOTDIR}/zstd/lib/decompress/zstd_decompress.c" \
                       "${ROOTDIR}/zstd/lib/decompress/huf_decompress.c" \
@@ -195,8 +193,8 @@ jobs:
             -DCMAKE_ASM_COMPILER="${{matrix.target}}-cc" \
             -DCMAKE_LINKER="${{matrix.target}}-ld" \
             -DCMAKE_OBJCOPY="${{matrix.target}}-objcopy" \
-            -DCMAKE_C_FLAGS="-fstack-protector-strong -static" \
-            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_C_FLAGS="-static" \
+            -DCMAKE_CXX_FLAGS="-static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DLLVM_ENABLE_PROJECTS="${{inputs.projects}}" \
             -DLLVM_ENABLE_ZLIB=FORCE_ON \
