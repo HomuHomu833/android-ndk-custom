@@ -63,7 +63,11 @@ jobs:
               libxml2-dev libxmlsec1-dev zlib1g-dev libcrypt-dev \
               libexpat1-dev libc6-dev-i386 libbluetooth-dev \
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
-              libdb5.3-dev libnsl-dev gawk cmake qemu-user-static
+              libdb5.3-dev libnsl-dev gawk cmake
+          sudo curl -LkSs -o /tmp/qemu-user-binfmt.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-binfmt_10.0.0+ds-2_amd64.deb
+          sudo curl -LkSs -o /tmp/qemu-user-static.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_10.0.0+ds-2_amd64.deb
+          sudo curl -LkSs -o /tmp/qemu-user.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_10.0.0+ds-2_amd64.deb
+          sudo apt install -y /tmp/*.deb
 
       - name: Build Extra Dependencies
         run: |
@@ -90,15 +94,15 @@ jobs:
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           CC=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -static" \
-          CXXFLAGS="-fstack-protector-strong -static" \
+          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -114,7 +118,7 @@ jobs:
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           --disable-nls \
           CC=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
@@ -154,8 +158,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -fsanitize=undefined -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -200,8 +204,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -static -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -static -Wno-error=date-time" \
+          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
           LDFLAGS="-static" \
           ac_cv_func_dlopen=no ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
