@@ -267,7 +267,9 @@ jobs:
             -DLLVM_ENABLE_CURL=OFF \
             -DLLVM_ENABLE_THREADS=ON \
             -DLLVM_VERSION_SUFFIX="" \
-            -DCLANG_VENDOR="Android"
+            -DCLANG_VENDOR="Android" \
+            -DDCLANG_REPOSITORY_STRING="https://github.com/HomuHomu833/android-ndk-custom" \
+            -DPACKAGE_BUGREPORT="https://github.com/HomuHomu833/android-ndk-custom/issues/"
 
           cmake --build "${TARGET_BUILD_DIR}" --target install
 
