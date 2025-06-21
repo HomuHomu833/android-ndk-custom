@@ -64,9 +64,9 @@ jobs:
               libexpat1-dev libc6-dev-i386 libbluetooth-dev \
               libopus-dev libogg-dev libvorbis-dev libpulse-dev \
               libdb5.3-dev libnsl-dev gawk cmake
-          sudo curl -LkSs -o /tmp/qemu-user-binfmt.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-binfmt_10.0.2+ds-2_amd64.deb
-          sudo curl -LkSs -o /tmp/qemu-user-static.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_10.0.2+ds-2_amd64.deb
-          sudo curl -LkSs -o /tmp/qemu-user.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_10.0.2+ds-2_amd64.deb
+          sudo curl -LkSs -o /tmp/qemu-user-binfmt.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-binfmt_10.0.2+ds-1_amd64.deb
+          sudo curl -LkSs -o /tmp/qemu-user-static.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_10.0.2+ds-1_amd64.deb
+          sudo curl -LkSs -o /tmp/qemu-user.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_10.0.2+ds-1_amd64.deb
           sudo apt install -y /tmp/*.deb
 
       - name: Build Extra Dependencies
