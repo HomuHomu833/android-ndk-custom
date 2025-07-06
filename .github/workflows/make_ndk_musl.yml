@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29-beta1'
+        default: '29-beta2'
         required: true
         type: string
 
