@@ -96,6 +96,9 @@ jobs:
             git apply "$PATCH"
           done
 
+          cp $ROOTDIR/patches/zig/faccessat.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/unistd
+          cp $ROOTDIR/patches/zig/tmpfile.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/stdio
+
           echo "All patches applied successfully."
 
       - name: Set Zig Version
