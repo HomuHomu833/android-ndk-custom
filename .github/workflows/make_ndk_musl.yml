@@ -91,6 +91,7 @@ jobs:
           cd make
           cp ${{github.workspace}}/config/config.sub build-aux
           cp ${{github.workspace}}/config/config.guess build-aux
+          cp ${{github.workspace}}/patches/musl/make/src/misc.c src
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
@@ -113,7 +114,9 @@ jobs:
           ac_cv_func_seteuid=no \
           ac_cv_func_setfsgid=no \
           ac_cv_func_setfsuid=no \
-          ac_cv_func_setegid=no
+          ac_cv_func_setegid=no \
+          ac_cv_func_getloadavg=no \
+          ac_cv_have_decl_getloadavg=no
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -227,7 +230,9 @@ jobs:
           ac_cv_func_seteuid=no \
           ac_cv_func_setfsgid=no \
           ac_cv_func_setfsuid=no \
-          ac_cv_func_setegid=no
+          ac_cv_func_setegid=no \
+          ac_cv_func_getloadavg=no \
+          ac_cv_have_decl_getloadavg=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
