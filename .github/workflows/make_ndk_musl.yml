@@ -103,7 +103,12 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
-          LDFLAGS="-static"
+          LDFLAGS="-static" \
+          ac_cv_func_setgid=no \
+          ac_cv_func_setresgid=no \
+          ac_cv_func_setresuid=no \
+          ac_cv_func_setreuid=no \
+          ac_cv_func_setuid=no
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -205,7 +210,14 @@ jobs:
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
           LDFLAGS="-static" \
-          ac_cv_func_dlopen=no ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no
+          ac_cv_func_dlopen=no \
+          ac_cv_file__dev_ptmx=no \
+          ac_cv_file__dev_ptc=no \
+          ac_cv_func_setgid=no \
+          ac_cv_func_setresgid=no \
+          ac_cv_func_setresuid=no \
+          ac_cv_func_setreuid=no \
+          ac_cv_func_setuid=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
