@@ -91,13 +91,12 @@ jobs:
 
           rm -rf "$ROOTDIR/../llvm_android"
 
-          for PATCH in $ROOTDIR/patches/llvm/musl/$LLVM_VERSION/*.patch; do
+          for PATCH in $ROOTDIR/patches/musl/llvm/$LLVM_VERSION/*.patch; do
             echo "Applying $(basename "$PATCH")..."
             git apply "$PATCH"
           done
 
-          cp $ROOTDIR/patches/zig/faccessat.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/unistd
-          cp $ROOTDIR/patches/zig/tmpfile.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/stdio
+          cp -R $ROOTDIR/patches/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
           echo "All patches applied successfully."
 

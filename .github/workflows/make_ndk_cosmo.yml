@@ -65,10 +65,8 @@ jobs:
           curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cd build-aux
-          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
-          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
-          cd ..
+          cp ${{github.workspace}}/config/config.sub build-aux
+          cp ${{github.workspace}}/config/config.guess build-aux
           ./configure \
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
@@ -89,10 +87,8 @@ jobs:
           curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_$YASM_VERSION.orig.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
-          cd config
-          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
-          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
-          cd ..
+          cp ${{github.workspace}}/config/config.sub config
+          cp ${{github.workspace}}/config/config.guess config
           echo '#define NO_STRING_INLINES
           #include "util.h"
 
@@ -160,11 +156,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "$ROOTDIR" branch --show-current)/patches/spirv/full_static.patch" | git apply
+          git apply ${{github.workspace}}/patches/global/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "$ROOTDIR" branch --show-current)/patches/shaderc/full_static.patch" | git apply
+          git apply ${{github.workspace}}/patches/global/shaderc/full_static.patch
           rm -rf .git
           sed -i 's/std::alignment_of<T>::value/alignof(T)/g' $HOME/shaderc/third_party/spirv-tools/source/util/small_vector.h
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \

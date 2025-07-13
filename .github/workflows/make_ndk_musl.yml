@@ -82,18 +82,15 @@ jobs:
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
 
-          cp ${{github.workspace}}/patches/zig/faccessat.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/unistd
-          cp ${{github.workspace}}/patches/zig/tmpfile.c $(whereis zig | awk '{print $2}' | xargs dirname)/lib/libc/musl/src/stdio
+          cp -R ${{github.workspace}}/patches/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
           cd $HOME
           # GNU Make
           curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cd build-aux
-          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
-          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
-          cd ..
+          cp ${{github.workspace}}/config/config.sub build-aux
+          cp ${{github.workspace}}/config/config.guess build-aux
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
@@ -114,10 +111,8 @@ jobs:
           curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_$YASM_VERSION.orig.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
-          cd config
-          wget -O config.sub "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.sub"
-          wget -O config.guess "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/config/config.guess"
-          cd ..
+          cp ${{github.workspace}}/config/config.sub config
+          cp ${{github.workspace}}/config/config.guess config
           ./configure \
           --prefix="${PWD}/build" \
           --build=${{ matrix.target }} \
@@ -152,11 +147,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/patches/spirv/full_static.patch" | git apply
+          git apply ${{github.workspace}}/patches/global/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          curl -LkSs "https://github.com/HomuHomu833/android-ndk-custom/raw/refs/heads/$(git -C "${{github.workspace}}" branch --show-current)/patches/shaderc/full_static.patch" | git apply
+          git apply ${{github.workspace}}/patches/global/shaderc/full_static.patch
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \

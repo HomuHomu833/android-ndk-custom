@@ -87,7 +87,7 @@ jobs:
 
           rm -rf "$ROOTDIR/../llvm_android"
 
-          for PATCH in $ROOTDIR/patches/llvm/cosmo/$LLVM_VERSION/*.patch; do
+          for PATCH in $ROOTDIR/patches/cosmo/llvm/$LLVM_VERSION/*.patch; do
             echo "Applying $(basename "$PATCH")..."
             git apply "$PATCH"
           done
