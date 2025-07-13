@@ -278,7 +278,7 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
-          cp ${{ github.workspace }}/patches/llvm/musl/lldb ${NDK_TOOLCHAIN}/bin/lldb
+          cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
           find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
              bname="$(basename "${file}")"
