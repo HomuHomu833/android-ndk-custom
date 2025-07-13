@@ -96,7 +96,7 @@ jobs:
             git apply "$PATCH"
           done
 
-          cp -R $ROOTDIR/patches/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
+          cp -R $ROOTDIR/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
           echo "All patches applied successfully."
 
