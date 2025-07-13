@@ -109,7 +109,11 @@ jobs:
           ac_cv_func_setresuid=no \
           ac_cv_func_setreuid=no \
           ac_cv_func_setregid=no \
-          ac_cv_func_setuid=no
+          ac_cv_func_setuid=no \
+          ac_cv_func_seteuid=no \
+          ac_cv_func_setfsgid=no \
+          ac_cv_func_setfsuid=no \
+          ac_cv_func_setegid=no
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -219,7 +223,11 @@ jobs:
           ac_cv_func_setresuid=no \
           ac_cv_func_setreuid=no \
           ac_cv_func_setregid=no \
-          ac_cv_func_setuid=no
+          ac_cv_func_setuid=no \
+          ac_cv_func_seteuid=no \
+          ac_cv_func_setfsgid=no \
+          ac_cv_func_setfsuid=no \
+          ac_cv_func_setegid=no
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
