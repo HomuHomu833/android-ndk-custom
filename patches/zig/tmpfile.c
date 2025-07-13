@@ -10,12 +10,10 @@ FILE *tmpfile(void)
 {
 	const char *tmpdir = getenv("TMPDIR");
 	if (!tmpdir || !*tmpdir) tmpdir = "/tmp";
-
 	char s[256];
 	int fd;
 	FILE *f;
 	int try;
-
 	for (try = 0; try < MAXTRIES; try++) {
 		snprintf(s, sizeof s, "%s/tmpfile_XXXXXX", tmpdir);
 		__randname(s + strlen(tmpdir) + 9);
