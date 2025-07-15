@@ -126,11 +126,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          git apply ${{github.workspace}}/patches/global/spirv/full_static.patch
+          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          git apply ${{github.workspace}}/patches/global/shaderc/full_static.patch
+          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
           rm -rf .git
           sed -i 's/std::alignment_of<T>::value/alignof(T)/g' $HOME/shaderc/third_party/spirv-tools/source/util/small_vector.h
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
@@ -212,7 +212,7 @@ jobs:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/${{ github.repository }}/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |

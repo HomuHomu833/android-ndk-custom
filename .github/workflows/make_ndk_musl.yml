@@ -45,7 +45,7 @@ jobs:
 
       - name: Setup Zig Toolchain
         run: |
-          git clone https://github.com/HomuHomu833/zig-as-llvm
+          git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
           cp -R ${{github.workspace}}/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
       - name: Get Official NDK
@@ -160,11 +160,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          git apply ${{github.workspace}}/patches/global/spirv/full_static.patch
+          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          git apply ${{github.workspace}}/patches/global/shaderc/full_static.patch
+          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
@@ -248,7 +248,7 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository }}/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK musl
         run: |
