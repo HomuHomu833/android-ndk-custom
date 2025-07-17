@@ -101,6 +101,7 @@ jobs:
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
@@ -136,6 +137,7 @@ jobs:
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
           CXXFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
@@ -180,6 +182,7 @@ jobs:
             -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
+            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
@@ -214,6 +217,7 @@ jobs:
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
