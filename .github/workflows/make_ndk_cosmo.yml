@@ -26,7 +26,6 @@ jobs:
       LD: ${{matrix.target}}-ld
       OBJCOPY: ${{matrix.target}}-objcopy
       AR: ${{matrix.target}}-ar
-      RANLIB: ${{matrix.target}}-ranlib
       STRIP: ${{matrix.target}}-strip
     steps:
       - name: Checkout android-ndk-custom
@@ -78,7 +77,6 @@ jobs:
           LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
-          RANLIB=${TOOLCHAIN}/bin/unknown-unknown-cosmo-ranlib \
           CFLAGS="-static" \
           CXXFLAGS="-static" \
           LDFLAGS="-static"
@@ -102,7 +100,6 @@ jobs:
           LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
-          RANLIB=${TOOLCHAIN}/bin/unknown-unknown-cosmo-ranlib
           CFLAGS="-static" \
           CXXFLAGS="-static" \
           LDFLAGS="-static"
@@ -143,7 +140,6 @@ jobs:
             -DCMAKE_LINKER="${TOOLCHAIN}/bin/${{matrix.target}}-ld" \
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/${{matrix.target}}-objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/${{matrix.target}}-ar" \
-            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/unknown-unknown-cosmo-ranlib" \
             -DCMAKE_C_FLAGS="-static" \
             -DCMAKE_CXX_FLAGS="-static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
