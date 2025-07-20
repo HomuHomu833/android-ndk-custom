@@ -1,11 +1,11 @@
 # Android NDK Custom
 
-A custom-built Android NDK that replaces the default toolchain with a modified LLVM using **musl libc from [Zig](https://ziglang.org)** and **[Cosmopolitan libc](https://justine.lol/cosmopolitan)**. Inspired by [Zongou's build system](https://github.com/zongou/build/tree/main/.github/workflows).
+A custom-built Android NDK that replaces the default toolchain with a modified LLVM using **musl libc from [Zig](https://ziglang.org)** and **[Cosmopolitan](https://justine.lol/cosmopolitan)**. Inspired by [Zongou's build system](https://github.com/zongou/build/tree/main/.github/workflows).
 
 ## Features
 
 - **Custom LLVM** build, sourced from Google's repositories.
-- Built using Zig as LLVM and Cosmopolitan GCC.
+- Built using Zig, Cosmopolitan and Android NDK itself.
 - **Additional Tools Built**:
   - **Shaderc**
   - **Python**
@@ -16,11 +16,14 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
 
 - **Zig-based Environment**
   - **Platforms**:
+    - Windows **(Planned)**
     - Linux
     - Android
+    - NetBSD **(Planned)**
+    - FreeBSD **(Planned)**
   - **Architectures**:
     - **X**: `x86`, `x86_64`
-    - **ARM**: `arm`, `armeb`, `aarch64`, `aarch64_be`
+    - **ARM**: `armhf`, `armeb`, `aarch64`, `aarch64_be`
     - **RISC-V**: `riscv32`, `riscv64`
     - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
     - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
@@ -38,6 +41,14 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
   - **Architectures**:
     - **X**: `x86_64`
     - **ARM**: `aarch64`
+   
+- **Bionic Environment** **(Planned)**
+  - **Platforms**:
+    - Android
+  - **Architectures**:
+    - **X**: `x86`, `x86_64`
+    - **ARM**: `armv7a`, `aarch64`
+    - **Other**: `riscv64`, `mips`**(?)**, `mips64`**(?)**
 
 ## Usage
 
