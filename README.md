@@ -42,13 +42,12 @@ A custom-built Android NDK that replaces the default toolchain with a modified L
     - **X**: `x86_64`
     - **ARM**: `aarch64`
    
-- **Bionic Environment** **(Planned)**
+- **Bionic Environment**
   - **Platforms**:
     - Android
   - **Architectures**:
     - **X**: `x86`, `x86_64`
     - **ARM**: `armv7a`, `aarch64`
-    - **Other**: `riscv64`, `mips`**(?)**, `mips64`**(?)**
 
 ## Usage
 
