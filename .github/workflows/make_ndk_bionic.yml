@@ -66,8 +66,8 @@ jobs:
           cp ${{github.workspace}}/config/config.guess build-aux
           ./configure \
           --prefix="${PWD}/build" \
-          --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           --disable-posix-spawn \
           CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
           CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
@@ -93,8 +93,8 @@ jobs:
           cp ${{github.workspace}}/config/config.guess config
           ./configure \
           --prefix="${PWD}/build" \
-          --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           --disable-nls \
           CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
           CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
