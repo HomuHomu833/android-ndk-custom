@@ -1,0 +1,366 @@
+name: Make NDK (Bionic libc)
+run-name: Make NDK-r${{inputs.version}} Bionic
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "NDK Release version:"
+        default: '29-beta2'
+        required: true
+        type: string
+
+jobs:
+  make:
+    name: Make NDK Bionic
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_PLATFORM: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [armv7a-linux-androideabi, aarch64-linux-android, i686-linux-android, x86_64-linux-android]
+    steps:
+      - name: Checkout android-ndk-custom
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}
+
+      - name: Get Official NDK
+        run: |
+          echo "Downloading NDK r${{inputs.version}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
+          unzip -qq android-ndk.zip -d ${{ runner.temp }}
+
+      - name: Install Dependencies
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt update
+          sudo apt install -y ninja-build python3.11
+
+      - name: Build Extra Dependencies
+        run: |
+          if [ "${{ matrix.target }}" = "riscv64-linux-android" ]; then
+            ANDROID_PLATFORM=35
+          else
+            ANDROID_PLATFORM=${ANDROID_PLATFORM}
+          fi
+
+          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
+          TOOLCHAIN=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64
+          SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
+          PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
+          # MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
+          MAKE_VERSION=4.4
+          YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+          SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+
+          cd $HOME
+          # GNU Make
+          curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          mv make-$MAKE_VERSION make
+          cd make
+          cp ${{github.workspace}}/config/config.sub build-aux
+          cp ${{github.workspace}}/config/config.guess build-aux
+          ./configure \
+          --prefix="${PWD}/build" \
+          --build=${{ matrix.target }} \
+          --host=x86_64-linux-gnu \
+          --disable-posix-spawn \
+          CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
+          CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
+          AR=${TOOLCHAIN}/bin/llvm-ar \
+          RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
+          STRIP=${TOOLCHAIN}/bin/llvm-strip \
+          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static" \
+          LDFLAGS="-static" \
+          ac_cv_lib_elf_elf_begin=no \
+          am_cv_func_iconv=no \
+          ac_cv_func_pselect=no
+          make -j"$(nproc --all)" install
+
+          cd $HOME
+          # YASM
+          curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_$YASM_VERSION.orig.tar.gz | gzip -d | tar -x
+          mv yasm-$YASM_VERSION yasm
+          cd yasm
+          cp ${{github.workspace}}/config/config.sub config
+          cp ${{github.workspace}}/config/config.guess config
+          ./configure \
+          --prefix="${PWD}/build" \
+          --build=${{ matrix.target }} \
+          --host=x86_64-linux-gnu \
+          --disable-nls \
+          CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
+          CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
+          AR=${TOOLCHAIN}/bin/llvm-ar \
+          RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
+          STRIP=${TOOLCHAIN}/bin/llvm-strip \
+          CFLAGS="-fstack-protector-strong -static" \
+          CXXFLAGS="-fstack-protector-strong -static" \
+          LDFLAGS="-static"
+          make -j"$(nproc --all)" install
+
+          # SPIRV-Tools and shaderc
+          mkdir -p "$HOME/shaderc"
+          cd "$HOME/shaderc"
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+archive/$SHADERC_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party"
+          mkdir -p spirv-tools
+          cd spirv-tools
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+archive/$SPIRV_TOOLS_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party/spirv-tools/external"
+          mkdir -p spirv-headers
+          cd spirv-headers
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+archive/$SPIRV_HEADERS_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party"
+          mkdir -p glslang
+          cd glslang
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
+          sed -i '/^elseif(UNIX)$/,/^[[:space:]]*endif()$/d' StandAlone/CMakeLists.txt
+          cd "$HOME/shaderc/third_party/spirv-tools"
+          git init --quiet
+          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
+          rm -rf .git
+          cd "$HOME/shaderc"
+          git init --quiet
+          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
+          rm -rf .git
+          cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_C_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_CROSSCOMPILING=True \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang" \
+            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++" \
+            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang" \
+            -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
+            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/llvm-objcopy" \
+            -DCMAKE_AR="${TOOLCHAIN}/bin/llvm-ar" \
+            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/llvm-ranlib" \
+            -DCMAKE_STRIP="${TOOLCHAIN}/bin/llvm-strip" \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build "$HOME/shaderc/build" --target install
+
+          cd $HOME
+          # Python
+          curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
+          mv Python-3.11.4 python
+          cd python
+          mkdir build
+          cat <<EOF > config.site
+          ac_cv_file__dev_ptmx=no
+          ac_cv_file__dev_ptc=no
+          EOF
+          sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
+          sed -i '/Linux\*|GNU\*) .*/d' configure
+          sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
+          sed -i '/#include "pycore_pathconfig.h"/a \
+          PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
+          ./configure --prefix="${PWD}/build" \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          --disable-ipv6 \
+          --with-build-python \
+          CONFIG_SITE=config.site \
+          TOOLCHAIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64" \
+          TARGET="${{ matrix.target }}" \
+          API="${ANDROID_PLATFORM}" \
+          CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
+          AS=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
+          CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
+          READELF=${TOOLCHAIN}/bin/llvm-readelf \
+          AR=${TOOLCHAIN}/bin/llvm-ar \
+          RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
+          STRIP=${TOOLCHAIN}/bin/llvm-strip \
+          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
+          LD_LIBRARY_PATH="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{matrix.target}}" \
+          LDSHARED="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang -shared -fPIC" \
+          CFLAGS="-fstack-protector-strong -fPIC" \
+          CXXFLAGS="-fstack-protector-strong -fPIC" \
+          LDFLAGS="-fPIC"
+          make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
+          make install
+
+          # Manually strip binaries
+          for file in \
+              $HOME/make/build/bin/make \
+              $HOME/yasm/build/bin/yasm \
+              $HOME/yasm/build/bin/ytasm \
+              $HOME/yasm/build/bin/vsyasm \
+              $HOME/python/python
+          do
+              ${TOOLCHAIN}/bin/llvm-strip -s "$file"
+          done
+
+      - name: Get LLVM
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
+
+      - name: Make NDK Bionic
+        run: |
+          NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}"
+          NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
+
+          find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
+              bname="$(basename "${file}")"
+              if [ -f "${HOST_TOOLCHAIN}/bin/${bname}" ] && file "${file}" | grep -q 'ELF'; then
+                  echo "Replacing ${bname}"
+                  cp "${HOST_TOOLCHAIN}/bin/${bname}" "${file}"
+              elif file "${file}" | grep -q 'Bourne-Again shell script'; then
+                  echo "Replacing SheBang ${bname}"
+                  sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "${file}"
+              elif ! file "${file}" | grep -Eq 'Python script|Perl script|ASCII text'; then
+                  echo "Removing ${bname}"
+                  rm ${file}
+              fi
+          done
+
+          # Fix "Unknown host CPU architecture" in some architectures
+          sed -i -E '/case \$HOST_ARCH in/,/esac/ c\
+          case $HOST_ARCH in\
+            armv5te|armv6|armv6l|armv7|armv7l|armv8l) HOST_ARCH=arm;;\
+            armv8b) HOST_ARCH=arm_be;;\
+            aarch64) HOST_ARCH=arm64;;\
+            aarch64_be) HOST_ARCH=arm64_be;;\
+            loongarch64) HOST_ARCH=loong64;;\
+            i?86) HOST_ARCH=x86;;\
+            amd64) HOST_ARCH=x86_64;;\
+            arm64|x86_64|riscv32|riscv64|ppc|ppcle|ppc64|ppc64le|mips|mips64|s390x) HOST_ARCH=$HOST_ARCH;;\
+            *) echo "ERROR: Unknown host CPU architecture: $HOST_ARCH"; exit 1;;\
+          esac' "${NDK}/build/tools/ndk_bin_common.sh"
+
+          # Remove unused resource
+          rm -rf "${NDK_TOOLCHAIN}/python3"
+          rm -rf "${NDK_TOOLCHAIN}/musl"
+          rm -rf "${NDK}/prebuilt/linux_x86-64/bin/*asm"
+          find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
+          find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
+
+          # Copy compiled binaries
+          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
+          cp $HOME/make/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
+          cp $HOME/yasm/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
+          cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
+          cp $HOME/yasm/build/bin/ytasm ${NDK}/prebuilt/linux-x86_64/bin
+          cp $HOME/yasm/build/bin/vsyasm ${NDK}/prebuilt/linux-x86_64/bin
+          cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/linux-x86_64/lib
+          mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
+          mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
+          cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
+          cp -R $HOME/python/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
+          cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
+          chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
+          find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
+             bname="$(basename "${file}")"
+
+             echo "Replacing ${bname}"
+             cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
+          done
+
+          if [[ "${{ matrix.target }}" != "x86_64-linux-android" ]]; then
+            ARCH="${{ matrix.target }}"
+            ARCH="${ARCH%%-*}"
+
+            case "$ARCH" in
+                aarch64)     ARCH="arm64" ;;
+                armv7a)     ARCH="arm" ;;
+                i686)     ARCH="x86" ;;
+            esac
+
+            mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
+            mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/linux-${ARCH}"
+            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/linux-${ARCH}"
+
+            cd ${NDK}/toolchains/llvm/prebuilt
+            ln -s linux-${ARCH} linux-x86_64
+            cd ${NDK}/prebuilt
+            ln -s linux-${ARCH} linux-x86_64
+            cd ${NDK}/shader-tools
+            ln -s linux-${ARCH} linux-x86_64
+
+            for file in \
+                ${NDK}/ndk-gdb \
+                ${NDK}/ndk-lldb \
+                ${NDK}/ndk-stack \
+                ${NDK}/ndk-which
+            do
+                sed -i "s|linux-x86_64|linux-${ARCH}|g" $file
+            done
+          fi
+
+          sed -i -E '/^if\(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux\)$/,/^endif\(\)$/c\
+          if(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux OR CMAKE_HOST_SYSTEM_NAME STREQUAL Android)\
+              execute_process(\
+                  COMMAND uname -m\
+                  OUTPUT_VARIABLE HOST_ARCH\
+                  OUTPUT_STRIP_TRAILING_WHITESPACE\
+              )\
+          \
+              # Normalize uname -m to Android NDK host tags\
+              if(HOST_ARCH STREQUAL "aarch64")\
+                  set(ARCH "arm64")\
+              elseif(HOST_ARCH MATCHES "^armv[0-9]+l$")\
+                  set(ARCH "arm")\
+              elseif(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")\
+                  set(ARCH "arm64")\
+              elseif(HOST_ARCH STREQUAL "aarch64_be")\
+                  set(ARCH "arm64_be")\
+              elseif(HOST_ARCH STREQUAL "loongarch64")\
+                  set(ARCH "loong64")\
+              elseif(HOST_ARCH STREQUAL "riscv64")\
+                  set(ARCH "riscv64")\
+              elseif(HOST_ARCH STREQUAL "powerpc64le")\
+                  set(ARCH "ppc64le")\
+              elseif(HOST_ARCH STREQUAL "powerpc64")\
+                  set(ARCH "ppc64")\
+              elseif(HOST_ARCH STREQUAL "powerpcle")\
+                  set(ARCH "ppcle")\
+              elseif(HOST_ARCH STREQUAL "powerpc")\
+                  set(ARCH "ppc")\
+              elseif(HOST_ARCH STREQUAL "amd64")\
+                  set(ARCH "x86_64")\
+              elseif(HOST_ARCH MATCHES "^i[3-6]86$")\
+                  set(ARCH "x86")\
+              else()\
+                  set(ARCH "${HOST_ARCH}")\
+              endif()\
+          \
+              set(ANDROID_HOST_TAG "linux-${ARCH}")\
+          \
+          elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)\
+              set(ANDROID_HOST_TAG "darwin-x86_64")\
+          elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
+              set(ANDROID_HOST_TAG "windows-x86_64")\
+          endif()' "${NDK}/build/cmake/android.toolchain.cmake" "${NDK}/build/cmake/android-legacy.toolchain.cmake"
+
+      - name: Archive
+        run: |
+          cd ${{ runner.temp }}
+          tar -cf - android-ndk-r${{inputs.version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
+          mv android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
+
+      - name: Release
+        uses: ncipollo/release-action@v1.16.0
+        with:
+          tag: "r${{inputs.version}}"
+          artifacts: android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
+          allowUpdates: true
+          replacesArtifacts: true
+          body: ''
