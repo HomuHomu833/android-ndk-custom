@@ -58,7 +58,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt update
-          sudo apt install -y ninja-build python3.12
+          sudo apt install -y ninja-build python3.11
 
       - name: Build Extra Dependencies
         run: |
