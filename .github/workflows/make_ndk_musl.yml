@@ -58,18 +58,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt update
-          sudo apt install -y ninja-build python3.12 \
-              build-essential libssl-dev libbz2-dev libdb-dev libgdbm-dev \
-              liblzma-dev libsqlite3-dev libreadline-dev libncurses5-dev \
-              libncursesw5-dev tk-dev uuid-dev libffi-dev \
-              libxml2-dev libxmlsec1-dev zlib1g-dev libcrypt-dev \
-              libexpat1-dev libc6-dev-i386 libbluetooth-dev \
-              libopus-dev libogg-dev libvorbis-dev libpulse-dev \
-              libdb5.3-dev libnsl-dev gawk cmake
-          sudo curl -LkSs -o /tmp/qemu-user-binfmt.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-binfmt_10.0.2+ds-1_amd64.deb
-          sudo curl -LkSs -o /tmp/qemu-user-static.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_10.0.2+ds-1_amd64.deb
-          sudo curl -LkSs -o /tmp/qemu-user.deb http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user_10.0.2+ds-1_amd64.deb
-          sudo apt install -y /tmp/*.deb
+          sudo apt install -y ninja-build python3.11
 
       - name: Build Extra Dependencies
         run: |
@@ -94,7 +83,7 @@ jobs:
           cp ${{github.workspace}}/config/config.guess build-aux
           ./configure \
           --prefix="${PWD}/build" \
-          --build=${{ matrix.target }} \
+          --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
           CC=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
@@ -129,7 +118,7 @@ jobs:
           cp ${{github.workspace}}/config/config.guess config
           ./configure \
           --prefix="${PWD}/build" \
-          --build=${{ matrix.target }} \
+          --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
           --disable-nls \
           CC=${TOOLCHAIN}/bin/cc \
@@ -191,52 +180,49 @@ jobs:
 
           cd $HOME
           # Python
-          curl -LkSs https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz | xz -d | tar -x
-          mv Python-3.12.3 python
+          curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
+          mv Python-3.11.4 python
           cd python
-          sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
-          sed -i '/Linux\*|GNU\*) .*/d' configure
-          sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
-          sed -i '/#include "pycore_pathconfig.h"/a \
-          PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
+          mkdir build
+          cat <<EOF > config.site
+          ac_cv_file__dev_ptmx=no
+          ac_cv_file__dev_ptc=no
+          ac_cv_func_setgid=no
+          ac_cv_func_setresgid=no
+          ac_cv_func_setresuid=no
+          ac_cv_func_setreuid=no
+          ac_cv_func_setregid=no
+          ac_cv_func_setuid=no
+          ac_cv_func_seteuid=no
+          ac_cv_func_setfsgid=no
+          ac_cv_func_setfsuid=no
+          ac_cv_func_setegid=no
+          ac_cv_func_getloadavg=no
+          ac_cv_have_decl_getloadavg=no
+          EOF
+          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          MODULE_BUILDTYPE=static
+          ' configure
           ./configure --prefix="${PWD}/build" \
-          --build=${{ matrix.target }} \
-          --host=x86_64-linux-gnu \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
           --disable-shared \
           --disable-ipv6 \
-          --without-pymalloc \
-          --enable-optimizations \
-          --with-pkg-config=no \
-          --with-readline=no \
-          --with-ensurepip=no \
-          --with-openssl-rpath=no \
-          --with-ssl-default-suites=python \
           --with-build-python \
+          CONFIG_SITE=config.site \
+          TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
+          AS=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
+          LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          LDFLAGS="-static" \
-          ac_cv_func_dlopen=no \
-          ac_cv_file__dev_ptmx=no \
-          ac_cv_file__dev_ptc=no \
-          ac_cv_func_setgid=no \
-          ac_cv_func_setresgid=no \
-          ac_cv_func_setresuid=no \
-          ac_cv_func_setreuid=no \
-          ac_cv_func_setregid=no \
-          ac_cv_func_setuid=no \
-          ac_cv_func_seteuid=no \
-          ac_cv_func_setfsgid=no \
-          ac_cv_func_setfsuid=no \
-          ac_cv_func_setegid=no \
-          ac_cv_func_getloadavg=no \
-          ac_cv_have_decl_getloadavg=no
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
