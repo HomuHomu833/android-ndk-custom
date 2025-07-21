@@ -1,6 +1,6 @@
 # Android NDK Custom
 
-A custom-built Android NDK that replaces the default toolchain with a modified LLVM using **musl libc from [Zig](https://ziglang.org)** and **[Cosmopolitan](https://justine.lol/cosmopolitan)**. Inspired by [Zongou's build system](https://github.com/zongou/build/tree/main/.github/workflows).
+A custom-built Android NDK that replaces the default toolchain with a rebuilt LLVM and NDK binares using **musl libc from [Zig](https://ziglang.org)**, **[Cosmopolitan](https://justine.lol/cosmopolitan)** and **Bionic (Android NDK itself)**. Inspired by [Zongou's build system](https://github.com/zongou/build/tree/main/.github/workflows).
 
 ## Features
 
