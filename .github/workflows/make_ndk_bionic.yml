@@ -164,11 +164,9 @@ jobs:
           ac_cv_file__dev_ptmx=no
           ac_cv_file__dev_ptc=no
           EOF
-          sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
-          sed -i '/Linux\*|GNU\*) .*/d' configure
-          sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
-          sed -i '/#include "pycore_pathconfig.h"/a \
-          PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
+          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          MODULE_BUILDTYPE=static
+          ' configure
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
