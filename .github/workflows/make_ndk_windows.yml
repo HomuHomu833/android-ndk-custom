@@ -78,7 +78,11 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -static" \
-          CXXFLAGS="-fstack-protector-strong -static"
+          CXXFLAGS="-fstack-protector-strong -static" \
+          gl_cv_fs_mounted_list=no \
+          ac_cv_func_getmntent=no \
+          ac_cv_func_getmntinfo=no \
+          ac_cv_func_getfsstat=no
           make -j"$(nproc --all)"
           make install
 
