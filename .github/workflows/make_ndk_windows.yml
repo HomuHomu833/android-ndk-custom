@@ -44,7 +44,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt update
-          sudo apt install -y autoconf automake autopoint bison flex gperf m4 texinfo texlive gawk cmake python3.12
+          sudo apt install -y autoconf automake autopoint bison flex gperf m4 texinfo texlive gawk cmake python3.11
 
       - name: Build Extra Dependencies
         run: |
@@ -59,6 +59,29 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+
+          cd $HOME
+          # GNU Core Utilities
+          curl -LkSs -o coreutils.zip https://github.com/coreutils/coreutils/archive/refs/tags/v9.4.tar.gz | gzip -d | tar -x
+          mv coreutils-9.4 coreutils
+          cd coreutils
+          ./bootstrap
+          ./configure --prefix="${PWD}/build" \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          CC=${TOOLCHAIN}/bin/cc \
+          AS=${TOOLCHAIN}/bin/cc \
+          CXX=${TOOLCHAIN}/bin/c++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
+          AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
+          STRIP=${TOOLCHAIN}/bin/strip \
+          CFLAGS="-fstack-protector-strong -static" \
+          CXXFLAGS="-fstack-protector-strong -static"
+          make -j"$(nproc --all)"
+          make install
 
           cd $HOME
           # GNU Make
@@ -154,43 +177,39 @@ jobs:
 
           cd $HOME
           # Python
-          curl -LkSs https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz | xz -d | tar -x
-          mv Python-3.12.3 python
+          curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
+          mv Python-3.11.4 python
           cd python
-          sed -i '/case $host_cpu/,/esac/ c MODULE_BUILDTYPE=static' configure
-          sed -i '/Linux\*|GNU\*) .*/d' configure
-          sed -i '/Linux\*|GNU\*|QNX\*|VxWorks\*|Haiku\*)/,/;;/d' configure
-          sed -i '/#include "pycore_pathconfig.h"/a \
-          PyObject* _Py_Get_Getpath_CodeObject(void) { Py_RETURN_NONE; }' Modules/getpath_noop.c
+          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          MODULE_BUILDTYPE=static
+          ' configure
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
           --disable-shared \
           --disable-ipv6 \
-          --without-pymalloc \
-          --enable-optimizations \
-          --with-pkg-config=no \
-          --with-readline=no \
-          --with-ensurepip=no \
-          --with-openssl-rpath=no \
-          --with-ssl-default-suites=python \
           --with-build-python \
+          TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
+          AS=${TOOLCHAIN}/bin/cc \
           CXX=${TOOLCHAIN}/bin/c++ \
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
+          LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
           CFLAGS="-fstack-protector-strong -static" \
-          CXXFLAGS="-fstack-protector-strong -static" \
-          LDFLAGS="-static"
+          CXXFLAGS="-fstack-protector-strong -static"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
           # Manually strip binaries
           for file in \
               $HOME/make/build/bin/make \
+              $HOME/coreutils/build/bin/echo \
+              $HOME/diffutils/build/bin/echo \
               $HOME/yasm/build/bin/yasm \
               $HOME/yasm/build/bin/ytasm \
               $HOME/yasm/build/bin/vsyasm \
