@@ -63,7 +63,7 @@ jobs:
           cd $HOME
           # GNU Core Utilities
           curl -LkSs https://github.com/coreutils/coreutils/archive/refs/tags/v9.4.tar.gz | gzip -d | tar -x
-          mv coreutils-9.4 coreutils4
+          mv coreutils-9.4 coreutils
           cd coreutils
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
