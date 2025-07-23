@@ -62,8 +62,7 @@ jobs:
 
           cd $HOME
           # GNU Core Utilities
-          curl -LkSs https://github.com/coreutils/coreutils/archive/refs/tags/v9.4.tar.gz | gzip -d | tar -x
-          mv coreutils-9.4 coreutils
+          git clone -q https://github.com/coreutils/coreutils -b v9.4
           cd coreutils
           ./bootstrap
           ./configure --prefix="${PWD}/build" \
