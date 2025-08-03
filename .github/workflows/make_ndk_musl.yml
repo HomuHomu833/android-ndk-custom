@@ -200,7 +200,7 @@ jobs:
           ac_cv_func_getloadavg=no
           ac_cv_have_decl_getloadavg=no
           EOF
-          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
           MODULE_BUILDTYPE=static
           ' configure
           ./configure --prefix="${PWD}/build" \
