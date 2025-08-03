@@ -209,6 +209,7 @@ jobs:
           --disable-shared \
           --disable-ipv6 \
           --with-build-python \
+          --without-ensurepip \
           CONFIG_SITE=config.site \
           TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
@@ -222,7 +223,8 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time"
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
