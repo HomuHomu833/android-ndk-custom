@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29-beta2'
+        default: '29-beta3'
         required: true
         type: string
 
@@ -164,14 +164,16 @@ jobs:
           ac_cv_file__dev_ptmx=no
           ac_cv_file__dev_ptc=no
           EOF
-          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
           MODULE_BUILDTYPE=static
           ' configure
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
+          --disable-shared \
           --disable-ipv6 \
           --with-build-python \
+          --without-ensurepip \
           CONFIG_SITE=config.site \
           TOOLCHAIN="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64" \
           TARGET="${{ matrix.target }}" \
@@ -187,9 +189,9 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
           LD_LIBRARY_PATH="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{matrix.target}}" \
           LDSHARED="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang -shared -fPIC" \
-          CFLAGS="-fstack-protector-strong -fPIC" \
-          CXXFLAGS="-fstack-protector-strong -fPIC" \
-          LDFLAGS="-fPIC"
+          CFLAGS="-fstack-protector-strong" \
+          CXXFLAGS="-fstack-protector-strong" \
+          _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 

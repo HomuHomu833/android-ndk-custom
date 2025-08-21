@@ -5,7 +5,7 @@ on:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29-beta2'
+        default: '29-beta3'
         required: true
         type: string
 
@@ -200,7 +200,7 @@ jobs:
           ac_cv_func_getloadavg=no
           ac_cv_have_decl_getloadavg=no
           EOF
-          sed '/^case \$host_cpu in #(/,/^esac$/c\
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
           MODULE_BUILDTYPE=static
           ' configure
           ./configure --prefix="${PWD}/build" \
@@ -209,6 +209,7 @@ jobs:
           --disable-shared \
           --disable-ipv6 \
           --with-build-python \
+          --without-ensurepip \
           CONFIG_SITE=config.site \
           TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
@@ -222,7 +223,8 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time"
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
@@ -294,7 +296,7 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
-          cp -R $HOME/python/build/lib/python3.12 ${NDK_TOOLCHAIN}/python3/lib
+          cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
           cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
           find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
