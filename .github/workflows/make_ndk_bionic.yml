@@ -103,7 +103,6 @@ jobs:
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
           CFLAGS="-fstack-protector-strong -static" \
           CXXFLAGS="-fstack-protector-strong -static" \
           LDFLAGS="-static"
