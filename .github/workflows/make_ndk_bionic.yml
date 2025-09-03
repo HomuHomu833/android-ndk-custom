@@ -103,7 +103,6 @@ jobs:
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
           CFLAGS="-fstack-protector-strong -static" \
           CXXFLAGS="-fstack-protector-strong -static" \
           LDFLAGS="-static"
@@ -188,7 +187,6 @@ jobs:
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
           LD_LIBRARY_PATH="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{matrix.target}}" \
           LDSHARED="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang -shared -fPIC" \
           CFLAGS="-fstack-protector-strong" \

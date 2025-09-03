@@ -18,29 +18,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, mips-linux-musleabihf, mips64-linux-muslabin32, mipsel-linux-musleabihf, mips64el-linux-muslabin32, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
+        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, thumb-linux-musleabi, thumb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, mips-linux-musleabi, mips-linux-musleabihf, mipsel-linux-musleabi, mipsel-linux-musleabihf, mips64-linux-muslabin32, mips64el-linux-muslabin32, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}
 
-      - name: Set Zig Version
-        id: zig_version
-        run: |
-          case "${{ matrix.target }}" in
-            arm-linux-musleabihf|armeb-linux-musleabihf|s390x-linux-musl)
-              echo "version=0.15.0-dev.137+db7db4802" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "version=0.15.0-dev.300+9e21ba12d" >> $GITHUB_OUTPUT
-              ;;
-          esac
-
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: "${{ steps.zig_version.outputs.version }}"
+          version: "0.16.0-dev.164+bc7955306"
           use-cache: false
 
       - name: Setup Zig Toolchain
@@ -265,8 +253,8 @@ jobs:
           # Fix "Unknown host CPU architecture" in some architectures
           sed -i -E '/case \$HOST_ARCH in/,/esac/ c\
           case $HOST_ARCH in\
-            armv5te|armv6|armv6l|armv7|armv7l|armv8l) HOST_ARCH=arm;;\
-            armv8b) HOST_ARCH=arm_be;;\
+            armv5te|armv5tel|armv6|armv6l|armv7|armv7l|armv8l) HOST_ARCH=arm;;\
+            armv7b|armv8b) HOST_ARCH=arm_be;;\
             aarch64) HOST_ARCH=arm64;;\
             aarch64_be) HOST_ARCH=arm64_be;;\
             loongarch64) HOST_ARCH=loong64;;\
@@ -318,6 +306,8 @@ jobs:
                 powerpc64)   ARCH="ppc64" ;;
                 powerpcle)   ARCH="ppcle" ;;
                 powerpc)     ARCH="ppc" ;;
+                thumb)       ARCH="arm" ;;
+                thumbeb)    ARCH="arm_be" ;;
             esac
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
@@ -354,6 +344,8 @@ jobs:
                   set(ARCH "arm64")\
               elseif(HOST_ARCH MATCHES "^armv[0-9]+l$")\
                   set(ARCH "arm")\
+              elseif(HOST_ARCH STREQUAL "armv7b" OR HOST_ARCH STREQUAL "armv8b")\
+                  set(ARCH "arm_be")\
               elseif(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")\
                   set(ARCH "arm64")\
               elseif(HOST_ARCH STREQUAL "aarch64_be")\

@@ -16,7 +16,6 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
 
 - **Zig-based Environment**
   - **Platforms**:
-    - Windows **(Planned)**
     - Linux
     - Android
     - NetBSD **(Planned)**
@@ -27,7 +26,7 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
     - **RISC-V**: `riscv32`, `riscv64`
     - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
     - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
-    - **Other**: `loongarch64`, `s390x`
+    - **Other**: `loongarch64`, `s390x`, `thumb`
 
 - **Cosmopolitan Environment**
   - **Platforms**:
