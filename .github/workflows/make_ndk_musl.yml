@@ -25,22 +25,10 @@ jobs:
         with:
           path: ${{github.workspace}}
 
-      - name: Set Zig Version
-        id: zig_version
-        run: |
-          case "${{ matrix.target }}" in
-            arm-linux-musleabihf|armeb-linux-musleabihf|s390x-linux-musl)
-              echo "version=0.15.0-dev.137+db7db4802" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "version=0.15.0-dev.300+9e21ba12d" >> $GITHUB_OUTPUT
-              ;;
-          esac
-
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: "${{ steps.zig_version.outputs.version }}"
+          version: "0.16.0-dev.164+bc7955306"
           use-cache: false
 
       - name: Setup Zig Toolchain
