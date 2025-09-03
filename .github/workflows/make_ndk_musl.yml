@@ -265,8 +265,8 @@ jobs:
           # Fix "Unknown host CPU architecture" in some architectures
           sed -i -E '/case \$HOST_ARCH in/,/esac/ c\
           case $HOST_ARCH in\
-            armv5te|armv6|armv6l|armv7|armv7l|armv8l) HOST_ARCH=arm;;\
-            armv8b) HOST_ARCH=arm_be;;\
+            armv5te|armv5tel|armv6|armv6l|armv7|armv7l|armv8l) HOST_ARCH=arm;;\
+            armv7b|armv8b) HOST_ARCH=arm_be;;\
             aarch64) HOST_ARCH=arm64;;\
             aarch64_be) HOST_ARCH=arm64_be;;\
             loongarch64) HOST_ARCH=loong64;;\
@@ -318,6 +318,8 @@ jobs:
                 powerpc64)   ARCH="ppc64" ;;
                 powerpcle)   ARCH="ppcle" ;;
                 powerpc)     ARCH="ppc" ;;
+                thumb)       ARCH="arm" ;;
+                thumbeb)    ARCH="arm_be" ;;
             esac
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
@@ -354,6 +356,8 @@ jobs:
                   set(ARCH "arm64")\
               elseif(HOST_ARCH MATCHES "^armv[0-9]+l$")\
                   set(ARCH "arm")\
+              elseif(HOST_ARCH STREQUAL "armv7b" OR HOST_ARCH STREQUAL "armv8b")\
+                  set(ARCH "arm_be")\
               elseif(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")\
                   set(ARCH "arm64")\
               elseif(HOST_ARCH STREQUAL "aarch64_be")\
