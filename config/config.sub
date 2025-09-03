@@ -1185,6 +1185,9 @@ case $cpu-$vendor in
 	strongarm-* | thumb-*)
 		cpu=arm
 		;;
+	thumbeb-*)
+		cpu=armeb
+		;;
 	tx39-*)
 		cpu=mipstx39
 		;;
