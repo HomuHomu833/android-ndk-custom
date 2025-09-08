@@ -20,6 +20,7 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
     - Android
     - NetBSD **(Planned)**
     - FreeBSD **(Planned)**
+    - OpenBSD **(Planned)**
   - **Architectures**:
     - **X**: `x86`, `x86_64`
     - **ARM**: `armhf`, `armeb`, `aarch64`, `aarch64_be`
