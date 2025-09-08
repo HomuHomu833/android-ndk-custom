@@ -59,7 +59,7 @@ jobs:
 
           cd $HOME
           # GNU Make
-          curl -LkSs https://ftp.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          curl -LkSs https://ftpmirror.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
           cp ${{github.workspace}}/config/config.sub build-aux
