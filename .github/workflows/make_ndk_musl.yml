@@ -64,7 +64,7 @@ jobs:
 
           cd $HOME
           # GNU Make
-          curl -LkSs https://ftpmirror.gnu.org/gnu/make/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          cat ${{github.workspace}}/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
           cp ${{github.workspace}}/config/config.sub build-aux
@@ -99,7 +99,7 @@ jobs:
 
           cd $HOME
           # YASM
-          curl -LkSs http://deb.debian.org/debian/pool/main/y/yasm/yasm_$YASM_VERSION.orig.tar.gz | gzip -d | tar -x
+          cat ${{github.workspace}}/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
           cp ${{github.workspace}}/config/config.sub config
