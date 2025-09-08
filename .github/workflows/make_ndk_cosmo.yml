@@ -288,6 +288,7 @@ jobs:
           cp llvm-ar llvm-dlltool
           cp lld ld.lld
           cp ld.lld ld
+          cd ${{github.workspace}}
 
           mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
