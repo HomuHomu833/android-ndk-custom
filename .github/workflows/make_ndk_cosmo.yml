@@ -282,12 +282,13 @@ jobs:
 
           cd ${NDK_TOOLCHAIN}/bin
           # idk why but these being symlinked causes issues
-          rm -rf llvm-readelf ld64.lld llvm-dlltool ld.lld ld
+          rm -rf llvm-readelf ld64.lld llvm-dlltool ld.lld ld clang++
           cp llvm-readobj llvm-readelf
           cp lld ld64.lld
           cp llvm-ar llvm-dlltool
           cp lld ld.lld
           cp ld.lld ld
+          cp clang clang++
           cd ${{github.workspace}}
 
           mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
