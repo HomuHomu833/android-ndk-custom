@@ -298,6 +298,8 @@ jobs:
              echo "Replacing ${bname}"
              cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
           done
+          
+          rm -rf "${NDK}/shader-tools/linux-x86_64/libc++.so"
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" && "${{ matrix.target }}" != "x86_64-linux-muslx32" ]]; then
             ARCH="${{ matrix.target }}"

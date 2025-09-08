@@ -278,6 +278,8 @@ jobs:
              cp "$HOME/extra-deps/${bname}" "${file}" || true
           done
 
+          rm -rf "${NDK}/shader-tools/linux-x86_64/libc++.so"
+
           mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal

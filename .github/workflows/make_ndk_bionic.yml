@@ -278,6 +278,8 @@ jobs:
              cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
           done
 
+          rm -rf "${NDK}/shader-tools/linux-x86_64/libc++.so"
+
           if [[ "${{ matrix.target }}" != "x86_64-linux-android" ]]; then
             ARCH="${{ matrix.target }}"
             ARCH="${ARCH%%-*}"
