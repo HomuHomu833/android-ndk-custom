@@ -238,6 +238,11 @@ jobs:
               fi
           done
 
+          sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "${NDK}/build/tools/ndk_bin_common.sh" "${NDK}/build/tools/make_standalone_toolchain.py" "${NDK}/build/ndk-build"
+          sed -i 's,#!/bin/bash,#!/bin/sh,' "${NDK}/prebuilt/linux-x86_64/bin/ndk-gdb" "${NDK}/prebuilt/linux-x86_64/bin/ndk-stack" "${NDK}/prebuilt/linux-x86_64/bin/ndk-which" "${NDK}/simpleperf/inferno.sh" "${NDK_TOOLCHAIN}/bin/lldb.sh"
+          cp ${{ github.workspace }}/patches/ndk/scripts/clang-tidy.sh ${NDK_TOOLCHAIN}/bin
+          cp ${{ github.workspace }}/patches/ndk/scripts/ndk-which ${NDK}/prebuilt/linux-x86_64/bin
+
           ## Fix: ERROR: Unknown host CPU architecture: aarch64
           sed -i 's/arm64)/arm64|aarch64)/' "${NDK}/build/tools/ndk_bin_common.sh"
 
