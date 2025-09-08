@@ -304,8 +304,7 @@ jobs:
           merge-multiple: true
 
       - name: Extract Unfixed NDK
-        shell: bash
-        run: tar -xvf android-ndk-r29-beta4-unfixed.tar
+        run: 7z x android-ndk-r${{inputs.version}}-unfixed.tar -aoa
 
       - name: Get Official NDK
         run: |
