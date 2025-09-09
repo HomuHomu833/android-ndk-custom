@@ -11,7 +11,7 @@ on:
 
 jobs:
   make:
-    name: Make NDK musl
+    name: Make NDK bsd
     runs-on: ubuntu-24.04
     env:
       ZIG_TARGET: ${{matrix.target}}
@@ -33,9 +33,7 @@ jobs:
           use-cache: false
 
       - name: Setup Zig Toolchain
-        run: |
-          git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
-          cp -R ${{github.workspace}}/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
+        run: git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
 
       - name: Get Official NDK
         run: |
