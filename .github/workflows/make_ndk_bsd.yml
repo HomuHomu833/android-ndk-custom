@@ -282,6 +282,11 @@ jobs:
             *) echo "ERROR: Unknown host CPU architecture: $HOST_ARCH"; exit 1;;\
           esac' "${NDK}/build/tools/ndk_bin_common.sh"
 
+          sed -i -e 's/FreeBsd/FreeBSD/' \
+               -e '/case \$HOST_OS in/a \
+          NetBSD) HOST_OS=netbsd;;\
+          OpenBSD) HOST_OS=openbsd;;' "${NDK}/build/tools/ndk_bin_common.sh"
+
           # Remove unused resource
           rm -rf "${NDK_TOOLCHAIN}/python3"
           rm -rf "${NDK_TOOLCHAIN}/musl"
