@@ -105,7 +105,7 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-fstack-protector-strong -fwrapv" \
-          CXXFLAGS="-fstack-protector-strong -fwrapv" \
+          CXXFLAGS="-fstack-protector-strong -fwrapv"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
