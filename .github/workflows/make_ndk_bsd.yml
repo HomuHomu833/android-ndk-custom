@@ -116,6 +116,7 @@ jobs:
           mkdir -p spirv-tools
           cd spirv-tools
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+archive/$SPIRV_TOOLS_HASH.tar.gz" | tar -xz
+          sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' CMakeLists.txt
           cd "$HOME/shaderc/third_party/spirv-tools/external"
           mkdir -p spirv-headers
           cd spirv-headers
