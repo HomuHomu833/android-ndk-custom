@@ -194,6 +194,31 @@ jobs:
           CFLAGS="-fstack-protector-strong -fsanitize=undefined" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
+          sed -i '/ac_sys_system=WASI/{ 
+          n
+          a\
+              *-*-freebsd*)\
+                  ac_sys_system=FreeBSD\
+                  ;;\
+              *-*-netbsd*)\
+                  ac_sys_system=NetBSD\
+                  ;;\
+              *-*-openbsd*)\
+                  ac_sys_system=OpenBSD\
+                  ;;
+          }' configure
+          sed -i '/wasm32-.*| wasm64-.*)/,/;;/ {
+              /;;/ a\
+          *-*-freebsd*)\
+              _host_cpu=$host_cpu\
+              ;;\
+          *-*-netbsd*)\
+              _host_cpu=$host_cpu\
+              ;;\
+          *-*-openbsd*)\
+              _host_cpu=$host_cpu\
+              ;;
+          }' configure
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
@@ -211,7 +236,7 @@ jobs:
       - name: Get LLVM
         run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
 
-      - name: Make NDK musl
+      - name: Make NDK BSD
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}"
