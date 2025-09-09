@@ -143,8 +143,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fstack-protector-strong -fsanitize=undefined" \
-            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fsanitize=undefined" \
+            -DCMAKE_C_FLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
+            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=$( \
               field=$(echo "$ZIG_TARGET" | cut -d- -f2); \
@@ -196,8 +196,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fstack-protector-strong -fsanitize=undefined" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined" \
+          CFLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
