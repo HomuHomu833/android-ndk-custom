@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # arm-freebsd-eabihf
-        target: [aarch64-freebsd-none, powerpc64-freebsd-none, powerpc64le-freebsd-none, riscv64-freebsd-none, x86_64-freebsd-none, aarch64-netbsd-none, aarch64_be-netbsd-none, arm-netbsd-eabi, arm-netbsd-eabihf, armeb-netbsd-eabi, armeb-netbsd-eabihf, mips-netbsd-eabi, mips-netbsd-eabihf, mipsel-netbsd-eabi, mipsel-netbsd-eabihf, powerpc-netbsd-eabi, powerpc-netbsd-eabihf, x86-netbsd-none, x86_64-netbsd-none]
+        # arm-freebsd-eabihf # aarch64-freebsd-none, powerpc64-freebsd-none, powerpc64le-freebsd-none, riscv64-freebsd-none, aarch64-netbsd-none, aarch64_be-netbsd-none, arm-netbsd-eabi, arm-netbsd-eabihf, armeb-netbsd-eabi, armeb-netbsd-eabihf, mips-netbsd-eabi, mips-netbsd-eabihf, mipsel-netbsd-eabi, mipsel-netbsd-eabihf, powerpc-netbsd-eabi, powerpc-netbsd-eabihf, x86-netbsd-none, 
+        target: [x86_64-freebsd-none, x86_64-netbsd-none]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
