@@ -17,7 +17,6 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
 - **Zig-based Environment**
   - **Platforms**:
     - Linux
-    - macOS **(Planned)**
     - Android
     - NetBSD
     - FreeBSD
