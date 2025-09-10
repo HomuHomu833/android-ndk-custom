@@ -18,8 +18,8 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
   - **Platforms**:
     - Linux
     - Android
-    - NetBSD **(Planned)**
-    - FreeBSD **(Planned)**
+    - NetBSD
+    - FreeBSD
     - OpenBSD **(Planned)**
   - **Architectures**:
     - **X**: `x86`, `x86_64`
