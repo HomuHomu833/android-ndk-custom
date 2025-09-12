@@ -1,11 +1,16 @@
 name: Make NDK (Cosmopolitan Libc)
-run-name: Make NDK-r${{inputs.version}} cosmo
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} cosmo
 on:
   workflow_dispatch:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29-beta4'
+        default: '29'
+        required: true
+        type: string
+      revision:
+        description: "NDK Release revision:"
+        default: '-beta4'
         required: true
         type: string
 
@@ -40,17 +45,17 @@ jobs:
 
       - name: Get Official NDK
         run: |
-          echo "Downloading NDK r${{inputs.version}}..."
-          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
+          echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux.zip"
           unzip -qq android-ndk.zip -d ${{ runner.temp }}
-      
+
       - name: Install Dependencies
         run: sudo apt update && sudo apt install -y ninja-build cmake qemu-user-static
 
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN="${{ runner.temp }}/cosmocc-4.0.2"
-          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
+          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
           # MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
@@ -220,13 +225,13 @@ jobs:
 
       - name: Get NDK and LLVM
         run: |
-          curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux.zip >ndk.zip && unzip -q ndk.zip
+          curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}${{inputs.revision}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |
-          NDK="${PWD}/android-ndk-r${{inputs.version}}"
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-ape"
+          NDK="${PWD}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-ape"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
@@ -296,12 +301,12 @@ jobs:
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
 
       - name: Archive
-        run: tar -c android-ndk-r${{inputs.version}} >android-ndk-r${{inputs.version}}-unfixed.tar
+        run: tar -c android-ndk-r${{inputs.version}}${{inputs.revision}} >android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
 
       - uses: actions/upload-artifact@v4
         with:
-          name: android-ndk-r${{inputs.version}}-unfixed
-          path: android-ndk-r${{inputs.version}}-unfixed.tar
+          name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
+          path: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
 
   windows_fix:
     needs: make
@@ -313,16 +318,16 @@ jobs:
       - name: Get Unfixed NDK
         uses: actions/download-artifact@v4
         with:
-          name: android-ndk-r${{inputs.version}}-unfixed
+          name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
           merge-multiple: true
 
       - name: Extract Unfixed NDK
-        run: 7z x android-ndk-r${{inputs.version}}-unfixed.tar -aoa
+        run: 7z x android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar -aoa
 
       - name: Get Official NDK
         run: |
-          echo "Downloading NDK r${{inputs.version}}..."
-          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-windows.zip"
+          echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows.zip"
           & "C:\Program Files\Git\usr\bin\unzip.exe" -qq android-ndk.zip -d ${{ runner.temp }}
 
       - name: Fix Links
@@ -334,9 +339,9 @@ jobs:
               return & "$fileExePath" $FilePath
           }
 
-          $NDK = "$PWD\android-ndk-r${{inputs.version}}"
+          $NDK = "$PWD\android-ndk-r${{inputs.version}}${{inputs.revision}}"
           $NDK_TOOLCHAIN = "$NDK\toolchains\llvm\prebuilt\cosmo-universal"
-          $MajorVersion = ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\clang.exe --version | Select-String -Pattern 'clang version (\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }
+          $MajorVersion = ${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\toolchains\llvm\prebuilt\windows-x86_64\bin\clang.exe --version | Select-String -Pattern 'clang version (\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }
 
           foreach ($file in Get-ChildItem -Path "$NDK_TOOLCHAIN\bin" -File) {
               $bname = $file.Name
@@ -367,8 +372,8 @@ jobs:
               }
               elseif ($fileType -match "a sh script") {
                   Write-Host "Replacing Shell Script $bname"
-                  Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name) -Destination $file.FullName -Force
-                  Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name).cmd" -Destination "$($file.FullName).cmd" -Force 
+                  Copy-Item -Path ${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name) -Destination $file.FullName -Force
+                  Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\toolchains\llvm\prebuilt\windows-x86_64\bin\$($file.Name).cmd" -Destination "$($file.FullName).cmd" -Force 
               }
           }
 
@@ -384,18 +389,18 @@ jobs:
 
           Write-Host "Running Extra Fixes..."
           Remove-Item "$NDK\ndk-build"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-build.cmd" -Destination "$NDK\ndk-build.cmd" -Force 
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\ndk-build.cmd" -Destination "$NDK\ndk-build.cmd" -Force 
           Remove-Item "$NDK\ndk-gdb"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-gdb.cmd" -Destination "$NDK\ndk-gdb.cmd" -Force 
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\ndk-gdb.cmd" -Destination "$NDK\ndk-gdb.cmd" -Force 
           Remove-Item "$NDK\ndk-lldb"
           Remove-Item "$NDK\ndk-stack"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-stack.cmd" -Destination "$NDK\ndk-stack.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\ndk-stack.cmd" -Destination "$NDK\ndk-stack.cmd" -Force
           Remove-Item "$NDK\ndk-which"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\ndk-which.cmd" -Destination "$NDK\ndk-which.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\ndk-which.cmd" -Destination "$NDK\ndk-which.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\prebuilt\windows-x86_64\bin\ndk-gdb.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-gdb.cmd" -Force
           Remove-Item "$NDK\prebuilt\cosmo-universal\bin\ndk-stack"
-          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}\prebuilt\windows-x86_64\bin\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
+          Copy-Item -Path "${{ runner.temp }}\android-ndk-r${{inputs.version}}${{inputs.revision}}\prebuilt\windows-x86_64\bin\ndk-stack.cmd" -Destination "$NDK\prebuilt\cosmo-universal\bin\ndk-stack.cmd" -Force
           Remove-Item "$NDK_TOOLCHAIN\bin\clang-$MajorVersion.exe"
           Remove-Item "$NDK_TOOLCHAIN\bin\ld64.lld.exe"
           Remove-Item "$NDK_TOOLCHAIN\bin\lld-link.exe"
@@ -418,13 +423,13 @@ jobs:
           Rename-Item -Path "cosmo-universal" -NewName "windows-x86_64"
 
       - name: Archive Fixed NDK
-        run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}-windows-ape.7z android-ndk-r${{inputs.version}}
+        run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
 
       - name: Upload Fixed NDK
         uses: actions/upload-artifact@v4
         with:
-          name: android-ndk-r${{inputs.version}}-windows-ape
-          path: android-ndk-r${{inputs.version}}-windows-ape.7z
+          name: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape
+          path: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z
 
   unix_fix:
     needs: make
@@ -434,15 +439,15 @@ jobs:
       - name: Get Unfixed NDK
         uses: actions/download-artifact@v4
         with:
-          name: android-ndk-r${{inputs.version}}-unfixed
+          name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
           merge-multiple: true
 
       - name: Extract Unfixed NDK
-        run: tar -xf android-ndk-r${{inputs.version}}-unfixed.tar
+        run: tar -xf android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
 
       - name: Fix Links
         run: |
-          NDK="${PWD}/android-ndk-r${{inputs.version}}"
+          NDK="${PWD}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/cosmo-universal"
 
           cd ${NDK}/toolchains/llvm/prebuilt
@@ -467,13 +472,13 @@ jobs:
           ln -s cosmo-universal darwin-arm64
 
       - name: Archive Fixed NDK
-        run: tar -cf - android-ndk-r${{inputs.version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}-unix-ape.tar.xz
+        run: tar -cf - android-ndk-r${{inputs.version}}${{inputs.revision}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape.tar.xz
 
       - name: Upload Fixed NDK
         uses: actions/upload-artifact@v4
         with:
-          name: android-ndk-r${{inputs.version}}-unix-ape
-          path: android-ndk-r${{inputs.version}}-unix-ape.tar.xz
+          name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape
+          path: android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape.tar.xz
 
   release:
     needs: [unix_fix, windows_fix]
@@ -485,7 +490,7 @@ jobs:
     steps:
     - uses: geekyeggo/delete-artifact@v5.1.0
       with:
-        name: android-ndk-r${{inputs.version}}-unfixed
+        name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
 
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -496,7 +501,7 @@ jobs:
       uses: ncipollo/release-action@v1.16.0
       with:
         tag: "r${{inputs.version}}"
-        artifacts: android-ndk-r${{inputs.version}}*
+        artifacts: android-ndk-r${{inputs.version}}${{inputs.revision}}*
         allowUpdates: true
         replacesArtifacts: true
         body: ''

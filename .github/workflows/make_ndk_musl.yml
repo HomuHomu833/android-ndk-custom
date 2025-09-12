@@ -1,11 +1,16 @@
 name: Make NDK (musl libc)
-run-name: Make NDK-r${{inputs.version}} musl
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} musl
 on:
   workflow_dispatch:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29-beta4'
+        default: '29'
+        required: true
+        type: string
+      revision:
+        description: "NDK Release revision:"
+        default: '-beta4'
         required: true
         type: string
 
@@ -39,8 +44,8 @@ jobs:
 
       - name: Get Official NDK
         run: |
-          echo "Downloading NDK r${{inputs.version}}..."
-          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}-linux.zip"
+          echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux.zip"
           unzip -qq android-ndk.zip -d ${{ runner.temp }}
 
       - name: Install Dependencies
@@ -52,7 +57,7 @@ jobs:
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
-          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
+          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
           # MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
@@ -229,12 +234,12 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}${{inputs.revision}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK musl
         run: |
-          NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}"
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}-${{matrix.target}}"
+          NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
@@ -389,14 +394,14 @@ jobs:
       - name: Archive
         run: |
           cd ${{ runner.temp }}
-          tar -cf - android-ndk-r${{inputs.version}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
-          mv android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
+          tar -cf - android-ndk-r${{inputs.version}}${{inputs.revision}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz
+          mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
 
       - name: Release
         uses: ncipollo/release-action@v1.16.0
         with:
           tag: "r${{inputs.version}}"
-          artifacts: android-ndk-r${{inputs.version}}-${{matrix.target}}.tar.xz
+          artifacts: android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz
           allowUpdates: true
           replacesArtifacts: true
           body: ''
