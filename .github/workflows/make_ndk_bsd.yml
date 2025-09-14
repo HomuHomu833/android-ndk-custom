@@ -399,6 +399,7 @@ jobs:
       - name: Release
         uses: ncipollo/release-action@v1.16.0
         with:
+          name: "r${{inputs.version}}${{inputs.revision}}"
           tag: "r${{inputs.version}}"
           artifacts: android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz
           allowUpdates: true
