@@ -230,6 +230,7 @@ jobs:
               last=${field: -3};
               echo "$(tr '[:lower:]' '[:upper:]' <<<"$first")$middle$(tr '[:lower:]' '[:upper:]' <<<"$last")"
           )
+          HOST_NAME_LOWER="${HOST_NAME,,}"
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
               bname="$(basename "${file}")"
@@ -317,16 +318,16 @@ jobs:
                 thumbeb)    ARCH="arm_be" ;;
             esac
 
-            mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${HOST_NAME}-${ARCH}"
-            mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${HOST_NAME}-${ARCH}"
-            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/${HOST_NAME}-${ARCH}"
+            mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/${HOST_NAME_LOWER}-${ARCH}"
+            mv "${NDK}/toolchains/llvm/prebuilt/linux-x86_64" "${NDK}/toolchains/llvm/prebuilt/${HOST_NAME_LOWER}-${ARCH}"
+            mv "${NDK}/shader-tools/linux-x86_64" "${NDK}/shader-tools/${HOST_NAME_LOWER}-${ARCH}"
 
             cd ${NDK}/toolchains/llvm/prebuilt
-            ln -s ${HOST_NAME}-${ARCH} linux-x86_64
+            ln -s ${HOST_NAME_LOWER}-${ARCH} linux-x86_64
             cd ${NDK}/prebuilt
-            ln -s ${HOST_NAME}-${ARCH} linux-x86_64
+            ln -s ${HOST_NAME_LOWER}-${ARCH} linux-x86_64
             cd ${NDK}/shader-tools
-            ln -s ${HOST_NAME}-${ARCH} linux-x86_64
+            ln -s ${HOST_NAME_LOWER}-${ARCH} linux-x86_64
 
             for file in \
                 ${NDK}/ndk-gdb \
@@ -334,7 +335,7 @@ jobs:
                 ${NDK}/ndk-stack \
                 ${NDK}/ndk-which
             do
-                sed -i "s|linux-x86_64|${HOST_NAME}-${ARCH}|g" $file
+                sed -i "s|linux-x86_64|${HOST_NAME_LOWER}-${ARCH}|g" $file
             done
           # fi
 
