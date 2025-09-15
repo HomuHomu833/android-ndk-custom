@@ -322,7 +322,7 @@ jobs:
                 powerpcle)   ARCH="ppcle" ;;
                 powerpc)     ARCH="ppc" ;;
                 thumb)       ARCH="arm" ;;
-                thumbeb)    ARCH="arm_be" ;;
+                thumbeb | armeb)    ARCH="arm_be" ;;
             esac
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
