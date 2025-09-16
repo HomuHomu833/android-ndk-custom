@@ -173,6 +173,8 @@ jobs:
           # Python
           curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
           mv Python-3.11.4 python
+          cp $ROOTDIR/config/config.sub python
+          cp $ROOTDIR/config/config.guess python
           cd python
           cp $ROOTDIR/patches/bsd/python/configure $(pwd)/configure
           mkdir build
