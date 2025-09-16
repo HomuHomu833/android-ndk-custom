@@ -20,7 +20,6 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
-      ZIG_TARGET: ${{matrix.target}}
     strategy:
       fail-fast: false
       matrix:
@@ -77,6 +76,7 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          export ZIG_TARGET=${{matrix.target}}
           ZIG_TARGET="${ZIG_TARGET%-gnu}"
 
           cd $HOME
