@@ -68,11 +68,11 @@ jobs:
 
           cd $HOME
           # GNU Make
-          cat ${{github.workspace}}/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cp ${{github.workspace}}/config/config.sub build-aux
-          cp ${{github.workspace}}/config/config.guess build-aux
+          cp $ROOTDIR/config/config.sub build-aux
+          cp $ROOTDIR/config/config.guess build-aux
           ./configure \
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
@@ -89,12 +89,12 @@ jobs:
 
           cd $HOME
           # YASM
-          cat ${{github.workspace}}/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
-          cp ${{github.workspace}}/config/config.sub config
-          cp ${{github.workspace}}/config/config.guess config
-          cp ${{github.workspace}}/patches/cosmo/libyasm/strsep.c libyasm/strsep.c
+          cp $ROOTDIR/config/config.sub config
+          cp $ROOTDIR/config/config.guess config
+          cp $ROOTDIR/patches/cosmo/libyasm/strsep.c libyasm/strsep.c
           ./configure \
           --prefix="$HOME/build-${{ matrix.target }}" \
           --build=${{ matrix.target }} \
@@ -129,11 +129,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
+          git apply $ROOTDIR/patches/ndk/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
+          git apply $ROOTDIR/patches/ndk/shaderc/full_static.patch
           rm -rf .git
           sed -i 's/std::alignment_of<T>::value/alignof(T)/g' $HOME/shaderc/third_party/spirv-tools/source/util/small_vector.h
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
@@ -294,7 +294,7 @@ jobs:
           cp lld ld.lld
           cp ld.lld ld
           cp clang clang++
-          cd ${{github.workspace}}
+          cd $ROOTDIR
 
           mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
