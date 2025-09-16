@@ -19,6 +19,7 @@ jobs:
     name: Make NDK windows
     runs-on: ubuntu-24.04
     env:
+      ROOTDIR: ${{github.workspace}}
       ZIG_TARGET: ${{matrix.target}}
     strategy:
       fail-fast: false
@@ -39,7 +40,7 @@ jobs:
       - name: Setup Zig Toolchain
         run: |
           git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
-          cp -R ${{github.workspace}}/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
+          cp -R $ROOTDIR/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
       - name: Get Official Linux NDK
         run: |
@@ -79,11 +80,11 @@ jobs:
 
           cd $HOME
           # GNU Make
-          cat ${{github.workspace}}/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cp ${{github.workspace}}/config/config.sub build-aux
-          cp ${{github.workspace}}/config/config.guess build-aux
+          cp $ROOTDIR/config/config.sub build-aux
+          cp $ROOTDIR/config/config.guess build-aux
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -114,11 +115,11 @@ jobs:
 
           cd $HOME
           # YASM
-          cat ${{github.workspace}}/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
-          cp ${{github.workspace}}/config/config.sub config
-          cp ${{github.workspace}}/config/config.guess config
+          cp $ROOTDIR/config/config.sub config
+          cp $ROOTDIR/config/config.guess config
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -154,11 +155,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
+          git apply $ROOTDIR/patches/ndk/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
+          git apply $ROOTDIR/patches/ndk/shaderc/full_static.patch
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
@@ -185,8 +186,8 @@ jobs:
           # Python
           curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
           mv Python-3.11.4 python
-          cp ${{github.workspace}}/config/config.sub python
-          cp ${{github.workspace}}/config/config.guess python
+          cp $ROOTDIR/config/config.sub python
+          cp $ROOTDIR/config/config.guess python
           cd python
           mkdir build
           cat <<EOF > config.site
@@ -296,8 +297,8 @@ jobs:
           cp $HOME/yasm/build/bin/ytasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/windows-x86_64/lib
-          cp ${{github.workspace}}/binaries/${{matrix.target}}/echo.exe ${NDK}/prebuilt/windows-x86_64/bin
-          cp ${{github.workspace}}/binaries/${{matrix.target}}/cmp.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $ROOTDIR/binaries/${{matrix.target}}/echo.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $ROOTDIR/binaries/${{matrix.target}}/cmp.exe ${NDK}/prebuilt/windows-x86_64/bin
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python.exe ${NDK_TOOLCHAIN}/python3/python.exe
