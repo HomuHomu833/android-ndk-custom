@@ -19,6 +19,7 @@ jobs:
     name: Make NDK bsd
     runs-on: ubuntu-24.04
     env:
+      ROOTDIR: ${{github.workspace}}
       ZIG_TARGET: ${{matrix.target}}
     strategy:
       fail-fast: false
@@ -74,11 +75,11 @@ jobs:
 
           cd $HOME
           # GNU Make
-          cat ${{github.workspace}}/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cp ${{github.workspace}}/config/config.sub build-aux
-          cp ${{github.workspace}}/config/config.guess build-aux
+          cp $ROOTDIR/config/config.sub build-aux
+          cp $ROOTDIR/config/config.guess build-aux
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -96,11 +97,11 @@ jobs:
 
           cd $HOME
           # YASM
-          cat ${{github.workspace}}/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
           mv yasm-$YASM_VERSION yasm
           cd yasm
-          cp ${{github.workspace}}/config/config.sub config
-          cp ${{github.workspace}}/config/config.guess config
+          cp $ROOTDIR/config/config.sub config
+          cp $ROOTDIR/config/config.guess config
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -136,11 +137,11 @@ jobs:
           curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
           cd "$HOME/shaderc/third_party/spirv-tools"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/spirv/full_static.patch
+          git apply $ROOTDIR/patches/ndk/spirv/full_static.patch
           rm -rf .git
           cd "$HOME/shaderc"
           git init --quiet
-          git apply ${{github.workspace}}/patches/ndk/shaderc/full_static.patch
+          git apply $ROOTDIR/patches/ndk/shaderc/full_static.patch
           rm -rf .git
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
@@ -173,7 +174,7 @@ jobs:
           curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
           mv Python-3.11.4 python
           cd python
-          cp ${{github.workspace}}/patches/bsd/python/configure $(pwd)/configure
+          cp $ROOTDIR/patches/bsd/python/configure $(pwd)/configure
           mkdir build
           cat <<EOF > config.site
           ac_cv_file__dev_ptmx=no
