@@ -62,7 +62,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt update
-          sudo apt install -y ninja-build python3.11 p7zip-full build-essential autoconf automake libtool pkg-config
+          sudo apt install -y ninja-build python3.11 p7zip-full build-essential autoconf automake libtool pkg-config autoconf-archive
 
       - name: Build Extra Dependencies
         run: |
@@ -187,7 +187,11 @@ jobs:
             git apply "$PATCH" || true
           done
           rm -rf .git
-          autoreconf -fi
+          rm -f aclocal.m4 configure
+          aclocal
+          autoconf
+          autoheader
+          automake --add-missing
           mkdir build
           cat <<EOF > config.site
           ac_cv_file__dev_ptmx=no
