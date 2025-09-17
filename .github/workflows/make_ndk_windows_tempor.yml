@@ -1,4 +1,4 @@
-name: Make NDK (Windows)
+name: Make NDK (Windows) TEMPOR
 run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} windows
 on:
   workflow_dispatch:
@@ -77,103 +77,6 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
-
-          cd $HOME
-          # GNU Make
-          cat $ROOTDIR/sources/make-w32-$MAKE_VERSION.tar.gz | gzip -d | tar -x
-          mv make-$MAKE_VERSION make
-          cd make
-          git init --quiet
-          for PATCH in $ROOTDIR/patches/windows/make/*.patch; do
-            git apply "$PATCH" || true
-          done
-          rm -rf .git
-          cp $ROOTDIR/config/config.sub build-aux
-          cp $ROOTDIR/config/config.guess build-aux
-          ./configure \
-          --prefix="${PWD}/build" \
-          --build=x86_64-linux-gnu \
-          --host=${{ matrix.target }} \
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
-          LDFLAGS="-static"
-          make -j"$(nproc --all)" install
-
-          cd $HOME
-          # YASM
-          cat $ROOTDIR/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
-          mv yasm-$YASM_VERSION yasm
-          cd yasm
-          cp $ROOTDIR/config/config.sub config
-          cp $ROOTDIR/config/config.guess config
-          ./configure \
-          --prefix="${PWD}/build" \
-          --build=x86_64-linux-gnu \
-          --host=${{ matrix.target }} \
-          --disable-nls \
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
-          LDFLAGS="-static"
-          make -j"$(nproc --all)" install
-
-          # SPIRV-Tools and shaderc
-          mkdir -p "$HOME/shaderc"
-          cd "$HOME/shaderc"
-          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+archive/$SHADERC_HASH.tar.gz" | tar -xz
-          cd "$HOME/shaderc/third_party"
-          mkdir -p spirv-tools
-          cd spirv-tools
-          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+archive/$SPIRV_TOOLS_HASH.tar.gz" | tar -xz
-          cd "$HOME/shaderc/third_party/spirv-tools/external"
-          mkdir -p spirv-headers
-          cd spirv-headers
-          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+archive/$SPIRV_HEADERS_HASH.tar.gz" | tar -xz
-          cd "$HOME/shaderc/third_party"
-          mkdir -p glslang
-          cd glslang
-          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
-          cd "$HOME/shaderc/third_party/spirv-tools"
-          git init --quiet
-          git apply $ROOTDIR/patches/ndk/spirv/full_static.patch
-          rm -rf .git
-          cd "$HOME/shaderc"
-          git init --quiet
-          git apply $ROOTDIR/patches/ndk/shaderc/full_static.patch
-          rm -rf .git
-          cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
-            -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
-            -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_CROSSCOMPILING=True \
-            -DCMAKE_SYSTEM_NAME=Windows \
-            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/c++" \
-            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
-            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
-            -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
-            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
-            -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
-            -DSHADERC_SKIP_TESTS=ON \
-            -DSHADERC_SKIP_EXAMPLES=ON \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-          cmake --build "$HOME/shaderc/build" --target install
 
           cd $HOME
           # Python
