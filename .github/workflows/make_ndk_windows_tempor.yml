@@ -42,6 +42,11 @@ jobs:
           git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
           cp -R $ROOTDIR/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
 
+      - name: Setup llvm-mingw
+        run: |
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
+          mv llvm-mingw-20250826-ucrt-ubuntu-22.04-x86_64 llvm-mingw
+
       - name: Get Official Linux NDK
         run: |
           echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
@@ -67,6 +72,7 @@ jobs:
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
+          LLVM_MINGW_TOOLCHAIN=${PWD}/llvm-mingw
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
@@ -116,7 +122,7 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
           LLVM_PROFDATA=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata \
-          WINDRES=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-windres \
+          WINDRES=$LLVM_MINGW_TOOLCHAIN/bin/llvm-windres \
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
