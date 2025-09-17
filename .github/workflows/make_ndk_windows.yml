@@ -71,7 +71,7 @@ jobs:
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
           # MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
-          MAKE_VERSION=4.4
+          MAKE_VERSION=4.4.1
           YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
           SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
@@ -80,7 +80,7 @@ jobs:
 
           cd $HOME
           # GNU Make
-          cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          cat $ROOTDIR/sources/make-w32-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
           cp $ROOTDIR/config/config.sub build-aux
@@ -98,19 +98,7 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/strip \
           CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
           CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
-          LDFLAGS="-static" \
-          ac_cv_func_setgid=no \
-          ac_cv_func_setresgid=no \
-          ac_cv_func_setresuid=no \
-          ac_cv_func_setreuid=no \
-          ac_cv_func_setregid=no \
-          ac_cv_func_setuid=no \
-          ac_cv_func_seteuid=no \
-          ac_cv_func_setfsgid=no \
-          ac_cv_func_setfsuid=no \
-          ac_cv_func_setegid=no \
-          ac_cv_func_getloadavg=no \
-          ac_cv_have_decl_getloadavg=no
+          LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -190,22 +178,6 @@ jobs:
           cp $ROOTDIR/config/config.guess python
           cd python
           mkdir build
-          cat <<EOF > config.site
-          ac_cv_file__dev_ptmx=no
-          ac_cv_file__dev_ptc=no
-          ac_cv_func_setgid=no
-          ac_cv_func_setresgid=no
-          ac_cv_func_setresuid=no
-          ac_cv_func_setreuid=no
-          ac_cv_func_setregid=no
-          ac_cv_func_setuid=no
-          ac_cv_func_seteuid=no
-          ac_cv_func_setfsgid=no
-          ac_cv_func_setfsuid=no
-          ac_cv_func_setegid=no
-          ac_cv_func_getloadavg=no
-          ac_cv_have_decl_getloadavg=no
-          EOF
           sed -i '/^case \$host_cpu in #(/,/^esac$/c\
           MODULE_BUILDTYPE=static
           ' configure
@@ -216,7 +188,6 @@ jobs:
           --disable-ipv6 \
           --with-build-python \
           --without-ensurepip \
-          CONFIG_SITE=config.site \
           TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
           AS=${TOOLCHAIN}/bin/cc \
