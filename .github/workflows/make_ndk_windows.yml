@@ -77,6 +77,20 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          case "$ZIG_TARGET" in
+            aarch64-windows-gnu)
+              export HOST_NAME="MINGW64_NT-10.0-22631"
+              ;;
+            thumb-windows-gnu)
+              export HOST_NAME="MINGW32_NT-10.0-22631"
+              ;;
+            x86-windows-gnu)
+              export HOST_NAME="MINGW32_NT-10.0-22631"
+              ;;
+            x86_64-windows-gnu)
+              export HOST_NAME="MINGW64_NT-10.0-22631"
+              ;;
+          esac
 
           cd $HOME
           # GNU Make
@@ -177,10 +191,8 @@ jobs:
           cp $ROOTDIR/config/config.sub python
           cp $ROOTDIR/config/config.guess python
           cd python
+          cp $ROOTDIR/patches/python/configure $(pwd)/configure
           mkdir build
-          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
-          MODULE_BUILDTYPE=static
-          ' configure
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
