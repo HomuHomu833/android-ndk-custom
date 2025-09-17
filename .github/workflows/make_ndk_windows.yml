@@ -204,6 +204,7 @@ jobs:
           --disable-ipv6 \
           --with-build-python \
           --without-ensurepip \
+          CONFIG_SITE=config.site \
           TARGET="${{ matrix.target }}" \
           CC=${TOOLCHAIN}/bin/cc \
           AS=${TOOLCHAIN}/bin/cc \
