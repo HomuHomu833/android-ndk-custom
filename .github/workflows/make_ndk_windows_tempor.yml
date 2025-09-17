@@ -84,6 +84,22 @@ jobs:
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
 
+          mkdir ${ROOTDIR}/lib
+          case "$ZIG_TARGET" in
+            aarch64-windows-gnu)
+              cp ${LLVM_MINGW_TOOLCHAIN}/aarch64-w64-mingw32/lib/libpathcch.a ${ROOTDIR}/lib
+              ;;
+            thumb-windows-gnu)
+              cp ${LLVM_MINGW_TOOLCHAIN}/armv7-w64-mingw32/lib/libpathcch.a ${ROOTDIR}/lib
+              ;;
+            x86-windows-gnu)
+              cp ${LLVM_MINGW_TOOLCHAIN}/i686-w64-mingw32/lib/libpathcch.a ${ROOTDIR}/lib
+              ;;
+            x86_64-windows-gnu)
+              cp ${LLVM_MINGW_TOOLCHAIN}/x86_64-w64-mingw32/lib/libpathcch.a ${ROOTDIR}/lib
+              ;;
+          esac
+
           cd $HOME
           # Python
           curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
@@ -126,6 +142,7 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
+          LDFLAGS="-L${ROOTDIR}/lib" \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
           CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
           CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
