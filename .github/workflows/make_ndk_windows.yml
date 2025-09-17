@@ -77,20 +77,6 @@ jobs:
           SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
           SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
           GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
-          case "$ZIG_TARGET" in
-            aarch64-windows-gnu)
-              export HOST_NAME="MINGW64_NT-10.0-22631"
-              ;;
-            thumb-windows-gnu)
-              export HOST_NAME="MINGW32_NT-10.0-22631"
-              ;;
-            x86-windows-gnu)
-              export HOST_NAME="MINGW32_NT-10.0-22631"
-              ;;
-            x86_64-windows-gnu)
-              export HOST_NAME="MINGW64_NT-10.0-22631"
-              ;;
-          esac
 
           cd $HOME
           # GNU Make
@@ -99,7 +85,7 @@ jobs:
           cd make
           git init --quiet
           for PATCH in $ROOTDIR/patches/windows/make/*.patch; do
-            git apply "$PATCH"
+            git apply "$PATCH" || true
           done
           rm -rf .git
           cp $ROOTDIR/config/config.sub build-aux
@@ -198,7 +184,7 @@ jobs:
           cd python
           git init --quiet
           for PATCH in $ROOTDIR/patches/windows/make/*.patch; do
-            git apply "$PATCH"
+            git apply "$PATCH" || true
           done
           rm -rf .git
           ./bootstrap
@@ -226,9 +212,9 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
+          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          _PYTHON_HOST_PLATFORM=MINGW
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
 
