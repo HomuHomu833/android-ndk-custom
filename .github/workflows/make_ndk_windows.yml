@@ -212,6 +212,8 @@ jobs:
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
+          LLVM_PROFDATA=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata \
+          WINDRES=${TOOLCHAIN}/bin/windres \
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \

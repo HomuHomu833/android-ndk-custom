@@ -192,7 +192,8 @@ jobs:
           CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
           LD=${TOOLCHAIN}/bin/ld \
           OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
-          READELF=${TOOLCHAIN}/bin/llvm-readelf \
+          READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
+          LLVM_PROFDATA=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata \
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
