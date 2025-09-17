@@ -176,7 +176,7 @@ jobs:
           cp $ROOTDIR/config/config.sub python
           cp $ROOTDIR/config/config.guess python
           cd python
-          cp $ROOTDIR/patches/bsd/python/configure $(pwd)/configure
+          cp $ROOTDIR/patches/python/configure $(pwd)/configure
           mkdir build
           cat <<EOF > config.site
           ac_cv_file__dev_ptmx=no
