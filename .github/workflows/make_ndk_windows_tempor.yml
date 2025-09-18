@@ -110,7 +110,7 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           READELF=${TOOLCHAIN}/bin/${{ matrix.target }}-readelf \
           LLVM_PROFDATA=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata \
-          WINDRES=$LLVM_MINGW_TOOLCHAIN/bin/${{ matrix.target }}-windres \
+          WINDRES=${TOOLCHAIN}/bin/${{ matrix.target }}-windres \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
