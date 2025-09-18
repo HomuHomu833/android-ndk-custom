@@ -17,8 +17,8 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
 - **Zig-based Environment**
   - **Platforms**:
     - ~~Windows~~ (HomuHomu833/android-ndk-custom#13)
-    - ~~macOS~~ (HomuHomu833/android-ndk-custom#14)
     - Linux
+    - ~~macOS~~ (HomuHomu833/android-ndk-custom#14)
     - Android
     - NetBSD
     - FreeBSD
