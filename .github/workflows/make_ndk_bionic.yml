@@ -89,7 +89,7 @@ jobs:
           CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static" \
           LDFLAGS="-static" \
           ac_cv_lib_elf_elf_begin=no \
-          am_cv_func_iconv=no \
+          am_cv_func_iconv=no
           make -j"$(nproc --all)" install
           unset ac_cv_func_pselect
 
