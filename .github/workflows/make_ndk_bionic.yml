@@ -71,7 +71,7 @@ jobs:
           cd make
           cp $ROOTDIR/config/config.sub build-aux
           cp $ROOTDIR/config/config.guess build-aux
-          if [ "$TARGET" = "armv7a-linux-androidreabi" ]; then
+          if [ "${{ matrix.target }}" = "armv7a-linux-androidreabi" ]; then
               export ac_cv_func_pselect=no
           fi
           ./configure \
