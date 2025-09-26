@@ -50,6 +50,7 @@ jobs:
           else
             ANDROID_PLATFORM=${ANDROID_PLATFORM}
           fi
+          HAVE_PSELECT=yes
 
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
           TOOLCHAIN=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64
@@ -70,6 +71,9 @@ jobs:
           cd make
           cp ${{github.workspace}}/config/config.sub build-aux
           cp ${{github.workspace}}/config/config.guess build-aux
+          if [ "${{ matrix.target }}" = "armv7a-linux-androideabi" ]; then
+              HAVE_PSELECT=no
+          fi
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -87,7 +91,7 @@ jobs:
           LDFLAGS="-static" \
           ac_cv_lib_elf_elf_begin=no \
           am_cv_func_iconv=no \
-          ac_cv_func_pselect=no
+          ac_cv_func_pselect=$HAVE_PSELECT
           make -j"$(nproc --all)" install
 
           cd $HOME
