@@ -71,6 +71,9 @@ jobs:
           cd make
           cp $ROOTDIR/config/config.sub build-aux
           cp $ROOTDIR/config/config.guess build-aux
+          if [ "$TARGET" = "armv7a-linux-androidreabi" ]; then
+              export ac_cv_func_pselect=no
+          fi
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
@@ -87,8 +90,8 @@ jobs:
           LDFLAGS="-static" \
           ac_cv_lib_elf_elf_begin=no \
           am_cv_func_iconv=no \
-          ac_cv_func_pselect_armv7a_linux_androidreabi=no
           make -j"$(nproc --all)" install
+          unset ac_cv_func_pselect
 
           cd $HOME
           # YASM
