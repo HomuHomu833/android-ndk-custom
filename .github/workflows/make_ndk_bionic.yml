@@ -75,7 +75,6 @@ jobs:
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
-          --disable-posix-spawn \
           CC=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang \
           CXX=${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang++ \
           LD=${TOOLCHAIN}/bin/ld \
@@ -88,7 +87,7 @@ jobs:
           LDFLAGS="-static" \
           ac_cv_lib_elf_elf_begin=no \
           am_cv_func_iconv=no \
-          ac_cv_func_pselect=no
+          ac_cv_func_pselect_armv7a_linux_androidreabi=no
           make -j"$(nproc --all)" install
 
           cd $HOME
