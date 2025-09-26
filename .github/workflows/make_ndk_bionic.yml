@@ -51,6 +51,7 @@ jobs:
           else
             ANDROID_PLATFORM=${ANDROID_PLATFORM}
           fi
+          HAVE_PSELECT=yes
 
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
           TOOLCHAIN=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64
@@ -69,10 +70,10 @@ jobs:
           cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
           mv make-$MAKE_VERSION make
           cd make
-          cp $ROOTDIR/config/config.sub build-aux
-          cp $ROOTDIR/config/config.guess build-aux
-          if [ "${{ matrix.target }}" = "armv7a-linux-androidreabi" ]; then
-              export ac_cv_func_pselect=no
+          cp ${{github.workspace}}/config/config.sub build-aux
+          cp ${{github.workspace}}/config/config.guess build-aux
+          if [ "${{ matrix.target }}" = "armv7a-linux-androideabi" ]; then
+              HAVE_PSELECT=no
           fi
           ./configure \
           --prefix="${PWD}/build" \
@@ -89,7 +90,8 @@ jobs:
           CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static" \
           LDFLAGS="-static" \
           ac_cv_lib_elf_elf_begin=no \
-          am_cv_func_iconv=no
+          am_cv_func_iconv=no \
+          ac_cv_func_pselect=$HAVE_PSELECT
           make -j"$(nproc --all)" install
           unset ac_cv_func_pselect
 
