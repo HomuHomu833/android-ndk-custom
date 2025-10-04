@@ -87,8 +87,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static" \
+          CFLAGS="-fsanitize=undefined -static" \
+          CXXFLAGS="-fsanitize=undefined -static" \
           LDFLAGS="-static" \
           ac_cv_func_setgid=no \
           ac_cv_func_setresgid=no \
@@ -123,8 +123,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
+          CFLAGS="-static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-static -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -155,8 +155,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fstack-protector-strong -fsanitize=undefined -static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fsanitize=undefined -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -220,8 +220,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          CFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
@@ -243,8 +243,10 @@ jobs:
       - name: Make NDK musl
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
+          ZIG_TOOLCHAIN=${PWD}/zig-as-llvm
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
+          CC=${ZIG_TOOLCHAIN}/bin/cc
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
               bname="$(basename "${file}")"
@@ -290,6 +292,8 @@ jobs:
           cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo
           cp $HOME/make/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin

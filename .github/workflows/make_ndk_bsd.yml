@@ -91,8 +91,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -fsanitize=undefined" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined"
+          CFLAGS="-fsanitize=undefined" \
+          CXXFLAGS="-fsanitize=undefined"
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -114,8 +114,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fstack-protector-strong -fwrapv" \
-          CXXFLAGS="-fstack-protector-strong -fwrapv"
+          CFLAGS="-fwrapv" \
+          CXXFLAGS="-fwrapv"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -146,8 +146,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
-            -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined -Wno-error=date-time" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -Wno-error=date-time" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=$( \
               field=$(echo "$ZIG_TARGET" | cut -d- -f2); \
@@ -202,8 +202,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
-          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -Wno-error=date-time" \
+          CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
@@ -225,6 +225,7 @@ jobs:
       - name: Make NDK BSD
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
+          ZIG_TOOLCHAIN=${PWD}/zig-as-llvm
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
           HOST_NAME=$(
@@ -235,6 +236,7 @@ jobs:
               echo "$(tr '[:lower:]' '[:upper:]' <<<"$first")$middle$(tr '[:lower:]' '[:upper:]' <<<"$last")"
           )
           HOST_NAME_LOWER="${HOST_NAME,,}"
+          CC=${ZIG_TOOLCHAIN}/bin/cc
 
           find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
               bname="$(basename "${file}")"
@@ -285,6 +287,8 @@ jobs:
           cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo
           cp $HOME/make/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
