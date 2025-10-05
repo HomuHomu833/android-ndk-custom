@@ -54,6 +54,7 @@ jobs:
           curl -LkSs https://www.python.org/ftp/python/3.11.4/python-3.11.4-embed-amd64.zip -O
           unzip -qq python-3.11.4-embed-amd64.zip
           rm python-3.11.4-embed-amd64.zip
+          cp python.exe python3.11
 
           cd $TOOLCHAIN/..
           curl -LkSs https://repo.msys2.org/mingw/sources/mingw-w64-python3.11-3.11.4-1.src.tar.zst | unzstd -d | tar -x
