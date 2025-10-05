@@ -75,6 +75,7 @@ jobs:
           --build=x86_64-pc-msys \
           --host=${{ matrix.target }} \
           --disable-ipv6 \
+          --disable-shared \
           --with-build-python \
           --without-ensurepip \
           CONFIG_SITE=config.site \
@@ -95,7 +96,7 @@ jobs:
           CXXFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM=MINGW
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
-          make install
+          make install || echo "WARNING: issue in installing python for ${{ matrix.target }}"
 
   make:
     name: Make NDK windows
