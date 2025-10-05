@@ -48,6 +48,12 @@ jobs:
       - name: Setup Python
         shell: msys2 {0}
         run: |
+          cd /usr/bin
+          curl -LkSs https://www.python.org/ftp/python/3.11.4/python-3.11.4-embed-amd64.zip -O
+          unzip -qq python-3.11.4-embed-amd64.zip
+          rm python-3.11.4-embed-amd64.zip
+
+          cd $HOME
           curl -LkSs https://repo.msys2.org/mingw/sources/mingw-w64-python3.11-3.11.4-1.src.tar.zst | unzstd -d | tar -x
           cat mingw-w64-python3.11/Python-3.11.4.tar.xz | xz -d | tar -x
           mv Python-3.11.4 python
