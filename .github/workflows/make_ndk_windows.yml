@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [aarch64-w64-mingw32, armv7-w64-mingw32, i686-w64-mingw32, x86_64-w64-mingw32]
+        target: [aarch64-windows-gnu, thumb-windows-gnu, x86-windows-gnu, x86_64-windows-gnu]
     steps:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
@@ -97,6 +97,13 @@ jobs:
           _PYTHON_HOST_PLATFORM=MINGW
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install || echo "WARNING: issue in installing python for ${{ matrix.target }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.target }}
+          path: |
+            "python/python*.exe"
+            "python/build/lib/python3.11"
 
   make:
     name: Make NDK windows
