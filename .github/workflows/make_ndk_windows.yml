@@ -61,7 +61,7 @@ jobs:
           curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o python/config.guess
           cd python
           git init --quiet
-          for PATCH in $HOME/mingw-w64-python3.11/*.patch; do
+          for PATCH in ../mingw-w64-python3.11/*.patch; do
             git apply "$PATCH" || true
           done
           rm -rf .git
