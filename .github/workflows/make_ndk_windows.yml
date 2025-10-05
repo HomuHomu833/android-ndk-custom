@@ -36,11 +36,13 @@ jobs:
             cmake
             ninja
             clang
+            unzip
 
       - name: Setup llvm-mingw
         shell: msys2 {0}
         run: |
-          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-x86_64.zip | xz -d | tar -x
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-x86_64.zip -O
+          unzip -qq llvm-mingw-20250826-ucrt-x86_64.zip
           mv llvm-mingw-20250826-ucrt-x86_64 llvm-mingw
 
       - name: Setup Python
