@@ -55,7 +55,7 @@ jobs:
           curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o python/config.guess
           cd python
           git init --quiet
-          for PATCH in mingw-w64-python3.11/*.patch; do
+          for PATCH in $HOME/mingw-w64-python3.11/*.patch; do
             git apply "$PATCH" || true
           done
           rm -rf .git
@@ -77,7 +77,7 @@ jobs:
 
           cd python
           ./configure --prefix="${PWD}/build" \
-          --build=x86_64-pc-windows-cygnus \
+          --build=x86_64-w64-mingw32 \
           --host=${{ matrix.target }} \
           --disable-shared \
           --disable-ipv6 \
