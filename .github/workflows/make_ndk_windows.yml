@@ -15,99 +15,8 @@ on:
         type: string
 
 jobs:
-  make-python:
-    name: Make Python windows
-    runs-on: windows-2025
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [aarch64-w64-mingw32, armv7-w64-mingw32, i686-w64-mingw32, x86_64-w64-mingw32]
-    steps:
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ucrt64
-          install: >-
-            git
-            autotools
-            autoconf-archive
-            m4
-            make
-            cmake
-            ninja
-            clang
-            unzip
-
-      - name: Setup llvm-mingw
-        shell: msys2 {0}
-        run: |
-          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-x86_64.zip -O
-          unzip -qq llvm-mingw-20250826-ucrt-x86_64.zip
-          mv llvm-mingw-20250826-ucrt-x86_64 llvm-mingw
-
-      - name: Build Python
-        shell: msys2 {0}
-        run: |
-          TOOLCHAIN=$(pwd)/llvm-mingw
-
-          cd /usr/bin
-          curl -LkSs https://www.python.org/ftp/python/3.11.4/python-3.11.4-embed-amd64.zip -O
-          unzip -qq python-3.11.4-embed-amd64.zip
-          rm python-3.11.4-embed-amd64.zip
-          cp python.exe python3.11
-
-          cd $TOOLCHAIN/..
-          curl -LkSs https://repo.msys2.org/mingw/sources/mingw-w64-python3.11-3.11.4-1.src.tar.zst | unzstd -d | tar -x
-          cat mingw-w64-python3.11/Python-3.11.4.tar.xz | xz -d | tar -x
-          mv Python-3.11.4 python
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -o python/config.sub
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o python/config.guess
-          cd python
-          git init --quiet
-          for PATCH in ../mingw-w64-python3.11/*.patch; do
-            git apply "$PATCH" || true
-          done
-          rm -rf .git
-          rm -rf aclocal.m4 configure
-          autoreconf -fi
-          mkdir build
-          cat <<-EOF > config.site
-          ac_cv_file__dev_ptmx=no
-          ac_cv_file__dev_ptc=no
-          EOF
-          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
-          MODULE_BUILDTYPE=static
-          ' configure
-          ./configure --prefix="${PWD}/build" \
-          --build=x86_64-w64-mingw32 \
-          --host=${{ matrix.target }} \
-          --disable-shared \
-          --disable-ipv6 \
-          --with-build-python \
-          --without-ensurepip \
-          CONFIG_SITE=config.site \
-          TARGET="${{ matrix.target }}" \
-          CC=${TOOLCHAIN}/bin/clang \
-          AS=${TOOLCHAIN}/bin/clang \
-          CXX=${TOOLCHAIN}/bin/clang++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          READELF=${TOOLCHAIN}/bin/llvm-readelf \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
-          WINDRES=${TOOLCHAIN}/bin/llvm-windres \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          LDSHARED="${TOOLCHAIN}/bin/clang -shared -fPIC" \
-          CFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
-          _PYTHON_HOST_PLATFORM=MINGW
-          make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
-          make install
-
   make:
     name: Make NDK windows
-    needs: [make-python]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
@@ -132,6 +41,11 @@ jobs:
         run: |
           git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
           cp -R $ROOTDIR/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
+
+      - name: Setup llvm-mingw
+        run: |
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
+          mv llvm-mingw-20250826-ucrt-ubuntu-22.04-x86_64 llvm-mingw
 
       - name: Get Official Linux NDK
         run: |
@@ -158,6 +72,7 @@ jobs:
       - name: Build Extra Dependencies
         run: |
           TOOLCHAIN=${PWD}/zig-as-llvm
+          LLVM_MINGW_TOOLCHAIN=${PWD}/llvm-mingw
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
@@ -192,8 +107,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -216,8 +131,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -static -fwrapv -Wno-error=date-time" \
+          CFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -static -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -248,8 +163,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fstack-protector-strong -fsanitize=undefined -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Windows \
@@ -265,6 +180,52 @@ jobs:
             -DSHADERC_SKIP_EXAMPLES=ON \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           cmake --build "$HOME/shaderc/build" --target install
+
+          cd $HOME
+          # Python
+          curl -LkSs https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz | xz -d | tar -x
+          mv Python-3.11.4 python
+          cp $ROOTDIR/config/config.sub python
+          cp $ROOTDIR/config/config.guess python
+          cd python
+          git init --quiet
+          for PATCH in $ROOTDIR/patches/windows/python/*.patch; do
+            git apply "$PATCH" || true
+          done
+          rm -rf .git
+          rm -rf aclocal.m4 configure
+          autoreconf -fi
+          mkdir build
+          cat <<EOF > config.site
+          ac_cv_file__dev_ptmx=no
+          ac_cv_file__dev_ptc=no
+          EOF
+          ./configure --prefix="${PWD}/build" \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          --disable-shared \
+          --disable-ipv6 \
+          --with-build-python \
+          --without-ensurepip \
+          CONFIG_SITE=config.site \
+          TARGET="${{ matrix.target }}" \
+          CC=${TOOLCHAIN}/bin/cc \
+          AS=${TOOLCHAIN}/bin/cc \
+          CXX=${TOOLCHAIN}/bin/c++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf \
+          LLVM_PROFDATA=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata \
+          WINDRES=$LLVM_MINGW_TOOLCHAIN/bin/llvm-windres \
+          AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
+          STRIP=${TOOLCHAIN}/bin/strip \
+          LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
+          CFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          CXXFLAGS="-fstack-protector-strong -fsanitize=undefined -static -Wno-error=date-time" \
+          _PYTHON_HOST_PLATFORM=MINGW
+          make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
+          make install
 
           # Manually strip binaries
           for file in \
