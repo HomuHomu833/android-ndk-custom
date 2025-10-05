@@ -26,7 +26,7 @@ jobs:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ucrt64
+          msystem: mingw64
           install: >-
             git
             autotools
@@ -50,7 +50,7 @@ jobs:
         shell: msys2 {0}
         run: |
           TOOLCHAIN=$(pwd)/llvm-mingw
-          cp /mingw64/bin/python3.exe /usr/bin/python3.12
+          cp /mingw64/bin/python.exe /usr/bin/python3.12
 
           cd $TOOLCHAIN/..
           curl -LkSs https://repo.msys2.org/mingw/sources/mingw-w64-python-3.12.11-3.src.tar.zst | unzstd -d | tar -x
@@ -72,7 +72,7 @@ jobs:
           ac_cv_file__dev_ptc=no
           EOF
           ./configure --prefix="${PWD}/build" \
-          --build=x86_64-pc-cygwin \
+          --build=x86_64-pc-msys \
           --host=${{ matrix.target }} \
           --disable-ipv6 \
           --with-build-python \
