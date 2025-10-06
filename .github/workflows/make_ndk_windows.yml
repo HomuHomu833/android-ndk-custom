@@ -15,166 +15,8 @@ on:
         type: string
 
 jobs:
-  make-python:
-    name: Make Python windows
-    runs-on: windows-2025
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [aarch64-windows-gnu, thumb-windows-gnu, x86-windows-gnu, x86_64-windows-gnu]
-    steps:
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: mingw64
-          install: >-
-            git
-            autotools
-            autoconf-archive
-            m4
-            make
-            cmake
-            ninja
-            clang
-            unzip
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-texinfo
-
-      - name: Setup llvm-mingw
-        shell: msys2 {0}
-        run: |
-          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250826/llvm-mingw-20250826-ucrt-x86_64.zip -O
-          unzip -qq llvm-mingw-20250826-ucrt-x86_64.zip
-          mv llvm-mingw-20250826-ucrt-x86_64 llvm-mingw
-
-      - name: Build Extra Dependencies
-        shell: msys2 {0}
-        run: |
-          TOOLCHAIN=$(pwd)/llvm-mingw
-          export CC=${TOOLCHAIN}/bin/clang
-          export CXX=${TOOLCHAIN}/bin/clang++
-          export CFLAGS="-fsanitize=undefined"
-          export CXXFLAGS="-fsanitize=undefined"
-          export LD=${TOOLCHAIN}/bin/ld
-          export OBJCOPY=${TOOLCHAIN}/bin/objcopy
-          export AR=${TOOLCHAIN}/bin/ar
-          export RANLIB=${TOOLCHAIN}/bin/ranlib
-          export STRIP=${TOOLCHAIN}/bin/strip
-
-          cd $HOME
-          curl -LkSs https://github.com/ImageMagick/bzlib/archive/refs/heads/main.tar.gz | gzip -d | tar -x
-          mv bzlib-main bzlib
-          cd bzlib
-          make -j"$(nproc --all)" install CFLAGS="-D_LIB" PREFIX="$HOME/output/${{matrix.target}}"
-
-          cd $HOME
-          curl -LkSs https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz | xz -d | tar -x
-          mv zlib-1.3.1 zlib
-          cd zlib
-          ./configure --prefix="$HOME/output/${{matrix.target}}" --static
-          make -j"$(nproc --all)" install
-
-          cd $HOME
-          curl -LkSs http://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1.orig.tar.xz | xz -d | tar -x
-          mv xz-5.8.1 xz
-          cd xz
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -o build-aux/config.sub
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o build-aux/config.guess
-          ./configure --prefix="$HOME/output/${{matrix.target}}" \
-          --build=x86_64-pc-msys \
-          --host=${{ matrix.target }} \
-          CC=${TOOLCHAIN}/bin/clang \
-          AS=${TOOLCHAIN}/bin/clang \
-          CXX=${TOOLCHAIN}/bin/clang++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          READELF=${TOOLCHAIN}/bin/llvm-readelf \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
-          WINDRES=${TOOLCHAIN}/bin/llvm-windres \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -Wno-error=date-time"
-          make -j"$(nproc --all)" install
-          
-      - name: Build Python
-        shell: msys2 {0}
-        run: |
-          PREFIX=$HOME/output/${{matrix.target}}
-          TOOLCHAIN=$(pwd)/llvm-mingw
-          cp /mingw64/bin/python.exe /usr/bin/python3.12
-
-          cd $TOOLCHAIN/..
-          curl -LkSs https://repo.msys2.org/mingw/sources/mingw-w64-python-3.12.11-3.src.tar.zst | unzstd -d | tar -x
-          cat mingw-w64-python/Python-3.12.11.tar.xz | xz -d | tar -x
-          mv Python-3.12.11 python
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -o python/config.sub
-          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o python/config.guess
-          cd python
-          git init --quiet
-          for PATCH in ../mingw-w64-python/*.patch; do
-            git apply "$PATCH" || true
-          done
-          rm -rf .git
-          rm -rf aclocal.m4 configure
-          autoreconf -fi
-          mkdir build
-          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
-          MODULE_BUILDTYPE=static
-          ' configure
-          cat <<-EOF > config.site
-          ac_cv_file__dev_ptmx=no
-          ac_cv_file__dev_ptc=no
-          EOF
-          ./configure --prefix="${PWD}/build" \
-          --build=x86_64-pc-msys \
-          --host=${{ matrix.target }} \
-          --disable-ipv6 \
-          --disable-shared \
-          --disable-test-modules \
-          --with-build-python \
-          --with-ensurepip=no \
-          --with-readline=no \
-          --with-pkg-config=no \
-          CONFIG_SITE=config.site \
-          TARGET="${{ matrix.target }}" \
-          CC=${TOOLCHAIN}/bin/clang \
-          AS=${TOOLCHAIN}/bin/clang \
-          CXX=${TOOLCHAIN}/bin/clang++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          READELF=${TOOLCHAIN}/bin/llvm-readelf \
-          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
-          WINDRES=${TOOLCHAIN}/bin/llvm-windres \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          LDSHARED="${TOOLCHAIN}/bin/clang -shared -fPIC" \
-          CFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
-          _PYTHON_HOST_PLATFORM=MINGW \
-          ZLIB_CFLAGS="-I$PREFIX/include" \
-          ZLIB_LIBS="-L$PREFIX/lib -lz" \
-          LIBFFI_CFLAGS="-I$PREFIX/include" \
-          LIBFFI_LIBS="-L$PREFIX/lib -lffi" \
-          BZIP2_CFLAGS="-I$PREFIX/include" \
-          BZIP2_LIBS="-L$PREFIX/lib -lbz2" \
-          LIBLZMA_CFLAGS="-I$PREFIX/include" \
-          LIBLZMA_LIBS="-L$PREFIX/lib -llzma"
-          make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
-          make install || echo "WARNING: issue in installing python for ${{ matrix.target }}"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: python-${{ matrix.target }}
-          path: |
-            "python/python*.exe"
-            "python/build/lib/python3.11"
-
   make:
     name: Make NDK windows
-    needs: [make-python]
     runs-on: ubuntu-24.04
     env:
       ROOTDIR: ${{github.workspace}}
@@ -182,7 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [aarch64-windows-gnu, thumb-windows-gnu, x86-windows-gnu, x86_64-windows-gnu]
+        # thumb-windows-gnu
+        target: [aarch64-windows-gnu, x86-windows-gnu, x86_64-windows-gnu]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
@@ -192,7 +35,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0-dev.164+bc7955306"
+          version: "0.16.0-dev.577+c50aa2b95"
           use-cache: false
 
       - name: Setup Zig Toolchain
@@ -350,8 +193,10 @@ jobs:
       - name: Make NDK Windows
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
+          ZIG_TOOLCHAIN=${PWD}/zig-as-llvm
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
+          CC=${ZIG_TOOLCHAIN}/bin/cc
 
           find "${HOST_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
               bname="$(basename "${file}")"
@@ -396,12 +241,10 @@ jobs:
           cp $HOME/yasm/build/bin/ytasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/windows-x86_64/lib
-          cp $ROOTDIR/binaries/${{matrix.target}}/echo.exe ${NDK}/prebuilt/windows-x86_64/bin
-          cp $ROOTDIR/binaries/${{matrix.target}}/cmp.exe ${NDK}/prebuilt/windows-x86_64/bin
-          mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
-          mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
-          cp $HOME/python/python.exe ${NDK_TOOLCHAIN}/python3/python.exe
-          cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp.exe
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo.exe
+          mkdir -p "${NDK_TOOLCHAIN}/python3"
+          unzip -qq "${{github.workspace}}/binaries/python-3.11.4-${{ matrix.target }}.zip" -d "${NDK_TOOLCHAIN}/python3"
           find "${NDK}/shader-tools/windows-x86_64" -type f | while IFS= read -r file; do
              bname="$(basename "${file}")"
 
