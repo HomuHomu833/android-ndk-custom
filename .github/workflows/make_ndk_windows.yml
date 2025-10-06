@@ -74,6 +74,28 @@ jobs:
           make -j"$(nproc --all)" install
 
           cd $HOME
+          curl -LkSs http://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1.orig.tar.xz | xz -d | tar -x
+          mv xz-5.8.1 xz
+          cd xz
+          ./configure --prefix="$HOME/output/${{matrix.target}}" \
+          --build=x86_64-pc-msys \
+          --host=${{ matrix.target }} \
+          CC=${TOOLCHAIN}/bin/clang \
+          AS=${TOOLCHAIN}/bin/clang \
+          CXX=${TOOLCHAIN}/bin/clang++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=${TOOLCHAIN}/bin/llvm-readelf \
+          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
+          WINDRES=${TOOLCHAIN}/bin/llvm-windres \
+          AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
+          STRIP=${TOOLCHAIN}/bin/strip \
+          CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -Wno-error=date-time"
+          make -j"$(nproc --all)" install
+          
+          cd $HOME
           curl -LkSs https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -O
           # we do it twice due to symlink errors
           tar -xf v1.5.6.tar.gz || true
@@ -154,6 +176,8 @@ jobs:
           _PYTHON_HOST_PLATFORM=MINGW \
           ZLIB_CFLAGS="-I$PREFIX/include" \
           ZLIB_LIBS="-L$PREFIX/lib -lz" \
+          ZSTD_CFLAGS="-I$PREFIX/include" \
+          ZSTD_LIBS="-L$PREFIX/lib -lzstd" \
           BZIP2_CFLAGS="-I$PREFIX/include" \
           BZIP2_LIBS="-L$PREFIX/lib -lbz2" \
           LIBLZMA_CFLAGS="-I$PREFIX/include" \
