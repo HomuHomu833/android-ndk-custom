@@ -88,6 +88,7 @@ jobs:
           ./configure --prefix="$HOME/output/${{matrix.target}}" \
           --build=x86_64-pc-msys \
           --host=${{ matrix.target }} \
+          --disable-symvers \
           CC=${TOOLCHAIN}/bin/clang \
           AS=${TOOLCHAIN}/bin/clang \
           CXX=${TOOLCHAIN}/bin/clang++ \
