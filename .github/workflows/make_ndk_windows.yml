@@ -95,8 +95,6 @@ jobs:
             -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
             -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
-            -DSHADERC_SKIP_TESTS=ON \
-            -DSHADERC_SKIP_EXAMPLES=ON \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             cmake --build "$HOME/zstd/build/cmake/builddir" --target install
           
@@ -158,7 +156,7 @@ jobs:
           BZIP2_CFLAGS="-I$PREFIX/include" \
           BZIP2_LIBS="-L$PREFIX/lib -lbz2" \
           LIBLZMA_CFLAGS="-I$PREFIX/include" \
-          LIBLZMA_LIBS="-L$PREFIX/lib -llzma" \
+          LIBLZMA_LIBS="-L$PREFIX/lib -llzma"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install || echo "WARNING: issue in installing python for ${{ matrix.target }}"
 
