@@ -49,9 +49,9 @@ jobs:
       - name: Build Extra Dependencies
         shell: msys2 {0}
         run: |
-          TOOLCHAIN=${PWD}/zig-as-llvm
-          export CC=${TOOLCHAIN}/bin/cc
-          export CXX=${TOOLCHAIN}/bin/c++
+          TOOLCHAIN=$(pwd)/llvm-mingw
+          export CC=${TOOLCHAIN}/bin/clang
+          export CXX=${TOOLCHAIN}/bin/clang++
           export CFLAGS="-fsanitize=undefined"
           export CXXFLAGS="-fsanitize=undefined"
           export LD=${TOOLCHAIN}/bin/ld
