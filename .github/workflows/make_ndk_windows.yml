@@ -97,7 +97,7 @@ jobs:
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             cmake --build "$HOME/zstd/build/cmake/builddir" --target install
-          ln -s $HOME/output/${{matrix.target}}/lib/libzstd.dll.a $HOME/output/${{matrix.target}}/lib/libzstd.a
+          # ln -s $HOME/output/${{matrix.target}}/lib/libzstd.dll.a $HOME/output/${{matrix.target}}/lib/libzstd.a
           
       - name: Build Python
         shell: msys2 {0}
