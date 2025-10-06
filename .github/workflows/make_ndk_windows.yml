@@ -64,7 +64,7 @@ jobs:
           curl -LkSs https://github.com/ImageMagick/bzlib/archive/refs/heads/main.tar.gz | gzip -d | tar -x
           mv bzlib-main bzlib
           cd bzlib
-          make -j"$(nproc --all)" install PREFIX="$HOME/output/${{matrix.target}}"
+          make -j"$(nproc --all)" install CFLAGS="-D_LIB" PREFIX="$HOME/output/${{matrix.target}}"
 
           cd $HOME
           curl https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -LkSs | gzip -d | tar -x
