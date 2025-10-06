@@ -96,32 +96,31 @@ jobs:
           CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
           CXXFLAGS="-fsanitize=undefined -Wno-error=date-time"
           make -j"$(nproc --all)" install
-          
+
           cd $HOME
-          curl -LkSs https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -O
-          # we do it twice due to symlink errors
-          tar -xf v1.5.6.tar.gz || true
-          tar -xf v1.5.6.tar.gz || true
-          mv zstd-1.5.6 zstd
-          cmake -S "$HOME/zstd/build/cmake" -B "$HOME/zstd/build/cmake/builddir" -G Ninja \
-            -DCMAKE_INSTALL_PREFIX="$HOME/output/${{matrix.target}}" \
-            -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
-            -DCMAKE_CROSSCOMPILING=True \
-            -DCMAKE_SYSTEM_NAME=Windows \
-            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/clang" \
-            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/clang++" \
-            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/clang" \
-            -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
-            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
-            -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
-            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
-            -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-            cmake --build "$HOME/zstd/build/cmake/builddir" --target install
-          # ln -s $HOME/output/${{matrix.target}}/lib/libzstd.dll.a $HOME/output/${{matrix.target}}/lib/libzstd.a
+          curl -LkSs http://deb.debian.org/debian/pool/main/libf/libffi/libffi_3.4.8.orig.tar.gz | gzip -d | tar -x
+          mv libffi-3.4.8 libffi
+          cd libffi
+          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -o build-aux/config.sub
+          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o build-aux/config.guess
+          autoreconf -fi
+          ./configure --prefix="$HOME/output/${{matrix.target}}" \
+          --build=x86_64-pc-msys \
+          --host=${{ matrix.target }} \
+          CC=${TOOLCHAIN}/bin/clang \
+          AS=${TOOLCHAIN}/bin/clang \
+          CXX=${TOOLCHAIN}/bin/clang++ \
+          LD=${TOOLCHAIN}/bin/ld \
+          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
+          READELF=${TOOLCHAIN}/bin/llvm-readelf \
+          LLVM_PROFDATA=${TOOLCHAIN}/bin/llvm-profdata \
+          WINDRES=${TOOLCHAIN}/bin/llvm-windres \
+          AR=${TOOLCHAIN}/bin/ar \
+          RANLIB=${TOOLCHAIN}/bin/ranlib \
+          STRIP=${TOOLCHAIN}/bin/strip \
+          CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -Wno-error=date-time"
+          make -j"$(nproc --all)" install
           
       - name: Build Python
         shell: msys2 {0}
@@ -178,8 +177,8 @@ jobs:
           _PYTHON_HOST_PLATFORM=MINGW \
           ZLIB_CFLAGS="-I$PREFIX/include" \
           ZLIB_LIBS="-L$PREFIX/lib -lz" \
-          ZSTD_CFLAGS="-I$PREFIX/include" \
-          ZSTD_LIBS="-L$PREFIX/lib -lzstd" \
+          LIBFFI_CFLAGS="-I$PREFIX/include" \
+          LIBFFI_LIBS="-L$PREFIX/lib -lffi" \
           BZIP2_CFLAGS="-I$PREFIX/include" \
           BZIP2_LIBS="-L$PREFIX/lib -lbz2" \
           LIBLZMA_CFLAGS="-I$PREFIX/include" \
