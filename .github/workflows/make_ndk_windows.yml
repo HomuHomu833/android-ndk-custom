@@ -74,8 +74,8 @@ jobs:
           make -j"$(nproc --all)" install
 
           cd $HOME
-          # we do it twice due to symlink errors
           curl -LkSs https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz -O
+          # we do it twice due to symlink errors
           tar -xf v1.5.6.tar.gz || true
           tar -xf v1.5.6.tar.gz || true
           mv zstd-1.5.6 zstd
@@ -97,6 +97,7 @@ jobs:
             -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             cmake --build "$HOME/zstd/build/cmake/builddir" --target install
+          ln -s $HOME/output/${{matrix.target}}/lib/libzstd.dll.a $HOME/output/${{matrix.target}}/lib/libzstd.a
           
       - name: Build Python
         shell: msys2 {0}
