@@ -226,7 +226,7 @@ jobs:
       - name: Get NDK and LLVM
         run: |
           curl -LkSs https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux.zip >ndk.zip && unzip -q ndk.zip
-          curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}${{inputs.revision}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-ape.tar.xz | tar -xJf -
+          curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-ape.tar.xz | tar -xJf -
 
       - name: Make NDK Cosmo
         run: |
