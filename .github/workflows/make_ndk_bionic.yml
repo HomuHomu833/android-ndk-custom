@@ -72,9 +72,9 @@ jobs:
           cd make
           cp ${{github.workspace}}/config/config.sub build-aux
           cp ${{github.workspace}}/config/config.guess build-aux
-          if [ "${{ matrix.target }}" = "armv7a-linux-androideabi" ]; then
-              HAVE_PSELECT=no
-          fi
+          # if [ "${{ matrix.target }}" = "armv7a-linux-androideabi" ]; then
+          #     HAVE_PSELECT=no
+          # fi
           ./configure \
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
