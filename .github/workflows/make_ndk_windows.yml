@@ -98,6 +98,7 @@ jobs:
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+            cmake --build "$HOME/zstd/build/cmake/builddir" --target install
           
       - name: Build Python
         shell: msys2 {0}
