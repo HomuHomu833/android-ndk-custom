@@ -132,8 +132,10 @@ jobs:
           --host=${{ matrix.target }} \
           --disable-ipv6 \
           --disable-shared \
+          --disable-test-modules \
           --with-build-python \
-          --without-ensurepip \
+          --with-ensurepip=no \
+          --with-readline=no \
           --with-pkg-config=no \
           CONFIG_SITE=config.site \
           TARGET="${{ matrix.target }}" \
