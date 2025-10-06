@@ -38,6 +38,7 @@ jobs:
             clang
             unzip
             mingw-w64-x86_64-python
+            mingw-w64-x86_64-texinfo
 
       - name: Setup llvm-mingw
         shell: msys2 {0}
