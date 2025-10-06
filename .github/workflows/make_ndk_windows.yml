@@ -77,6 +77,8 @@ jobs:
           curl -LkSs http://deb.debian.org/debian/pool/main/x/xz-utils/xz-utils_5.8.1.orig.tar.xz | xz -d | tar -x
           mv xz-5.8.1 xz
           cd xz
+          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -o build-aux/config.sub
+          curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -o build-aux/config.guess
           ./configure --prefix="$HOME/output/${{matrix.target}}" \
           --build=x86_64-pc-msys \
           --host=${{ matrix.target }} \
