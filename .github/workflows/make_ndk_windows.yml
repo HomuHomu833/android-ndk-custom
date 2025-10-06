@@ -79,9 +79,26 @@ jobs:
           tar -xf v1.5.6.tar.gz || true
           tar -xf v1.5.6.tar.gz || true
           mv zstd-1.5.6 zstd
-          cd zstd
-          make -j"$(nproc --all)" install PREFIX="$HOME/output/${{matrix.target}}"
-
+          cmake -S "$HOME/zstd/build/cmake" -B "$HOME/zstd/build/cmake/builddir" -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$HOME/output/${{matrix.target}}" \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_CROSSCOMPILING=True \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/clang" \
+            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/clang++" \
+            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/clang" \
+            -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
+            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
+            -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
+            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
+            -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          
       - name: Build Python
         shell: msys2 {0}
         run: |
