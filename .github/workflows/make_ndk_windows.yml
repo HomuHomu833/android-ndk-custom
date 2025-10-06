@@ -77,6 +77,7 @@ jobs:
           curl -LkSs http://deb.debian.org/debian/pool/main/libf/libffi/libffi_3.4.8.orig.tar.gz | gzip -d | tar -x
           mv libffi-3.4.8 libffi
           cd libffi
+          rm config.sub config.guess
           curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.sub -O
           curl -LkSs https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/config/config.guess -O
           cat <<-EOF > config.site
