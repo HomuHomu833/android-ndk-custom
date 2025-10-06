@@ -32,7 +32,7 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
     - **Thumb**: `thumb`, `thumbeb`
     - **Other**: `loongarch64`, `s390x`
 
-- **Cosmopolitan Environment**
+- **Cosmopolitan Environment** **(DISCONTINUED)**
   - **Platforms**:
     - Windows
     - Linux
