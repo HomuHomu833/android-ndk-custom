@@ -67,6 +67,9 @@ jobs:
           rm -rf aclocal.m4 configure
           autoreconf -fi
           mkdir build
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
+          MODULE_BUILDTYPE=static
+          ' configure
           cat <<-EOF > config.site
           ac_cv_file__dev_ptmx=no
           ac_cv_file__dev_ptc=no
@@ -278,7 +281,7 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}${{inputs.revision}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK Windows
         run: |
