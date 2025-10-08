@@ -18,7 +18,7 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
   - **Platforms**:
     - ~~Windows~~ (HomuHomu833/android-ndk-custom#13)
     - Linux
-    - ~~macOS~~ (HomuHomu833/android-ndk-custom#14)
+    - ~~macOS~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/14#issuecomment-3346720483)
     - Android
     - NetBSD
     - FreeBSD
