@@ -232,8 +232,8 @@ jobs:
           cp $HOME/yasm/build/bin/ytasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/windows-x86_64/lib
-          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp.exe
-          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo.exe
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/windows-x86_64/bin/cmp.exe
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/windows-x86_64/bin/echo.exe
           mkdir -p "${NDK_TOOLCHAIN}/python3"
           unzip -qq "${{github.workspace}}/binaries/python-3.11.4-${{ matrix.target }}.zip" -d "${NDK_TOOLCHAIN}/python3"
           find "${NDK}/shader-tools/windows-x86_64" -type f | while IFS= read -r file; do
