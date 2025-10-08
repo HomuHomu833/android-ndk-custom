@@ -26,7 +26,6 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 
 **Platforms**
 - Linux
-- ❌ ~~macOS~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/14#issuecomment-3346720483)
 - Android
 - NetBSD
 - FreeBSD
@@ -64,6 +63,7 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 
 **Platforms**
 - Windows
+- ❌ ~~macOS~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/14#issuecomment-3346720483)
 - Android
 
 **Architectures**
