@@ -247,7 +247,7 @@ jobs:
         run: |
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-windows android-ndk-r${{inputs.version}}${{inputs.revision}}
           7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
-          mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z ${{ github.workspace }}
+          # mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z ${{ github.workspace }}
 
       - name: Release
         uses: ncipollo/release-action@v1.20.0
