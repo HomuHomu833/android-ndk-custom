@@ -176,7 +176,7 @@ jobs:
               $HOME/yasm/build/bin/vsyasm.exe \
               $HOME/python/python.exe
           do
-              ${TOOLCHAIN}/bin/strip "$file"
+              ${TOOLCHAIN}/bin/${{ matrix.target }}-strip "$file"
           done
 
       - name: Get LLVM
