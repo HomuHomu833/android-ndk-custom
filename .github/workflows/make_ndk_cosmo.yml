@@ -11,7 +11,7 @@ on:
       revision:
         description: "NDK Release revision:"
         default: ''
-        required: true
+        required: false
         type: string
 
 jobs:
