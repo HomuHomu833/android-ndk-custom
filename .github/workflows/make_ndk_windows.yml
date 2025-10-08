@@ -173,8 +173,7 @@ jobs:
               $HOME/make/build/bin/make.exe \
               $HOME/yasm/build/bin/yasm.exe \
               $HOME/yasm/build/bin/ytasm.exe \
-              $HOME/yasm/build/bin/vsyasm.exe \
-              $HOME/python/python.exe
+              $HOME/yasm/build/bin/vsyasm.exe
           do
               ${TOOLCHAIN}/bin/${{ matrix.target }}-strip "$file"
           done
