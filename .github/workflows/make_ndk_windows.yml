@@ -94,8 +94,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-fsanitize=undefined -static" \
-          CXXFLAGS="-fsanitize=undefined -static" \
+          CFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -118,8 +118,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
           RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
           STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
-          CFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
+          CFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -150,8 +150,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Windows \
