@@ -189,7 +189,7 @@ jobs:
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
           CC=${ZIG_TOOLCHAIN}/bin/${{ matrix.target }}-clang
 
-          find "${HOST_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
+          find "${HOST_TOOLCHAIN}/bin" -type l | while IFS= read -r file; do
               bname="$(basename "${file}")"
               if [ -L "${file}" ]; then
                  target="$(readlink -f "${file}")"
