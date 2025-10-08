@@ -28,7 +28,7 @@ jobs:
         target: [armv7a-linux-androideabi, aarch64-linux-android, i686-linux-android, x86_64-linux-android]
     steps:
       - name: Checkout android-ndk-custom
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ${{github.workspace}}
 
@@ -379,7 +379,7 @@ jobs:
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
 
       - name: Release
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1.20.0
         with:
           name: "r${{inputs.version}}${{inputs.revision}}"
           tag: "r${{inputs.version}}"

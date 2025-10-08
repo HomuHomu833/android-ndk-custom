@@ -27,12 +27,12 @@ jobs:
         target: [arm-freebsd-eabihf, aarch64-freebsd-none, powerpc-freebsd-eabihf, powerpc64-freebsd-none, powerpc64le-freebsd-none, riscv64-freebsd-none, x86-freebsd-none, x86_64-freebsd-none, aarch64-netbsd-none, aarch64_be-netbsd-none, arm-netbsd-eabi, arm-netbsd-eabihf, armeb-netbsd-eabi, armeb-netbsd-eabihf, mips-netbsd-eabi, mips-netbsd-eabihf, mipsel-netbsd-eabi, mipsel-netbsd-eabihf, powerpc-netbsd-eabi, powerpc-netbsd-eabihf, x86-netbsd-none, x86_64-netbsd-none]
     steps:
       - name: Checkout android-ndk-custom
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ${{github.workspace}}
 
       - name: Setup Zig
-        uses: mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2.0.5
         with:
           version: "0.16.0-dev.577+c50aa2b95"
           use-cache: false
@@ -405,7 +405,7 @@ jobs:
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
 
       - name: Release
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1.20.0
         with:
           name: "r${{inputs.version}}${{inputs.revision}}"
           tag: "r${{inputs.version}}"

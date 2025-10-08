@@ -34,12 +34,12 @@ jobs:
       STRIP: ${{matrix.target}}-strip
     steps:
       - name: Checkout android-ndk-custom
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ${{github.workspace}}
 
       - name: Setup cosmo toolchain
-        uses: bjia56/setup-cosmocc@v0.0.3
+        uses: bjia56/setup-cosmocc@v0.0.5
         with:
           version: "4.0.2"
 
@@ -211,11 +211,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout android-ndk-custom
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ${{github.workspace}}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: "~/"
 
@@ -316,7 +316,7 @@ jobs:
       - uses: milliewalky/setup-7-zip@v2
 
       - name: Get Unfixed NDK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
           merge-multiple: true
@@ -426,7 +426,7 @@ jobs:
         run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
 
       - name: Upload Fixed NDK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape
           path: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z
@@ -437,7 +437,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get Unfixed NDK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
           merge-multiple: true
@@ -493,12 +493,12 @@ jobs:
         name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
 
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         merge-multiple: true
 
     - name: Release
-      uses: ncipollo/release-action@v1.16.0
+      uses: ncipollo/release-action@v1.20.0
       with:
         name: "r${{inputs.version}}${{inputs.revision}}"
         tag: "r${{inputs.version}}"
