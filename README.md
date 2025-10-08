@@ -22,7 +22,7 @@ A custom-built Android NDK that replaces the default toolchain with a rebuilt LL
     - Android
     - NetBSD
     - FreeBSD
-    - ~~OpenBSD~~ (HomuHomu833/android-ndk-custom#15)
+    - ~~OpenBSD~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/15#issuecomment-3378450872)
   - **Architectures**:
     - **X**: `x86`, `x86_64`
     - **ARM**: `armhf`, `armeb`, `aarch64`, `aarch64_be`
