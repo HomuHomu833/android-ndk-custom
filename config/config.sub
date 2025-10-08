@@ -2229,6 +2229,18 @@ case $kernel-$os-$obj in
 		;;
 	windows*-msvc*-)
 		;;
+	windows*-gnu*-)
+		# assuming these from llvm-mingw.
+		vendor=w64
+		kernel=
+		os=mingw32
+
+		if [[ "$cpu" == "x86" ]]; then
+			cpu="i686"
+		elif [[ "$cpu" == "arm" ]]; then
+   			cpu="armv7"
+		fi
+		;;
 	-dietlibc*- | -llvm*- | -mlibc*- | -musl*- | -newlib*- | -relibc*- \
 		    | -uclibc*- )
 		# These are just libc implementations, not actual OSes, and thus

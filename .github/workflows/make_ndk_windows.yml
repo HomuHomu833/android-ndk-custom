@@ -1,0 +1,263 @@
+name: Make NDK (Windows)
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} windows
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "NDK Release version:"
+        default: '29'
+        required: true
+        type: string
+      revision:
+        description: "NDK Release revision:"
+        default: '-beta4'
+        required: true
+        type: string
+
+jobs:
+  make:
+    name: Make NDK windows
+    runs-on: ubuntu-24.04
+    env:
+      ROOTDIR: ${{github.workspace}}
+    strategy:
+      fail-fast: false
+      matrix:
+        # armv7-w64-mingw32, arm64ec-w64-mingw32
+        target: [aarch64-w64-mingw32, i686-w64-mingw32, x86_64-w64-mingw32]
+    steps:
+      - name: Checkout android-ndk-custom
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}
+
+      - name: Setup llvm-mingw
+        run: |
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250924/llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
+          mv llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64 llvm-mingw
+
+      - name: Get Official Linux NDK
+        run: |
+          echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux.zip"
+          unzip -qq android-ndk.zip -d ${{ runner.temp }}
+          rm android-ndk.zip
+          mv ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}} ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux
+
+      - name: Get Official Windows NDK
+        run: |
+          echo "Downloading NDK r${{inputs.version}}${{inputs.revision}}..."
+          curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows.zip"
+          unzip -qq android-ndk.zip -d ${{ runner.temp }}
+          rm android-ndk.zip
+          mv ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}} ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows
+
+      - name: Install Dependencies
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt update
+          sudo apt install -y ninja-build python3.11 p7zip-full autoconf automake libtool pkgconf autoconf-archive m4
+
+      - name: Build Extra Dependencies
+        run: |
+          TOOLCHAIN=${PWD}/llvm-mingw
+          NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux"
+          SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
+          PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
+          # MAKE_VERSION=$($PREBUILT_BIN/make --version | sed -n '1s/.*GNU Make \([0-9]*\.[0-9]*\).*/\1/p')
+          MAKE_VERSION=4.4
+          YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+          SHADERC_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/shaderc/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/shaderc\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_TOOLS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-tools/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-tools\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/spirv-headers/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/spirv-headers\/\+archive\///' | sed 's/\.tar\.gz"$//')
+          GLSLANG_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+/refs/tags/$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)" | grep -oP 'href="/platform/external/shaderc/glslang/\+archive/[a-f0-9]{40}\.tar\.gz"' | sed -E 's/^href="\/platform\/external\/shaderc\/glslang\/\+archive\///' | sed 's/\.tar\.gz"$//')
+
+          cd $HOME
+          # GNU Make
+          cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
+          mv make-$MAKE_VERSION make
+          cd make
+          git init --quiet
+          for PATCH in $ROOTDIR/patches/windows/make/*.patch; do
+            git apply "$PATCH" || true
+          done
+          rm -rf .git
+          cp $ROOTDIR/config/config.sub build-aux
+          cp $ROOTDIR/config/config.guess build-aux
+          ./configure \
+          --prefix="${PWD}/build" \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-clang \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-clang++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
+          CFLAGS="-fsanitize=undefined -static" \
+          CXXFLAGS="-fsanitize=undefined -static" \
+          LDFLAGS="-static"
+          make -j"$(nproc --all)" install
+
+          cd $HOME
+          # YASM
+          cat $ROOTDIR/sources/yasm-$YASM_VERSION.tar.gz | gzip -d | tar -x
+          mv yasm-$YASM_VERSION yasm
+          cd yasm
+          cp $ROOTDIR/config/config.sub config
+          cp $ROOTDIR/config/config.guess config
+          ./configure \
+          --prefix="${PWD}/build" \
+          --build=x86_64-linux-gnu \
+          --host=${{ matrix.target }} \
+          --disable-nls \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-clang \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-clang++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
+          CFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
+          LDFLAGS="-static"
+          make -j"$(nproc --all)" install
+
+          # SPIRV-Tools and shaderc
+          mkdir -p "$HOME/shaderc"
+          cd "$HOME/shaderc"
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/shaderc/+archive/$SHADERC_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party"
+          mkdir -p spirv-tools
+          cd spirv-tools
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+archive/$SPIRV_TOOLS_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party/spirv-tools/external"
+          mkdir -p spirv-headers
+          cd spirv-headers
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-headers/+archive/$SPIRV_HEADERS_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party"
+          mkdir -p glslang
+          cd glslang
+          curl -LkSs "https://android.googlesource.com/platform/external/shaderc/glslang/+archive/$GLSLANG_HASH.tar.gz" | tar -xz
+          cd "$HOME/shaderc/third_party/spirv-tools"
+          git init --quiet
+          git apply $ROOTDIR/patches/ndk/spirv/full_static.patch
+          rm -rf .git
+          cd "$HOME/shaderc"
+          git init --quiet
+          git apply $ROOTDIR/patches/ndk/shaderc/full_static.patch
+          rm -rf .git
+          cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
+            -DCMAKE_BUILD_TYPE=MinSizeRel \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_CROSSCOMPILING=True \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang" \
+            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang++" \
+            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang" \
+            -DCMAKE_LINKER="${TOOLCHAIN}/bin/${{ matrix.target }}-ld" \
+            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy" \
+            -DCMAKE_AR="${TOOLCHAIN}/bin/${{ matrix.target }}-ar" \
+            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib" \
+            -DCMAKE_STRIP="${TOOLCHAIN}/bin/${{ matrix.target }}-strip" \
+            -DSHADERC_SKIP_TESTS=ON \
+            -DSHADERC_SKIP_EXAMPLES=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build "$HOME/shaderc/build" --target install
+
+          # Manually strip binaries
+          for file in \
+              $HOME/make/build/bin/make.exe \
+              $HOME/yasm/build/bin/yasm.exe \
+              $HOME/yasm/build/bin/ytasm.exe \
+              $HOME/yasm/build/bin/vsyasm.exe \
+              $HOME/python/python.exe
+          do
+              ${TOOLCHAIN}/bin/strip "$file"
+          done
+
+      - name: Get LLVM
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
+
+      - name: Make NDK Windows
+        run: |
+          NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
+          ZIG_TOOLCHAIN=${PWD}/llvm-mingw
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
+          NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
+          CC=${ZIG_TOOLCHAIN}/bin/${{ matrix.target }}-clang
+
+          find "${HOST_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
+              bname="$(basename "${file}")"
+              if [ -L "${file}" ]; then
+                 target="$(readlink -f "${file}")"
+                 echo "Hard linking ${bname}"
+                 rm "${file}"
+                 ln "${target}" "${file}"
+              fi
+          done
+
+          find "${NDK_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
+              bname="$(basename "${file}")"
+              if [ -f "${HOST_TOOLCHAIN}/bin/${bname}" ] && file "${file}" | grep -q 'PE32'; then
+                  echo "Replacing ${bname}"
+                  cp "${HOST_TOOLCHAIN}/bin/${bname}" "${file}"
+              elif ! file "${file}" | grep -Eq 'Python script|Perl script|ASCII text'; then
+                  echo "Removing ${bname}"
+                  rm ${file}
+              fi
+          done
+
+          sed -i -E '/case \$HOST_ARCH in/,/esac/ c\
+          HOST_ARCH=x86_64' "${NDK}/build/tools/ndk_bin_common.sh"
+          sed -i '/^HOST_ARCH=$(uname -m)$/d' "${NDK}/build/tools/ndk_bin_common.sh"
+
+          # Remove unused resource
+          rm -rf "${NDK_TOOLCHAIN}/python3"
+          rm -rf "${NDK}/prebuilt/windows_x86-64/bin/*asm.exe"
+          rm -rf "${NDK}/prebuilt/windows_x86-64/bin/echo.exe"
+          rm -rf "${NDK}/prebuilt/windows_x86-64/bin/cmp.exe"
+          find "${NDK_TOOLCHAIN}/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
+          find "${NDK_TOOLCHAIN}" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
+
+          # Copy compiled binaries
+          cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
+          cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
+          cp $HOME/make/build/bin/make.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $HOME/yasm/build/bin/yasm.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $HOME/yasm/build/bin/yasm.exe ${NDK_TOOLCHAIN}/bin
+          cp $HOME/yasm/build/bin/ytasm.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $HOME/yasm/build/bin/vsyasm.exe ${NDK}/prebuilt/windows-x86_64/bin
+          cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/windows-x86_64/lib
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp.exe
+          $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo.exe
+          mkdir -p "${NDK_TOOLCHAIN}/python3"
+          unzip -qq "${{github.workspace}}/binaries/python-3.11.4-${{ matrix.target }}.zip" -d "${NDK_TOOLCHAIN}/python3"
+          find "${NDK}/shader-tools/windows-x86_64" -type f | while IFS= read -r file; do
+             bname="$(basename "${file}")"
+
+             echo "Replacing ${bname}"
+             cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
+          done
+
+      - name: Archive
+        run: |
+          cd ${{ runner.temp }}
+          mv android-ndk-r${{inputs.version}}${{inputs.revision}}-windows android-ndk-r${{inputs.version}}${{inputs.revision}}
+          7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}-windows.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
+          mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z ${{ github.workspace }}
+
+      - name: Release
+        uses: ncipollo/release-action@v1.16.0
+        with:
+          name: "r${{inputs.version}}${{inputs.revision}}"
+          tag: "r${{inputs.version}}"
+          artifacts: android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z
+          allowUpdates: true
+          replacesArtifacts: true
+          body: ''
