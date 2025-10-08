@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -euo pipefail
+set -eu
 
 LLDB_PATH=$(command -v lldb || true)
 
