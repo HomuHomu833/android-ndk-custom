@@ -26,11 +26,11 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 ### 🔹 Zig-based Environment
 
 **Platforms**
-- ✅ Linux  
+- Linux  
 - ❌ ~~macOS~~ ([#14 comment](https://github.com/HomuHomu833/android-ndk-custom/issues/14#issuecomment-3346720483))  
-- ✅ Android  
-- ✅ NetBSD  
-- ✅ FreeBSD  
+- Android  
+- NetBSD  
+- FreeBSD  
 - ❌ ~~OpenBSD~~ ([#15 comment](https://github.com/HomuHomu833/android-ndk-custom/issues/15#issuecomment-3378450872))
 
 **Architectures**
