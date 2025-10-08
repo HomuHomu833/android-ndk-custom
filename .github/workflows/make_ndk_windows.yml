@@ -50,13 +50,12 @@ jobs:
           curl -sSfL -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows.zip"
           unzip -qq android-ndk.zip -d ${{ runner.temp }}
           rm android-ndk.zip
-          mv ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}} ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows
+          mv ${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}} android-ndk-r${{inputs.version}}${{inputs.revision}}-windows
 
       - name: Install Dependencies
         run: |
-          sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt update
-          sudo apt install -y ninja-build python3.11 p7zip-full autoconf automake libtool pkgconf autoconf-archive m4
+          sudo apt install -y ninja-build p7zip-full
 
       - name: Build Extra Dependencies
         run: |
@@ -185,7 +184,7 @@ jobs:
 
       - name: Make NDK Windows
         run: |
-          NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
+          NDK="${PWD}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
           ZIG_TOOLCHAIN=${PWD}/llvm-mingw
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
@@ -247,9 +246,8 @@ jobs:
 
       - name: Archive
         run: |
-          cd ${{ runner.temp }}
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-windows android-ndk-r${{inputs.version}}${{inputs.revision}}
-          7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}-windows.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
+          7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.7z ${{ github.workspace }}
 
       - name: Release
