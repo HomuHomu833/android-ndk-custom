@@ -24,24 +24,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # thumb-windows-gnu
-        target: [aarch64-windows-gnu, x86-windows-gnu, x86_64-windows-gnu]
+        # armv7-w64-mingw32, arm64ec-w64-mingw32
+        target: [aarch64-w64-mingw32, i686-w64-mingw32, x86_64-w64-mingw32]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}
 
-      - name: Setup Zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: "0.16.0-dev.577+c50aa2b95"
-          use-cache: false
-
-      - name: Setup Zig Toolchain
+      - name: Setup llvm-mingw
         run: |
-          git clone https://github.com/${{ github.repository_owner }}/zig-as-llvm
-          cp -R $ROOTDIR/patches/musl/zig/* $(whereis zig | awk '{print $2}' | xargs dirname)
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250924/llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
+          mv llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64 llvm-mingw
 
       - name: Get Official Linux NDK
         run: |
@@ -67,7 +61,7 @@ jobs:
 
       - name: Build Extra Dependencies
         run: |
-          TOOLCHAIN=${PWD}/zig-as-llvm
+          TOOLCHAIN=${PWD}/llvm-mingw
           NDK_DIR="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-linux"
           SHADER_TOOLS_BIN="$NDK_DIR/shader-tools/linux-x86_64"
           PREBUILT_BIN="$NDK_DIR/prebuilt/linux-x86_64/bin"
@@ -95,15 +89,15 @@ jobs:
           --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-clang \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-clang++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
+          CFLAGS="-fsanitize=undefined -static" \
+          CXXFLAGS="-fsanitize=undefined -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -119,15 +113,15 @@ jobs:
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
           --disable-nls \
-          CC=${TOOLCHAIN}/bin/cc \
-          CXX=${TOOLCHAIN}/bin/c++ \
-          LD=${TOOLCHAIN}/bin/ld \
-          OBJCOPY=${TOOLCHAIN}/bin/objcopy \
-          AR=${TOOLCHAIN}/bin/ar \
-          RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -static -fwrapv -Wno-error=date-time" \
+          CC=${TOOLCHAIN}/bin/${{ matrix.target }}-clang \
+          CXX=${TOOLCHAIN}/bin/${{ matrix.target }}-clang++ \
+          LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
+          OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
+          AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
+          RANLIB=${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib \
+          STRIP=${TOOLCHAIN}/bin/${{ matrix.target }}-strip \
+          CFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
+          CXXFLAGS="-fsanitize=undefined -static -fwrapv -Wno-error=date-time" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -158,19 +152,19 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="-Wno-error=implicit-function-declaration -fsanitize=undefined -static" \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined -static" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Windows \
-            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/c++" \
-            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/cc" \
-            -DCMAKE_LINKER="${TOOLCHAIN}/bin/ld" \
-            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/objcopy" \
-            -DCMAKE_AR="${TOOLCHAIN}/bin/ar" \
-            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/ranlib" \
-            -DCMAKE_STRIP="${TOOLCHAIN}/bin/strip" \
+            -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang" \
+            -DCMAKE_CXX_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang++" \
+            -DCMAKE_ASM_COMPILER="${TOOLCHAIN}/bin/${{ matrix.target }}-clang" \
+            -DCMAKE_LINKER="${TOOLCHAIN}/bin/${{ matrix.target }}-ld" \
+            -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy" \
+            -DCMAKE_AR="${TOOLCHAIN}/bin/${{ matrix.target }}-ar" \
+            -DCMAKE_RANLIB="${TOOLCHAIN}/bin/${{ matrix.target }}-ranlib" \
+            -DCMAKE_STRIP="${TOOLCHAIN}/bin/${{ matrix.target }}-strip" \
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
@@ -193,10 +187,10 @@ jobs:
       - name: Make NDK Windows
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
-          ZIG_TOOLCHAIN=${PWD}/zig-as-llvm
+          ZIG_TOOLCHAIN=${PWD}/llvm-mingw
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
-          CC=${ZIG_TOOLCHAIN}/bin/cc
+          CC=${ZIG_TOOLCHAIN}/bin/${{ matrix.target }}-clang
 
           find "${HOST_TOOLCHAIN}/bin" -type f | while IFS= read -r file; do
               bname="$(basename "${file}")"
