@@ -242,6 +242,10 @@ jobs:
              echo "Replacing ${bname}"
              cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
           done
+          
+          cd $NDK
+          $CC $CFLAGS ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
+          $HOME/package-generator package.xml $(grep '^Pkg\.Revision =' source.properties | cut -d'=' -f2 | tr -d ' ')
 
       - name: Archive
         run: |

@@ -299,6 +299,10 @@ jobs:
           mv ${NDK}/shader-tools/linux-x86_64 ${NDK}/shader-tools/cosmo-universal
           mv ${NDK}/prebuilt/linux-x86_64 ${NDK}/prebuilt/cosmo-universal
           mv ${NDK}/toolchains/llvm/prebuilt/linux-x86_64 ${NDK}/toolchains/llvm/prebuilt/cosmo-universal
+          
+          cd $NDK
+          $CC $CFLAGS ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
+          $HOME/package-generator package.xml $(grep '^Pkg\.Revision =' source.properties | cut -d'=' -f2 | tr -d ' ')
 
       - name: Archive
         run: tar -c android-ndk-r${{inputs.version}}${{inputs.revision}} >android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
