@@ -227,7 +227,7 @@ jobs:
           HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
           CC="${NDK_TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang"
-          
+
           $CC $CFLAGS ${{ github.workspace }}/sources/portable_cmp.c -o ${NDK}/prebuilt/linux-x86_64/bin/cmp
           $CC $CFLAGS ${{ github.workspace }}/sources/portable_echo.c -o ${NDK}/prebuilt/linux-x86_64/bin/echo
 
@@ -371,9 +371,9 @@ jobs:
           elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
               set(ANDROID_HOST_TAG "windows-x86_64")\
           endif()' "${NDK}/build/cmake/android.toolchain.cmake" "${NDK}/build/cmake/android-legacy.toolchain.cmake"
-          
+
           cd $NDK
-          $CC $CFLAGS ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
+          /usr/bin/cc ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
           $HOME/package-generator package.xml $(grep '^Pkg\.Revision =' source.properties | cut -d'=' -f2 | tr -d ' ')
 
       - name: Archive

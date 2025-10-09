@@ -312,7 +312,7 @@ jobs:
              echo "Replacing ${bname}"
              cp "$HOME/shaderc/install/bin/${bname}" "${file}" || true
           done
-          
+
           rm -rf "${NDK}/shader-tools/linux-x86_64/libc++.so"
 
           if [[ "${{ matrix.target }}" != "x86_64-linux-musl" && "${{ matrix.target }}" != "x86_64-linux-muslx32" ]]; then
@@ -398,9 +398,9 @@ jobs:
           elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
               set(ANDROID_HOST_TAG "windows-x86_64")\
           endif()' "${NDK}/build/cmake/android.toolchain.cmake" "${NDK}/build/cmake/android-legacy.toolchain.cmake"
-          
+
           cd $NDK
-          $CC $CFLAGS ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
+          /usr/bin/cc ${{ github.workspace }}/sources/package-generator.c -o $HOME/package-generator
           $HOME/package-generator package.xml $(grep '^Pkg\.Revision =' source.properties | cut -d'=' -f2 | tr -d ' ')
 
       - name: Archive
