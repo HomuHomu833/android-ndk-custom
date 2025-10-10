@@ -153,7 +153,7 @@ jobs:
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           cmake --build "$HOME/shaderc/build" --target install
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4.6.2
         with:
           name: extra-deps-${{ matrix.target }}
           path: "~/build-${{ matrix.target }}"
@@ -200,7 +200,7 @@ jobs:
             fi
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4.6.2
         with:
           name: extra-deps
           path: "~/build/*"
@@ -307,7 +307,7 @@ jobs:
       - name: Archive
         run: tar -c android-ndk-r${{inputs.version}}${{inputs.revision}} >android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4.6.2
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed
           path: android-ndk-r${{inputs.version}}${{inputs.revision}}-unfixed.tar
@@ -430,7 +430,7 @@ jobs:
         run: 7z a -snl -t7z -mx=9 -m0=LZMA2 -md=256m -mfb=273 -mtc=on -mmt=on android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z android-ndk-r${{inputs.version}}${{inputs.revision}}
 
       - name: Upload Fixed NDK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape
           path: android-ndk-r${{inputs.version}}${{inputs.revision}}-windows-ape.7z
@@ -479,7 +479,7 @@ jobs:
         run: tar -cf - android-ndk-r${{inputs.version}}${{inputs.revision}} | xz -T0 -9e --lzma2=dict=256MiB > android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape.tar.xz
 
       - name: Upload Fixed NDK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape
           path: android-ndk-r${{inputs.version}}${{inputs.revision}}-unix-ape.tar.xz
