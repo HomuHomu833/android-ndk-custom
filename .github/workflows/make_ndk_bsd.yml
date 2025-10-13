@@ -368,8 +368,6 @@ jobs:
                   set(ARCH "arm64_be")\
               elseif(HOST_ARCH STREQUAL "loongarch64")\
                   set(ARCH "loong64")\
-              elseif(HOST_ARCH STREQUAL "riscv64")\
-                  set(ARCH "riscv64")\
               elseif(HOST_ARCH STREQUAL "powerpc64le")\
                   set(ARCH "ppc64le")\
               elseif(HOST_ARCH STREQUAL "powerpc64")\
