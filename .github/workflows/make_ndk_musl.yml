@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         # hexagon-linux-musl, mips64-linux-muslabi64, mips64el-linux-muslabi64, x86_64-linux-muslx32
-        target: [arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, aarch64-linux-musl, aarch64_be-linux-musl, loongarch64-linux-musl, loongarch64-linux-muslsf, mips-linux-musleabi, mips-linux-musleabihf, mipsel-linux-musleabi, mipsel-linux-musleabihf, mips64-linux-muslabin32, mips64el-linux-muslabin32, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, x86-linux-musl, x86_64-linux-musl]
+        target: [aarch64-linux-musl, aarch64_be-linux-musl, arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, loongarch64-linux-musl, loongarch64-linux-muslsf, mips-linux-musleabi, mips-linux-musleabihf, mips64-linux-muslabin32, mips64el-linux-muslabin32, mipsel-linux-musleabi, mipsel-linux-musleabihf, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v5
@@ -87,8 +87,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fsanitize=undefined -static" \
-          CXXFLAGS="-fsanitize=undefined -static" \
+          CFLAGS="-fno-sanitize=all -static" \
+          CXXFLAGS="-fno-sanitize=all -static" \
           LDFLAGS="-static" \
           ac_cv_func_setgid=no \
           ac_cv_func_setresgid=no \
@@ -123,8 +123,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static -fwrapv -Wno-error=date-time" \
-          CXXFLAGS="-static -fwrapv -Wno-error=date-time" \
+          CFLAGS="-fno-sanitize=all -fwrapv -Wno-error=date-time -static" \
+          CXXFLAGS="-fno-sanitize=all -fwrapv -Wno-error=date-time -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -155,8 +155,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fsanitize=undefined -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fsanitize=undefined -static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fno-sanitize=all -static" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fno-sanitize=all -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -220,8 +220,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -static -Wno-error=date-time" \
+          CFLAGS="-fno-sanitize=all -Wno-error=date-time -static" \
+          CXXFLAGS="-fno-sanitize=all -Wno-error=date-time -static" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install

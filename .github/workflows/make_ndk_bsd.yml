@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         # riscv32-netbsd-none
-        target: [arm-freebsd-eabihf, aarch64-freebsd-none, powerpc-freebsd-eabihf, powerpc64-freebsd-none, powerpc64le-freebsd-none, riscv64-freebsd-none, x86-freebsd-none, x86_64-freebsd-none, aarch64-netbsd-none, aarch64_be-netbsd-none, arm-netbsd-eabi, arm-netbsd-eabihf, armeb-netbsd-eabi, armeb-netbsd-eabihf, mips-netbsd-eabi, mips-netbsd-eabihf, mipsel-netbsd-eabi, mipsel-netbsd-eabihf, powerpc-netbsd-eabi, powerpc-netbsd-eabihf, x86-netbsd-none, x86_64-netbsd-none]
+        target: [aarch64-freebsd-none, aarch64-netbsd-none, aarch64_be-netbsd-none, arm-freebsd-eabihf, arm-netbsd-eabi, arm-netbsd-eabihf, armeb-netbsd-eabi, armeb-netbsd-eabihf, mips-netbsd-eabi, mips-netbsd-eabihf, mipsel-netbsd-eabi, mipsel-netbsd-eabihf, powerpc-freebsd-eabihf, powerpc-netbsd-eabi, powerpc-netbsd-eabihf, powerpc64-freebsd-none, powerpc64le-freebsd-none, riscv64-freebsd-none, x86-freebsd-none, x86-netbsd-none, x86_64-freebsd-none, x86_64-netbsd-none]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v5
@@ -92,8 +92,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fsanitize=undefined" \
-          CXXFLAGS="-fsanitize=undefined"
+          CFLAGS="-fno-sanitize=all" \
+          CXXFLAGS="-fno-sanitize=all"
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -115,8 +115,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fwrapv" \
-          CXXFLAGS="-fwrapv"
+          CFLAGS="-fno-sanitize=all -fwrapv" \
+          CXXFLAGS="-fno-sanitize=all -fwrapv"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -147,8 +147,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fsanitize=undefined -Wno-error=date-time" \
-            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -Wno-error=date-time" \
+            -DCMAKE_C_FLAGS="-fno-sanitize=all -Wno-error=date-time" \
+            -DCMAKE_CXX_FLAGS="-fno-sanitize=all -Wno-error=date-time" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=$( \
               field=$(echo "$ZIG_TARGET" | cut -d- -f2); \
@@ -203,8 +203,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fsanitize=undefined -Wno-error=date-time" \
-          CXXFLAGS="-fsanitize=undefined -Wno-error=date-time" \
+          CFLAGS="-fno-sanitize=all -Wno-error=date-time" \
+          CXXFLAGS="-fno-sanitize=all -Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install

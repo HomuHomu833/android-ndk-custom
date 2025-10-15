@@ -82,8 +82,8 @@ jobs:
           LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-fno-sanitize=all -static" \
+          CXXFLAGS="-fno-sanitize=all -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -105,8 +105,8 @@ jobs:
           LD=${TOOLCHAIN}/bin/${{ matrix.target }}-ld \
           OBJCOPY=${TOOLCHAIN}/bin/${{ matrix.target }}-objcopy \
           AR=${TOOLCHAIN}/bin/${{ matrix.target }}-ar \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-fno-sanitize=all -static" \
+          CXXFLAGS="-fno-sanitize=all -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -145,8 +145,8 @@ jobs:
             -DCMAKE_LINKER="${TOOLCHAIN}/bin/${{matrix.target}}-ld" \
             -DCMAKE_OBJCOPY="${TOOLCHAIN}/bin/${{matrix.target}}-objcopy" \
             -DCMAKE_AR="${TOOLCHAIN}/bin/${{matrix.target}}-ar" \
-            -DCMAKE_C_FLAGS="-static" \
-            -DCMAKE_CXX_FLAGS="-static" \
+            -DCMAKE_C_FLAGS="-fno-sanitize=all -static" \
+            -DCMAKE_CXX_FLAGS="-fno-sanitize=all -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DSHADERC_SKIP_TESTS=ON \
             -DSHADERC_SKIP_EXAMPLES=ON \
