@@ -87,8 +87,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fno-sanitize=all -static" \
-          CXXFLAGS="-fno-sanitize=all -static" \
+          CFLAGS="-static" \
+          CXXFLAGS="-static" \
           LDFLAGS="-static" \
           ac_cv_func_setgid=no \
           ac_cv_func_setresgid=no \
@@ -123,8 +123,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fno-sanitize=all -fwrapv -Wno-error=date-time -static" \
-          CXXFLAGS="-fno-sanitize=all -fwrapv -Wno-error=date-time -static" \
+          CFLAGS="-fwrapv -Wno-error=date-time -static" \
+          CXXFLAGS="-fwrapv -Wno-error=date-time -static" \
           LDFLAGS="-static"
           make -j"$(nproc --all)" install
 
@@ -155,8 +155,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fno-sanitize=all -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -fno-sanitize=all -static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
             -DCMAKE_EXE_LINKER_FLAGS="-static" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
@@ -220,8 +220,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fno-sanitize=all -Wno-error=date-time -static" \
-          CXXFLAGS="-fno-sanitize=all -Wno-error=date-time -static" \
+          CFLAGS="-Wno-error=date-time -static" \
+          CXXFLAGS="-Wno-error=date-time -static" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install

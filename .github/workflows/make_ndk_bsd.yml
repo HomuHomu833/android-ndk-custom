@@ -91,9 +91,7 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/objcopy \
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
-          STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fno-sanitize=all" \
-          CXXFLAGS="-fno-sanitize=all"
+          STRIP=${TOOLCHAIN}/bin/strip
           make -j"$(nproc --all)" install
 
           cd $HOME
@@ -115,8 +113,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fno-sanitize=all -fwrapv" \
-          CXXFLAGS="-fno-sanitize=all -fwrapv"
+          CFLAGS="-fwrapv" \
+          CXXFLAGS="-fwrapv"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -147,8 +145,8 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-fno-sanitize=all -Wno-error=date-time" \
-            -DCMAKE_CXX_FLAGS="-fno-sanitize=all -Wno-error=date-time" \
+            -DCMAKE_C_FLAGS="-Wno-error=date-time" \
+            -DCMAKE_CXX_FLAGS="-Wno-error=date-time" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=$( \
               field=$(echo "$ZIG_TARGET" | cut -d- -f2); \
@@ -203,8 +201,8 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-fno-sanitize=all -Wno-error=date-time" \
-          CXXFLAGS="-fno-sanitize=all -Wno-error=date-time" \
+          CFLAGS="-Wno-error=date-time" \
+          CXXFLAGS="-Wno-error=date-time" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
