@@ -87,5 +87,5 @@ See the [LICENSE](LICENSE) file for more details.
 
 ---
 
-## 💬 **Contributing** 
+## 💬 Contributing
 Feel free to open pull requests or issues if you have any contributions or feedback!
