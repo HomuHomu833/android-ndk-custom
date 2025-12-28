@@ -2,7 +2,7 @@
 
 **Android NDK Custom** is a custom-built Android NDK that replaces the default toolchain with a rebuilt **LLVM** and related binaries.
 
-It integrates alternative libc implementations like **musl** (via **[Zig](https://ziglang.org)**), **[Cosmopolitan](https://justine.lol/cosmopolitan)**, **Bionic** (from the official Android NDK), and **[llvm-mingw](https://github.com/mstorsjo/llvm-mingw)** to provide a more flexible and portable build environment.
+It integrates alternative libc implementations like **musl** (via **[Zig](https://ziglang.org)**), **Bionic** (from the official Android NDK), and **[llvm-mingw](https://github.com/mstorsjo/llvm-mingw)** to provide a more flexible and portable build environment.
 
 This project is inspired by [Zongou’s build system](https://github.com/zongou/build/tree/main/.github/workflows).
 
@@ -39,23 +39,6 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
 - **Thumb**: `thumb`, `thumbeb`
 - **Other**: `loongarch64`, `s390x`
-
----
-
-### 🔹 Cosmopolitan Environment *(Discontinued)*
-
-**Platforms**
-- Windows
-- Linux
-- macOS
-- Android
-- NetBSD
-- FreeBSD
-- OpenBSD 7.3
-
-**Architectures**
-- `x86_64`
-- `aarch64`
 
 ---
 
