@@ -5,12 +5,12 @@ on:
     inputs:
       version:
         description: "NDK Release version:"
-        default: '29'
+        default: '30'
         required: true
         type: string
       revision:
         description: "NDK Release revision:"
-        default: ''
+        default: '-beta1'
         required: false
         type: string
 
