@@ -14,6 +14,9 @@ on:
         required: false
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   make:
     name: Make NDK musl
@@ -408,7 +411,7 @@ jobs:
           mv android-ndk-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz ${{ github.workspace }}
 
       - name: Release
-        uses: ncipollo/release-action@v1.20.0
+        uses: ncipollo/release-action@v1.21.0
         with:
           name: "r${{inputs.version}}${{inputs.revision}}"
           tag: "r${{inputs.version}}"
