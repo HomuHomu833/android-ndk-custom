@@ -64,7 +64,7 @@ jobs:
             GLSLC_VERSION_OUTPUT="$($SHADER_TOOLS_BIN/glslc --version)"
             SHADERC_HASH=$(echo "$GLSLC_VERSION_OUTPUT" | sed -n 's/^shaderc .* \([a-f0-9]\{40\}\)$/\1/p')
             SPIRV_TOOLS_HASH=$(echo "$GLSLC_VERSION_OUTPUT" | sed -n 's/^spirv-tools .* \([a-f0-9]\{40\}\)$/\1/p')
-            GLSLANG_HASH=$(echo "$GLSLC_VERSION_OUTPUT" | sed -n 's/^glslang .* \([a-f0-9]\{40\}\)$/\1/p')
+            GLSLANG_HASH=$(echo "$GLSLC_VERSION_OUTPUT" | sed -n 's/^glslang \([0-9a-f]\{40\}\)$/\1/p')
             SPIRV_HEADERS_HASH=$(curl -LkSs "https://android.googlesource.com/platform/external/shaderc/spirv-tools/+/${SPIRV_TOOLS_HASH}/DEPS?format=TEXT" | base64 -d | grep -oP "'spirv_headers_revision': '\K[a-f0-9]{40}")
           else
             NDK_TAG=$($SHADER_TOOLS_BIN/glslc --version | sed -n 's/.*\(ndk-[^ ]*\).*/\1/p' | sed 's/+/%2B/g' | head -n 1)
