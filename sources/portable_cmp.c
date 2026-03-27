@@ -1,4 +1,4 @@
-/* portable_cmp.c - Improved portable recreation of GNU cmp
+/* portable_cmp.c - A portable recreation of GNU cmp
    Public domain / CC0 – no warranty. */
 
 #include <errno.h>
