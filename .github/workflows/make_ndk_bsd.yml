@@ -10,7 +10,6 @@ on:
         type: string
       revision:
         description: "NDK Release revision:"
-        default: '-beta1'
         required: false
         type: string
 
