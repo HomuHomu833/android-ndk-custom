@@ -234,6 +234,8 @@ jobs:
           cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
+          find "${HOST_TOOLCHAIN}/lib" -maxdepth 1 \( -name '*.dll' -o -name '*.dll.*' \) \
+              -exec cp {} "${NDK_TOOLCHAIN}/lib/" \;
           cp $HOME/make/build/bin/make.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/yasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/yasm.exe ${NDK_TOOLCHAIN}/bin
