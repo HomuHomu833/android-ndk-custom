@@ -26,8 +26,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # hexagon-linux-musl, mips64-linux-muslabi64, mips64el-linux-muslabi64, x86_64-linux-muslx32
-        target: [aarch64-linux-musl, aarch64_be-linux-musl, arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, loongarch64-linux-musl, loongarch64-linux-muslsf, mips-linux-musleabi, mips-linux-musleabihf, mips64-linux-muslabin32, mips64el-linux-muslabin32, mipsel-linux-musleabi, mipsel-linux-musleabihf, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, x86-linux-musl, x86_64-linux-musl]
+        # x86_64-linux-muslx32
+        target: [aarch64-linux-musl, aarch64_be-linux-musl, arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, hexagon-linux-musl, loongarch64-linux-musl, loongarch64-linux-muslf32, loongarch64-linux-muslsf, mips-linux-musleabi, mips-linux-musleabihf, mips64-linux-muslabin32, mips64-linux-muslabi64, mips64el-linux-muslabin32, mips64el-linux-muslabi64, mipsel-linux-musleabi, mipsel-linux-musleabihf, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, x86-linux-musl, x86_64-linux-musl]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v5
