@@ -29,7 +29,7 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 - Android
 - NetBSD
 - FreeBSD
-- ❌ ~~OpenBSD~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/15#issuecomment-3378450872)
+- ⚠️ OpenBSD (https://github.com/HomuHomu833/android-ndk-custom/issues/15#issuecomment-3378450872)
 
 **Architectures**
 - **X86 Family**: `x86`, `x86_64`
