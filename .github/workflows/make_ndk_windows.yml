@@ -187,13 +187,13 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK Windows
         run: |
           NDK="${PWD}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
           ZIG_TOOLCHAIN=${PWD}/llvm-mingw
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
           CC=${ZIG_TOOLCHAIN}/bin/${{ matrix.target }}-clang
 
