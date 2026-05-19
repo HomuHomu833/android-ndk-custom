@@ -37,7 +37,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2.0.5
         with:
-          version: "0.16.0-dev.577+c50aa2b95"
+          version: "0.17.0-dev.304+9787df942"
           use-cache: false
 
       - name: Setup Zig Toolchain
