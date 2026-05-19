@@ -32,8 +32,8 @@ jobs:
 
       - name: Setup llvm-mingw
         run: |
-          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20250924/llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
-          mv llvm-mingw-20250924-ucrt-ubuntu-22.04-x86_64 llvm-mingw
+          curl -LkSs https://github.com/mstorsjo/llvm-mingw/releases/download/20260505/llvm-mingw-20260505-ucrt-ubuntu-22.04-x86_64.tar.xz | xz -d | tar -x
+          mv llvm-mingw-20260505-ucrt-ubuntu-22.04-x86_64 llvm-mingw
 
       - name: Get Official Linux NDK
         run: |
@@ -187,13 +187,13 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK Windows
         run: |
           NDK="${PWD}/android-ndk-r${{inputs.version}}${{inputs.revision}}-windows"
           ZIG_TOOLCHAIN=${PWD}/llvm-mingw
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/windows-x86_64"
           CC=${ZIG_TOOLCHAIN}/bin/${{ matrix.target }}-clang
 
@@ -234,8 +234,6 @@ jobs:
           cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
-          find "${HOST_TOOLCHAIN}/lib" -maxdepth 1 \( -name '*.dll' -o -name '*.dll.*' \) \
-              -exec cp {} "${NDK_TOOLCHAIN}/lib/" \;
           cp $HOME/make/build/bin/make.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/yasm.exe ${NDK}/prebuilt/windows-x86_64/bin
           cp $HOME/yasm/build/bin/yasm.exe ${NDK_TOOLCHAIN}/bin
