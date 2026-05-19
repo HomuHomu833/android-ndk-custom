@@ -232,7 +232,7 @@ jobs:
       - name: Make NDK Bionic
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
           CC="${NDK_TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang"
 
