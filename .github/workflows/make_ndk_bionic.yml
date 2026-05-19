@@ -227,12 +227,12 @@ jobs:
           done
 
       - name: Get LLVM
-        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
+        run: curl -LkSs https://github.com/${{ github.repository_owner }}/llvm-custom/releases/download/llvm-r${{inputs.version}}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}.tar.xz | tar -xJf -
 
       - name: Make NDK Bionic
         run: |
           NDK="${{ runner.temp }}/android-ndk-r${{inputs.version}}${{inputs.revision}}"
-          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld+lldb-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
+          HOST_TOOLCHAIN="${PWD}/bolt+clang+clang-tools-extra+lld-r${{inputs.version}}${{inputs.revision}}-${{matrix.target}}"
           NDK_TOOLCHAIN="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
           CC="${NDK_TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang"
 
@@ -283,8 +283,6 @@ jobs:
           cp -R "${HOST_TOOLCHAIN}/lib/clang" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libear" "${NDK_TOOLCHAIN}/lib"
           cp -R "${HOST_TOOLCHAIN}/lib/libscanbuild" "${NDK_TOOLCHAIN}/lib"
-          find "${HOST_TOOLCHAIN}/lib" -maxdepth 1 \( -name '*.so' -o -name '*.so.*' \) \
-              -exec cp {} "${NDK_TOOLCHAIN}/lib/" \;
           cp $HOME/make/build/bin/make ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
@@ -295,6 +293,8 @@ jobs:
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
           cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
+          cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
+          chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
           find "${NDK}/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
              bname="$(basename "${file}")"
 
