@@ -86,8 +86,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
+          CFLAGS="-Wno-error=incompatible-pointer-types -static" \
+          CXXFLAGS="-Wno-error=incompatible-pointer-types -static" \
           LDFLAGS="-static" \
           ac_cv_func_setgid=no \
           ac_cv_func_setresgid=no \
@@ -319,15 +319,16 @@ jobs:
             ARCH="${ARCH%%-*}"
 
             case "$ARCH" in
-                aarch64)     ARCH="arm64" ;;
-                aarch64_be)  ARCH="arm64_be" ;;
-                loongarch64) ARCH="loong64" ;;
-                powerpc64le) ARCH="ppc64le" ;;
-                powerpc64)   ARCH="ppc64" ;;
-                powerpcle)   ARCH="ppcle" ;;
-                powerpc)     ARCH="ppc" ;;
-                thumb)       ARCH="arm" ;;
+                aarch64)            ARCH="arm64" ;;
+                aarch64_be)         ARCH="arm64_be" ;;
+                loongarch64)        ARCH="loong64" ;;
+                powerpc64le)        ARCH="ppc64le" ;;
+                powerpc64)          ARCH="ppc64" ;;
+                powerpcle)          ARCH="ppcle" ;;
+                powerpc)            ARCH="ppc" ;;
+                thumb)              ARCH="arm" ;;
                 thumbeb | armeb)    ARCH="arm_be" ;;
+                x86)                ARCH="i686" ;;
             esac
 
             mv "${NDK}/prebuilt/linux-x86_64" "${NDK}/prebuilt/linux-${ARCH}"
