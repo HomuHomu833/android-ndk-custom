@@ -83,9 +83,8 @@ jobs:
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
-          CFLAGS="-Wno-error=implicit-function-declaration -static" \
-          CXXFLAGS="-Wno-error=implicit-function-declaration -static" \
-          LDFLAGS="-static" \
+          CFLAGS="-Wno-error=implicit-function-declaration" \
+          CXXFLAGS="-Wno-error=implicit-function-declaration" \
           ac_cv_lib_elf_elf_begin=no \
           am_cv_func_iconv=no \
           ac_cv_func_pselect=$HAVE_PSELECT
@@ -109,10 +108,7 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
-          STRIP=${TOOLCHAIN}/bin/llvm-strip \
-          CFLAGS="-static" \
-          CXXFLAGS="-static" \
-          LDFLAGS="-static"
+          STRIP=${TOOLCHAIN}/bin/llvm-strip
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -143,9 +139,7 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="-static" \
-            -DCMAKE_CXX_FLAGS="-static" \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang" \
