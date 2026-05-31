@@ -85,6 +85,7 @@ jobs:
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
           CFLAGS="-Wno-error=implicit-function-declaration" \
           CXXFLAGS="-Wno-error=implicit-function-declaration" \
+          LDFLAGS="-static-libstdc++ -static-libgcc" \
           ac_cv_lib_elf_elf_begin=no \
           am_cv_func_iconv=no \
           ac_cv_func_pselect=$HAVE_PSELECT
@@ -108,7 +109,8 @@ jobs:
           OBJCOPY=${TOOLCHAIN}/bin/llvm-objcopy \
           AR=${TOOLCHAIN}/bin/llvm-ar \
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
-          STRIP=${TOOLCHAIN}/bin/llvm-strip
+          STRIP=${TOOLCHAIN}/bin/llvm-strip \
+          LDFLAGS="-static-libstdc++ -static-libgcc"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -167,9 +169,6 @@ jobs:
           ac_cv_file__dev_ptmx=no
           ac_cv_file__dev_ptc=no
           EOF
-          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
-          MODULE_BUILDTYPE=static
-          ' configure
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
@@ -192,6 +191,7 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/llvm-ranlib \
           STRIP=${TOOLCHAIN}/bin/llvm-strip \
           LD_LIBRARY_PATH="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${{matrix.target}}" \
+          LDFLAGS="-static-libstdc++ -static-libgcc" \
           LDSHARED="${TOOLCHAIN}/bin/${{matrix.target}}${ANDROID_PLATFORM}-clang -shared -fPIC" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
@@ -203,7 +203,7 @@ jobs:
               $HOME/yasm/build/bin/yasm \
               $HOME/yasm/build/bin/ytasm \
               $HOME/yasm/build/bin/vsyasm \
-              $HOME/python/python
+              $HOME/python/build/python
           do
               ${TOOLCHAIN}/bin/llvm-strip -s "$file"
           done
@@ -270,10 +270,9 @@ jobs:
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
           cp $HOME/yasm/build/bin/ytasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm ${NDK}/prebuilt/linux-x86_64/bin
-          cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/linux-x86_64/lib
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
-          cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
+          cp $HOME/python/build/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
           cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb

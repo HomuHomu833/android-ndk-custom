@@ -214,7 +214,7 @@ jobs:
               $HOME/yasm/build/bin/yasm \
               $HOME/yasm/build/bin/ytasm \
               $HOME/yasm/build/bin/vsyasm \
-              $HOME/python/python
+              $HOME/python/build/python
           do
               ${TOOLCHAIN}/bin/strip "$file"
           done
@@ -294,10 +294,9 @@ jobs:
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
           cp $HOME/yasm/build/bin/ytasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm ${NDK}/prebuilt/linux-x86_64/bin
-          cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/linux-x86_64/lib
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
-          cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
+          cp $HOME/python/build/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
           cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb

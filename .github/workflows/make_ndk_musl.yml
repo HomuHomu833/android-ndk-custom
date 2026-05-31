@@ -1,4 +1,4 @@
-name: Make NDK (musl libc)
+name: Make NDK (Linux)
 run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} musl
 on:
   workflow_dispatch:
@@ -26,8 +26,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # x86_64-linux-muslx32
-        target: [aarch64-linux-musl, aarch64_be-linux-musl, arm-linux-musleabi, arm-linux-musleabihf, armeb-linux-musleabi, armeb-linux-musleabihf, hexagon-linux-musl, loongarch64-linux-musl, loongarch64-linux-muslf32, loongarch64-linux-muslsf, mips-linux-musleabi, mips-linux-musleabihf, mips64-linux-muslabin32, mips64-linux-muslabi64, mips64el-linux-muslabin32, mips64el-linux-muslabi64, mipsel-linux-musleabi, mipsel-linux-musleabihf, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-musl, riscv32-linux-musl, riscv64-linux-musl, s390x-linux-musl, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, x86-linux-musl, x86_64-linux-musl]
+        # x86_64-linux-gnux32
+        target: [aarch64-linux-musl, aarch64-linux-gnu, aarch64_be-linux-gnu, arm-linux-gnueabi, arm-linux-musleabihf, arm-linux-gnueabihf, armeb-linux-gnueabi, armeb-linux-gnueabihf, hexagon-linux-musl, loongarch64-linux-gnu, loongarch64-linux-muslf32, loongarch64-linux-gnusf, mips-linux-gnueabi, mips-linux-gnueabihf, mips64-linux-gnuabin32, mips64-linux-gnuabi64, mips64el-linux-gnuabin32, mips64el-linux-gnuabi64, mipsel-linux-gnueabi, mipsel-linux-gnueabihf, powerpc-linux-musleabi, powerpc-linux-musleabihf, powerpc64-linux-musl, powerpc64le-linux-gnu, riscv32-linux-gnu, riscv64-linux-gnu, s390x-linux-gnu, thumb-linux-musleabi, thumb-linux-musleabihf, thumbeb-linux-musleabi, thumbeb-linux-musleabihf, x86-linux-musl, x86-linux-gnu, x86_64-linux-musl, x86_64-linux-gnu]
     steps:
       - name: Checkout android-ndk-custom
         uses: actions/checkout@v5
@@ -68,6 +68,12 @@ jobs:
           YASM_VERSION=$($PREBUILT_BIN/yasm --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
           NDK_TAG="ndk-r${{inputs.version}}${{inputs.revision}}"
 
+          # $STATIC is compile+link (static libc, musl only) and $STATIC_LD is link-only.
+          case "${{ matrix.target }}" in
+              *musl*) STATIC="-static"; STATIC_LD="-static" ;;
+              *)      STATIC="";        STATIC_LD="-static-libstdc++ -static-libgcc" ;;
+          esac
+
           cd $HOME
           # GNU Make
           cat $ROOTDIR/sources/make-$MAKE_VERSION.tar.gz | gzip -d | tar -x
@@ -86,9 +92,9 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-Wno-error=incompatible-pointer-types -static" \
-          CXXFLAGS="-Wno-error=incompatible-pointer-types -static" \
-          LDFLAGS="-static" \
+          CFLAGS="-Wno-error=incompatible-pointer-types $STATIC" \
+          CXXFLAGS="-Wno-error=incompatible-pointer-types $STATIC" \
+          LDFLAGS="$STATIC_LD" \
           ac_cv_func_setgid=no \
           ac_cv_func_setresgid=no \
           ac_cv_func_setresuid=no \
@@ -122,9 +128,9 @@ jobs:
           AR=${TOOLCHAIN}/bin/ar \
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
-          CFLAGS="-fwrapv -Wno-error=date-time -static" \
-          CXXFLAGS="-fwrapv -Wno-error=date-time -static" \
-          LDFLAGS="-static"
+          CFLAGS="-fwrapv -Wno-error=date-time $STATIC" \
+          CXXFLAGS="-fwrapv -Wno-error=date-time $STATIC" \
+          LDFLAGS="$STATIC_LD"
           make -j"$(nproc --all)" install
 
           # SPIRV-Tools and shaderc
@@ -154,9 +160,9 @@ jobs:
           cmake -S "$HOME/shaderc" -B "$HOME/shaderc/build" -G Ninja \
             -DCMAKE_INSTALL_PREFIX="$HOME/shaderc/install" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
-            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
-            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') -static" \
-            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_C_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') $STATIC" \
+            -DCMAKE_CXX_FLAGS="$([[ "${{ matrix.target }}" == "hexagon-linux-musl" ]] && echo '-Wno-bitfield-width -Wno-error=bitfield-width') $STATIC" \
+            -DCMAKE_EXE_LINKER_FLAGS="$STATIC_LD" \
             -DCMAKE_CROSSCOMPILING=True \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_C_COMPILER="${TOOLCHAIN}/bin/cc" \
@@ -196,9 +202,11 @@ jobs:
           ac_cv_func_getloadavg=no
           ac_cv_have_decl_getloadavg=no
           EOF
+          case "${{ matrix.target }}" in *musl*)
           sed -i '/^case \$host_cpu in #(/,/^esac$/c\
           MODULE_BUILDTYPE=static
           ' configure
+          ;; esac
           ./configure --prefix="${PWD}/build" \
           --build=x86_64-linux-gnu \
           --host=${{ matrix.target }} \
@@ -219,8 +227,9 @@ jobs:
           RANLIB=${TOOLCHAIN}/bin/ranlib \
           STRIP=${TOOLCHAIN}/bin/strip \
           LDSHARED="${TOOLCHAIN}/bin/cc -shared -fPIC" \
-          CFLAGS="-Wno-error=date-time -static" \
-          CXXFLAGS="-Wno-error=date-time -static" \
+          CFLAGS="-Wno-error=date-time $STATIC" \
+          CXXFLAGS="-Wno-error=date-time $STATIC" \
+          LDFLAGS="$STATIC_LD" \
           _PYTHON_HOST_PLATFORM="${{ matrix.target }}"
           make -j"$(nproc --all)" build_all || echo "WARNING: issue in building python for ${{ matrix.target }}"
           make install
@@ -231,7 +240,7 @@ jobs:
               $HOME/yasm/build/bin/yasm \
               $HOME/yasm/build/bin/ytasm \
               $HOME/yasm/build/bin/vsyasm \
-              $HOME/python/python
+              $HOME/python/build/python
           do
               ${TOOLCHAIN}/bin/strip "$file"
           done
@@ -298,10 +307,9 @@ jobs:
           cp $HOME/yasm/build/bin/yasm ${NDK_TOOLCHAIN}/bin
           cp $HOME/yasm/build/bin/ytasm ${NDK}/prebuilt/linux-x86_64/bin
           cp $HOME/yasm/build/bin/vsyasm ${NDK}/prebuilt/linux-x86_64/bin
-          cp $HOME/yasm/build/lib/libyasm.a ${NDK}/prebuilt/linux-x86_64/lib
           mkdir -p "${NDK_TOOLCHAIN}/python3/bin"
           mkdir -p "${NDK_TOOLCHAIN}/python3/lib"
-          cp $HOME/python/python ${NDK_TOOLCHAIN}/python3/bin/python3
+          cp $HOME/python/build/python ${NDK_TOOLCHAIN}/python3/bin/python3
           cp -R $HOME/python/build/lib/python3.11 ${NDK_TOOLCHAIN}/python3/lib
           cp ${{ github.workspace }}/patches/musl/llvm/lldb ${NDK_TOOLCHAIN}/bin/lldb
           chmod 755 ${NDK_TOOLCHAIN}/bin/lldb
