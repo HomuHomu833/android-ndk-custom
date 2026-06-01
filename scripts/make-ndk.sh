@@ -50,7 +50,7 @@ bsd_system_name() {
 download_official_ndk() {
   local base="https://dl.google.com/android/repository/${NDK_NAME}"
   log "Downloading official NDK (linux)"
-  aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 -o "$BUILD/ndk-linux.zip" "${base}-linux.zip"
+  aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir="$BUILD" -o ndk-linux.zip "${base}-linux.zip"
   unzip -qq "$BUILD/ndk-linux.zip" -d "$BUILD/ndk-linux"
   rm -f "$BUILD/ndk-linux.zip"
   LINUX_NDK="$BUILD/ndk-linux/$NDK_NAME"
@@ -58,7 +58,7 @@ download_official_ndk() {
 
   if [ "$PLATFORM" = windows ]; then
     log "Downloading official NDK (windows)"
-    aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 -o "$BUILD/ndk-windows.zip" "${base}-windows.zip"
+    aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir="$BUILD" -o ndk-windows.zip "${base}-windows.zip"
     unzip -qq "$BUILD/ndk-windows.zip" -d "$ROOTDIR/ndk-windows"
     rm -f "$BUILD/ndk-windows.zip"
     NDK="$ROOTDIR/ndk-windows/$NDK_NAME"
@@ -187,17 +187,17 @@ build_shaderc() {
   log "Building shaderc"
   local SH="$BUILD/shaderc"
   rm -rf "$SH"; mkdir -p "$SH"
-  ( cd "$SH" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
+  ( cd "$SH" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
   mkdir -p "$SH/third_party/spirv-tools"
-  ( cd "$SH/third_party/spirv-tools" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
+  ( cd "$SH/third_party/spirv-tools" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
   if [ "$PLATFORM" = bsd ]; then
     # spirv-tools refuses unknown platforms; downgrade to a warning + assume Linux
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
   fi
   mkdir -p "$SH/third_party/spirv-tools/external/spirv-headers"
-  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/spirv-headers.tar.gz "$SHADERC_BASE/spirv-headers/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-headers.tar.gz && rm /tmp/spirv-headers.tar.gz )
+  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o spirv-headers.tar.gz "$SHADERC_BASE/spirv-headers/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-headers.tar.gz && rm /tmp/spirv-headers.tar.gz )
   mkdir -p "$SH/third_party/glslang"
-  ( cd "$SH/third_party/glslang" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/glslang.tar.gz "$SHADERC_BASE/glslang/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/glslang.tar.gz && rm /tmp/glslang.tar.gz )
+  ( cd "$SH/third_party/glslang" && aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o glslang.tar.gz "$SHADERC_BASE/glslang/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/glslang.tar.gz && rm /tmp/glslang.tar.gz )
   if [ "$PLATFORM" = bionic ]; then
     sed -i '/^elseif(UNIX)$/,/^[[:space:]]*endif()$/d' "$SH/third_party/glslang/StandAlone/CMakeLists.txt"
   fi
@@ -230,7 +230,7 @@ build_python() {
   [ "$PLATFORM" = windows ] && return 0
   log "Building Python 3.11.4"
   ( cd "$BUILD"
-    aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/python.tar.xz https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz && xz -d < /tmp/python.tar.xz | tar -x && rm /tmp/python.tar.xz
+    aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o python.tar.xz https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz && xz -d < /tmp/python.tar.xz | tar -x && rm /tmp/python.tar.xz
     rm -rf python; mv Python-3.11.4 python
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" python/
     cd python
@@ -311,7 +311,7 @@ strip_deps() {
 fetch_llvm() {
   local name="${LLVM_PKG}-r${NDK_VERSION}${NDK_REVISION}-${TARGET}"
   log "Fetching LLVM ($name)"
-  aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/llvm-custom.tar.xz "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" && tar -xJf /tmp/llvm-custom.tar.xz -C "$BUILD" && rm /tmp/llvm-custom.tar.xz
+  aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o llvm-custom.tar.xz "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" && tar -xJf /tmp/llvm-custom.tar.xz -C "$BUILD" && rm /tmp/llvm-custom.tar.xz
   HOST_TOOLCHAIN="$BUILD/$name"
 }
 

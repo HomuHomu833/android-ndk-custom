@@ -30,12 +30,12 @@ RUN arch="$(uname -m)"; \
         apt-get update && apt-get install -y --no-install-recommends \
             qemu-user-static libc6-amd64-cross \
         && rm -rf /var/lib/apt/lists/* \
-        && aria2c --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/zlib.deb \
+        && aria2c --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o zlib.deb \
             "http://archive.ubuntu.com/ubuntu/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.1_amd64.deb" \
         && dpkg-deb -x /tmp/zlib.deb /tmp/zlib \
         && cp -a /tmp/zlib/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
         && rm -rf /tmp/zlib.deb /tmp/zlib \
-        && aria2c --max-tries=5 --retry-wait=2 --connect-timeout=15 -o /tmp/gcc.deb \
+        && aria2c --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o gcc.deb \
             "http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-14/libgcc-s1_14.2.0-4ubuntu2~24.04.1_amd64.deb" \
         && dpkg-deb -x /tmp/gcc.deb /tmp/gcc \
         && cp -a /tmp/gcc/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
@@ -56,7 +56,7 @@ RUN arch="$(uname -m)"; \
         *) echo "WARNING: unsupported zig host arch '$arch'; skipping zig and zig-as-llvm"; touch /opt/.no-zig ;; \
     esac; \
     if [ ! -f /opt/.no-zig ]; then \
-        aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 -o /tmp/zig.tar.xz \
+        aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o zig.tar.xz \
             "https://ziglang.org/builds/zig-${zig_arch}-linux-${ZIG_VERSION}.tar.xz" \
         && tar -xJf /tmp/zig.tar.xz -C /opt \
         && rm /tmp/zig.tar.xz \
@@ -68,7 +68,7 @@ RUN arch="$(uname -m)"; \
 RUN arch="$(uname -m)"; \
     case "$arch" in \
         x86_64|aarch64) \
-            aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 -o /tmp/llvm-mingw.tar.xz \
+            aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o llvm-mingw.tar.xz \
                 "https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-${arch}.tar.xz" \
             && tar -xJf /tmp/llvm-mingw.tar.xz -C /opt \
             && rm /tmp/llvm-mingw.tar.xz \
