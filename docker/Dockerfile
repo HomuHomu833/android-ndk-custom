@@ -33,7 +33,7 @@ RUN arch="$(uname -m)"; \
         && curl -L -o /tmp/zlib.deb \
             "http://archive.ubuntu.com/ubuntu/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.1_amd64.deb" \
         && dpkg-deb -x /tmp/zlib.deb /tmp/zlib \
-        && cp -a /tmp/zlib/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
+        && cp -a /tmp/zlib/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
         && rm -rf /tmp/zlib.deb /tmp/zlib; \
     fi
 
