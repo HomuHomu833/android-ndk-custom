@@ -29,7 +29,12 @@ RUN arch="$(uname -m)"; \
     if [ "$arch" != x86_64 ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
             qemu-user-static libc6-amd64-cross \
-        && rm -rf /var/lib/apt/lists/*; \
+        && rm -rf /var/lib/apt/lists/* \
+        && curl -L -o /tmp/zlib.deb \
+            "http://archive.ubuntu.com/ubuntu/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.1_amd64.deb" \
+        && dpkg-deb -x /tmp/zlib.deb /tmp/zlib \
+        && cp -a /tmp/zlib/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
+        && rm -rf /tmp/zlib.deb /tmp/zlib; \
     fi
 
 # zig (provides the cross C/C++ toolchain for linux/bsd targets)
