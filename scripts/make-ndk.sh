@@ -288,7 +288,7 @@ MODULE_BUILDTYPE=static
       bsd)    args+=( CFLAGS="-Wno-error=date-time" CXXFLAGS="-Wno-error=date-time" ) ;;
     esac
     ./configure "${args[@]}"
-    make -j"$(ncpu)" build_all || echo "WARNING: issue in building python for $TARGET"
+    make -j"$(ncpu)" build_all
     make install
   )
 }
@@ -302,7 +302,7 @@ strip_deps() {
   else
     files=( "$BUILD/make/build/bin/make"
             "$BUILD/yasm/build/bin/yasm" "$BUILD/yasm/build/bin/ytasm" "$BUILD/yasm/build/bin/vsyasm"
-            "$BUILD/python/build/python" )
+             "$BUILD/python/build/bin/python3.11" )
   fi
   for f in "${files[@]}"; do
     [ -f "$f" ] || continue
@@ -374,7 +374,7 @@ assemble_unix() {
   cp "$BUILD/yasm/build/bin/ytasm" "$PREBUILT_BIN"
   cp "$BUILD/yasm/build/bin/vsyasm" "$PREBUILT_BIN"
   mkdir -p "$NDK_TOOLCHAIN/python3/bin" "$NDK_TOOLCHAIN/python3/lib"
-  cp "$BUILD/python/build/python" "$NDK_TOOLCHAIN/python3/bin/python3"
+  cp "$BUILD/python/build/bin/python3.11" "$NDK_TOOLCHAIN/python3/bin/python3"
   cp -R "$BUILD/python/build/lib/python3.11" "$NDK_TOOLCHAIN/python3/lib"
   cp "$ROOT/patches/musl/llvm/lldb" "$NDK_TOOLCHAIN/bin/lldb"
   chmod 755 "$NDK_TOOLCHAIN/bin/lldb"
