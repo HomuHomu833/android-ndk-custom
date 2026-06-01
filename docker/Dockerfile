@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     && apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates aria2 xz-utils unzip git make cmake ninja-build \
         build-essential file p7zip-full python3 python3.11 \
+        autoconf automake libtool \
     && rm -rf /var/lib/apt/lists/*
 
 # qemu-user-static + x86_64 libs so the NDK's prebuilt binaries run on non-x86 hosts
