@@ -1,4 +1,4 @@
-name: Make NDK (musl/Linux)
+name: Make NDK (Linux)
 run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} musl
 on:
   workflow_dispatch:
