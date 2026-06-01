@@ -1,0 +1,98 @@
+name: Make NDK (reusable)
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: "bionic | musl | bsd | windows"
+        required: true
+        type: string
+      targets:
+        description: "JSON array of target triples"
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      revision:
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  make:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.targets) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 5120
+          swap-size-mb: 5120
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
+          build-mount-path: /mnt
+
+      - name: Move Docker to /mnt
+        run: |
+          sudo systemctl stop docker.socket docker.service
+          sudo mkdir -p /mnt/docker
+          sudo rsync -aqP /var/lib/docker/ /mnt/docker/
+          sudo rm -rf /var/lib/docker
+          sudo ln -s /mnt/docker /var/lib/docker
+          sudo systemctl start docker
+
+      - name: Prepare /mnt/build
+        run: |
+          sudo mkdir -p /mnt/build
+          sudo chown $(id -u):$(id -g) /mnt/build
+          rmdir "$GITHUB_WORKSPACE"
+          ln -s /mnt/build "$GITHUB_WORKSPACE"
+
+      - uses: actions/checkout@v5
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make NDK
+        run: |
+          IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/ndk-builder:latest"
+          docker run --rm \
+            -v "/mnt/build:/work" -w /work --user "$(id -u):$(id -g)" \
+            -e HOME=/work \
+            -e PLATFORM='${{ inputs.platform }}' \
+            -e TARGET='${{ matrix.target }}' \
+            -e NDK_VERSION='${{ inputs.version }}' \
+            -e NDK_REVISION='${{ inputs.revision }}' \
+            -e ROOTDIR=/work \
+            -e REPO_OWNER='${{ github.repository_owner }}' \
+            "$IMAGE" \
+            bash -c 'scripts/make-ndk.sh'
+
+      - name: Set artifact name
+        run: |
+          ext="tar.xz"; [ "${{ inputs.platform }}" = windows ] && ext="7z"
+          echo "ARTIFACT=android-ndk-r${{ inputs.version }}${{ inputs.revision }}-${{ matrix.target }}.${ext}" >> "$GITHUB_ENV"
+
+      - name: Release
+        uses: ncipollo/release-action@v1.21.0
+        with:
+          name: "r${{ inputs.version }}${{ inputs.revision }}"
+          tag: "r${{ inputs.version }}"
+          artifacts: ${{ github.workspace }}/${{ env.ARTIFACT }}
+          allowUpdates: true
+          replacesArtifacts: true
+          body: ''
