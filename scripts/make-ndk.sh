@@ -2,10 +2,10 @@
 # Assemble one Android NDK for a single cross target. Driven entirely by env vars
 # so it runs identically in CI and in `docker run`.
 #
-#   PLATFORM    bionic | musl | bsd | windows
+#   PLATFORM    bionic | linux | bsd | windows
 #   TARGET      target triple, e.g.
 #                 aarch64-linux-android        (bionic)
-#                 x86_64-linux-gnu / -musl     (musl)
+#                 x86_64-linux-gnu / -musl     (linux)
 #                 aarch64-freebsd-none         (bsd)
 #                 x86_64-w64-mingw32           (windows)
 #   NDK_VERSION   required (e.g. 30)
@@ -77,17 +77,17 @@ setup_toolchain() {
     bionic)
       API="${ANDROID_PLATFORM:-25}"; [ "$TARGET" = riscv64-linux-android ] && API=35
       TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
-      CC="$TC/bin/${TARGET}${API}-clang"; CXX="${CC}++"
-      LD="$TC/bin/ld"; AR="$TC/bin/llvm-ar"; RANLIB="$TC/bin/llvm-ranlib"
-      STRIP="$TC/bin/llvm-strip"; OBJCOPY="$TC/bin/llvm-objcopy"
+      CROSS_CC="$TC/bin/${TARGET}${API}-clang"; CROSS_CXX="${CROSS_CC}++"
+      CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/llvm-ar"; CROSS_RANLIB="$TC/bin/llvm-ranlib"
+      CROSS_STRIP="$TC/bin/llvm-strip"; CROSS_OBJCOPY="$TC/bin/llvm-objcopy"
       NDK_HOST=linux-x86_64
       ;;
-    musl)
+    linux)
       TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
       # overlay the musl libc source fixes onto zig's bundled musl (lib is a+w)
       [ -d "$ROOT/patches/musl/zig" ] && cp -R "$ROOT/patches/musl/zig/." /opt/zig/ || true
-      CC="$TC/bin/cc"; CXX="$TC/bin/c++"; LD="$TC/bin/ld"; AR="$TC/bin/ar"
-      RANLIB="$TC/bin/ranlib"; STRIP="$TC/bin/strip"; OBJCOPY="$TC/bin/objcopy"
+      CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
+      CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
       NDK_HOST=linux-x86_64
       case "$TARGET" in
         *musl*) STATIC="-static"; STATIC_LD="-static" ;;
@@ -96,16 +96,16 @@ setup_toolchain() {
       ;;
     bsd)
       TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
-      CC="$TC/bin/cc"; CXX="$TC/bin/c++"; LD="$TC/bin/ld"; AR="$TC/bin/ar"
-      RANLIB="$TC/bin/ranlib"; STRIP="$TC/bin/strip"; OBJCOPY="$TC/bin/objcopy"
+      CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
+      CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
       NDK_HOST=linux-x86_64
       SYSTEM_NAME="$(bsd_system_name)"
       ;;
     windows)
       TC=/opt/llvm-mingw
-      CC="$TC/bin/${TARGET}-clang"; CXX="$TC/bin/${TARGET}-clang++"; LD="$TC/bin/${TARGET}-ld"
-      AR="$TC/bin/${TARGET}-ar"; RANLIB="$TC/bin/${TARGET}-ranlib"
-      STRIP="$TC/bin/${TARGET}-strip"; OBJCOPY="$TC/bin/${TARGET}-objcopy"
+      CROSS_CC="$TC/bin/${TARGET}-clang"; CROSS_CXX="$TC/bin/${TARGET}-clang++"; CROSS_LD="$TC/bin/${TARGET}-ld"
+      CROSS_AR="$TC/bin/${TARGET}-ar"; CROSS_RANLIB="$TC/bin/${TARGET}-ranlib"
+      CROSS_STRIP="$TC/bin/${TARGET}-strip"; CROSS_OBJCOPY="$TC/bin/${TARGET}-objcopy"
       NDK_HOST=windows-x86_64; SYSTEM_NAME=Windows
       ;;
     *) echo "Unknown PLATFORM='$PLATFORM'" >&2; exit 1 ;;
@@ -127,14 +127,14 @@ build_make() {
     fi
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" build-aux/
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET"
-                 CC="$CC" CXX="$CXX" LD="$LD" OBJCOPY="$OBJCOPY" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" )
+                 CC="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
     case "$PLATFORM" in
       bionic)  args+=( --disable-posix-spawn
                        CFLAGS="-Wno-error=implicit-function-declaration"
                        CXXFLAGS="-Wno-error=implicit-function-declaration"
                        LDFLAGS="-static-libstdc++ -static-libgcc"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
-      musl)    args+=( CFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
+      linux)    args+=( CFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
                        LDFLAGS="$STATIC_LD"
                        ac_cv_func_setgid=no ac_cv_func_setresgid=no ac_cv_func_setresuid=no
@@ -160,10 +160,10 @@ build_yasm() {
     cd yasm
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" config/
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET" --disable-nls
-                 CC="$CC" CXX="$CXX" LD="$LD" OBJCOPY="$OBJCOPY" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" )
+                 CC="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
     case "$PLATFORM" in
       bionic)  args+=( LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
-      musl)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $STATIC"
+      linux)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $STATIC"
                        CXXFLAGS="-fwrapv -Wno-error=date-time $STATIC"
                        LDFLAGS="$STATIC_LD" ) ;;
       bsd)     args+=( CFLAGS="-fwrapv" CXXFLAGS="-fwrapv" ) ;;
@@ -200,7 +200,7 @@ build_shaderc() {
   local cflags="" exelink=""
   case "$PLATFORM" in
     bionic)  exelink="-static-libstdc++ -static-libgcc" ;;
-    musl)    exelink="$STATIC_LD"; cflags="$STATIC"
+    linux)    exelink="$STATIC_LD"; cflags="$STATIC"
              [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $STATIC" ;;
     bsd)     cflags="-Wno-error=date-time" ;;
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
@@ -211,9 +211,9 @@ build_shaderc() {
     -DCMAKE_C_FLAGS="$cflags" -DCMAKE_CXX_FLAGS="$cflags" \
     -DCMAKE_EXE_LINKER_FLAGS="$exelink" \
     -DCMAKE_CROSSCOMPILING=True -DCMAKE_SYSTEM_NAME="$SYSTEM_NAME" \
-    -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" -DCMAKE_ASM_COMPILER="$CC" \
-    -DCMAKE_LINKER="$LD" -DCMAKE_OBJCOPY="$OBJCOPY" -DCMAKE_AR="$AR" \
-    -DCMAKE_RANLIB="$RANLIB" -DCMAKE_STRIP="$STRIP" \
+    -DCMAKE_C_COMPILER="$CROSS_CC" -DCMAKE_CXX_COMPILER="$CROSS_CXX" -DCMAKE_ASM_COMPILER="$CROSS_CC" \
+    -DCMAKE_LINKER="$CROSS_LD" -DCMAKE_OBJCOPY="$CROSS_OBJCOPY" -DCMAKE_AR="$CROSS_AR" \
+    -DCMAKE_RANLIB="$CROSS_RANLIB" -DCMAKE_STRIP="$CROSS_STRIP" \
     -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
   cmake --build "$SH/build" --target install
 }
@@ -229,7 +229,7 @@ build_python() {
     cd python
     [ "$PLATFORM" = bsd ] && cp "$ROOT/patches/bsd/python/configure" "$PWD/configure"
     mkdir -p build
-    if [ "$PLATFORM" = musl ]; then
+    if [ "$PLATFORM" = linux ]; then
       cat > config.site <<'EOF'
 ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
@@ -252,8 +252,8 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
-    # musl: force static extension modules
-    if [ "$PLATFORM" = musl ]; then
+    # linux: force static extension modules
+    if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
         *musl*) sed -i '/^case \$host_cpu in #(/,/^esac$/c\
 MODULE_BUILDTYPE=static
@@ -263,16 +263,16 @@ MODULE_BUILDTYPE=static
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET"
                  --disable-shared --disable-ipv6 --with-build-python --without-ensurepip
                  CONFIG_SITE=config.site TARGET="$TARGET"
-                 CC="$CC" AS="$CC" CXX="$CXX" LD="$LD" OBJCOPY="$OBJCOPY"
+                 CC="$CROSS_CC" AS="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY"
                  READELF="$NDK_LLVM_BIN/llvm-readelf" LLVM_PROFDATA="$NDK_LLVM_BIN/llvm-profdata"
-                 AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP"
-                 LDSHARED="$CC -shared -fPIC"
+                 AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
+                 LDSHARED="$CROSS_CC -shared -fPIC"
                  _PYTHON_HOST_PLATFORM="$TARGET" )
     case "$PLATFORM" in
       bionic) args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
-      musl)   args+=( CFLAGS="-Wno-error=date-time $STATIC"
+      linux)   args+=( CFLAGS="-Wno-error=date-time $STATIC"
                       CXXFLAGS="-Wno-error=date-time $STATIC"
                       LDFLAGS="$STATIC_LD" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time" CXXFLAGS="-Wno-error=date-time" ) ;;
@@ -296,7 +296,7 @@ strip_deps() {
   fi
   for f in "${files[@]}"; do
     [ -f "$f" ] || continue
-    if [ "$PLATFORM" = bionic ]; then "$STRIP" -s "$f"; else "$STRIP" "$f"; fi
+    if [ "$PLATFORM" = bionic ]; then "$CROSS_STRIP" -s "$f"; else "$CROSS_STRIP" "$f"; fi
   done
 }
 
@@ -324,8 +324,8 @@ assemble_unix() {
   # cmp/echo are built before the replace loop so bionic uses the *official* NDK
   # clang (the loop overwrites it with llvm-custom's). Harmless for musl/bsd,
   # which use zig cc and write to a different dir than the loop touches.
-  "$CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
-  "$CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
+  "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
+  "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
 
   # replace ELF tools with the rebuilt ones; convert bash shebangs; drop the rest
   find "$NDK_TOOLCHAIN/bin" -type f | while IFS= read -r file; do
@@ -449,7 +449,7 @@ rename_host() {
   arch="$(host_tag_arch)"
   case "$PLATFORM" in
     bionic)  [ "$TARGET" = x86_64-linux-android ] && return 0; tag="linux-$arch" ;;
-    musl)    case "$TARGET" in x86_64-linux-musl|x86_64-linux-muslx32) return 0 ;; esac; tag="linux-$arch" ;;
+    linux)    case "$TARGET" in x86_64-linux-musl|x86_64-linux-muslx32|x86_64-linux-gnu|x86_64-linux-gnux32) return 0 ;; esac; tag="linux-$arch" ;;
     bsd)     tag="${SYSTEM_NAME,,}-$arch" ;;
   esac
 
@@ -512,7 +512,7 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
     set(ANDROID_HOST_TAG "windows-x86_64")\
 endif()' "${files[@]}"
       ;;
-    musl)
+    linux)
       sed -i -E '/^if\(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux\)$/,/^endif\(\)$/c\
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux OR CMAKE_HOST_SYSTEM_NAME STREQUAL Android)\
     execute_process(\
@@ -651,8 +651,8 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   cp "$BUILD/yasm/build/bin/yasm.exe" "$NDK_TOOLCHAIN/bin"
   cp "$BUILD/yasm/build/bin/ytasm.exe" "$PREBUILT_BIN"
   cp "$BUILD/yasm/build/bin/vsyasm.exe" "$PREBUILT_BIN"
-  "$CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
-  "$CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
+  "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
+  "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
   mkdir -p "$NDK_TOOLCHAIN/python3"
   unzip -qq "$ROOT/binaries/python-3.11.4-${TARGET}.zip" -d "$NDK_TOOLCHAIN/python3"
   find "$NDK/shader-tools/windows-x86_64" -type f | while IFS= read -r file; do

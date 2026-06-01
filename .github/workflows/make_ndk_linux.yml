@@ -22,7 +22,7 @@ jobs:
     uses: ./.github/workflows/make-ndk.yml
     secrets: inherit
     with:
-      platform: musl
+      platform: linux
       version: ${{ inputs.version }}
       revision: ${{ inputs.revision }}
       # x86_64-linux-gnux32
