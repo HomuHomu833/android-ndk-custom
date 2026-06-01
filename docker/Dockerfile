@@ -27,7 +27,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
 # qemu-user-binfmt so the official NDK's x86_64 prebuilt binaries run on other hosts
 RUN arch="$(uname -m)"; \
     if [ "$arch" != x86_64 ]; then \
-        apt-get update && apt-get install -y --no-install-recommends qemu-user-static \
+        . /etc/os-release \
+        && dpkg --add-architecture amd64 \
+        && find /etc/apt -name "*.list" -exec sed -i "s/^deb /deb [arch=$arch] /g" {} + \
+        && find /etc/apt -name "*.sources" -exec sed -i "/^Types:/a Architectures: $arch" {} + \
+        && echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu $VERSION_CODENAME main universe" >> /etc/apt/sources.list \
+        && apt-get update && apt-get install -y --no-install-recommends qemu-user-static libc6:amd64 \
         && rm -rf /var/lib/apt/lists/*; \
     fi
 
