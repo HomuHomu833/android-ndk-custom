@@ -72,7 +72,7 @@ download_official_ndk() {
 
 # --- toolchain selection (mirrors build.sh's case "$PLATFORM") -------------
 setup_toolchain() {
-  STATIC=""; STATIC_LD=""; SYSTEM_NAME=Linux
+  CROSS_CFLAGS="-fno-sanitize=undefined"; CROSS_LDFLAGS=""; SYSTEM_NAME=Linux
   case "$PLATFORM" in
     bionic)
       API="${ANDROID_PLATFORM:-25}"; [ "$TARGET" = riscv64-linux-android ] && API=35
@@ -90,8 +90,8 @@ setup_toolchain() {
       CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
       NDK_HOST=linux-x86_64
       case "$TARGET" in
-        *musl*) STATIC="-static"; STATIC_LD="-static" ;;
-        *)      STATIC="";        STATIC_LD="-static-libstdc++ -static-libgcc" ;;
+        *musl*) CROSS_CFLAGS="-static -fno-sanitize=undefined"; CROSS_LDFLAGS="-static" ;;
+        *)      CROSS_LDFLAGS="-static-libstdc++ -static-libgcc" ;;
       esac
       ;;
     bsd)
@@ -134,9 +134,9 @@ build_make() {
                        CXXFLAGS="-Wno-error=implicit-function-declaration"
                        LDFLAGS="-static-libstdc++ -static-libgcc"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
-      linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
-                       CXXFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
-                       LDFLAGS="$STATIC_LD" )
+      linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" )
 
         case "$TARGET" in
           *musl*)
@@ -170,9 +170,9 @@ build_yasm() {
                  CC="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
     case "$PLATFORM" in
       bionic)  args+=( LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
-      linux)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $STATIC"
-                       CXXFLAGS="-fwrapv -Wno-error=date-time $STATIC"
-                       LDFLAGS="$STATIC_LD" ) ;;
+      linux)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
+                       CXXFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)     args+=( CFLAGS="-fwrapv" CXXFLAGS="-fwrapv" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time"
                        CXXFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time" ) ;;
@@ -207,8 +207,8 @@ build_shaderc() {
   local cflags="" exelink=""
   case "$PLATFORM" in
     bionic)  exelink="-static-libstdc++ -static-libgcc" ;;
-    linux)    exelink="$STATIC_LD"; cflags="$STATIC"
-             [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $STATIC" ;;
+    linux)    exelink="$CROSS_LDFLAGS"; cflags="$CROSS_CFLAGS"
+             [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $CROSS_CFLAGS" ;;
     bsd)     cflags="-Wno-error=date-time" ;;
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
   esac
@@ -279,9 +279,9 @@ MODULE_BUILDTYPE=static
       bionic) args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
-      linux)   args+=( CFLAGS="-Wno-error=date-time $STATIC"
-                      CXXFLAGS="-Wno-error=date-time $STATIC"
-                      LDFLAGS="$STATIC_LD" ) ;;
+      linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
+                      CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
+                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time" CXXFLAGS="-Wno-error=date-time" ) ;;
     esac
     ./configure "${args[@]}"
