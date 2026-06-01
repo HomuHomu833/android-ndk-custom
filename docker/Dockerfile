@@ -24,15 +24,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
         build-essential file p7zip-full python3 python3.11 \
     && rm -rf /var/lib/apt/lists/*
 
-# qemu-user-binfmt so the official NDK's x86_64 prebuilt binaries run on other hosts
+# qemu-user-static + x86_64 libs so the NDK's prebuilt binaries run on non-x86 hosts
 RUN arch="$(uname -m)"; \
     if [ "$arch" != x86_64 ]; then \
-        . /etc/os-release \
-        && dpkg --add-architecture amd64 \
-        && find /etc/apt -name "*.list" -exec sed -i "s/^deb /deb [arch=$arch] /g" {} + \
-        && find /etc/apt -name "*.sources" -exec sed -i "/^Types:/a Architectures: $arch" {} + \
-        && echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu $VERSION_CODENAME main universe" >> /etc/apt/sources.list \
-        && apt-get update && apt-get install -y --no-install-recommends qemu-user-static libc6:amd64 \
+        apt-get update && apt-get install -y --no-install-recommends \
+            qemu-user-static libc6-amd64-cross \
         && rm -rf /var/lib/apt/lists/*; \
     fi
 
@@ -75,6 +71,8 @@ RUN if [ ! -f /opt/.no-zig ]; then \
 # zig on PATH so the zig-as-llvm wrappers resolve it. llvm-mingw is intentionally
 # *not* on PATH — the windows branch calls it by absolute path, and keeping its
 # windows-targeting clang off PATH avoids it shadowing the zig toolchain.
+ENV QEMU_LD_PREFIX=/usr/x86_64-linux-gnu
+
 ENV PATH="/opt/zig:${PATH}"
 
 WORKDIR /work
