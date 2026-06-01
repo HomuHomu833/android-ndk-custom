@@ -99,7 +99,10 @@ setup_toolchain() {
       CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
       CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
       NDK_HOST=linux-x86_64
-      SYSTEM_NAME="$(bsd_system_name)"
+      case "$(echo "$TARGET" | cut -d- -f2)" in
+        macos|maccatalyst) SYSTEM_NAME=Darwin ;;
+        *) SYSTEM_NAME="$(bsd_system_name)" ;;
+      esac
       ;;
     windows)
       TC=/opt/llvm-mingw
