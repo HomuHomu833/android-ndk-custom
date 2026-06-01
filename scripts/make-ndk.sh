@@ -134,13 +134,20 @@ build_make() {
                        CXXFLAGS="-Wno-error=implicit-function-declaration"
                        LDFLAGS="-static-libstdc++ -static-libgcc"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
-      linux)    args+=( CFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
+      linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types $STATIC"
-                       LDFLAGS="$STATIC_LD"
-                       ac_cv_func_setgid=no ac_cv_func_setresgid=no ac_cv_func_setresuid=no
-                       ac_cv_func_setreuid=no ac_cv_func_setregid=no ac_cv_func_setuid=no
-                       ac_cv_func_seteuid=no ac_cv_func_setfsgid=no ac_cv_func_setfsuid=no
-                       ac_cv_func_setegid=no ac_cv_func_getloadavg=no ac_cv_have_decl_getloadavg=no ) ;;
+                       LDFLAGS="$STATIC_LD" )
+
+        case "$TARGET" in
+          *musl*)
+               args+=( ac_cv_func_setgid=no ac_cv_func_setresgid=no
+                       ac_cv_func_setresuid=no ac_cv_func_setreuid=no
+                       ac_cv_func_setregid=no ac_cv_func_setuid=no
+                       ac_cv_func_seteuid=no ac_cv_func_setfsgid=no
+                       ac_cv_func_setfsuid=no ac_cv_func_setegid=no
+                       ac_cv_func_getloadavg=no ac_cv_have_decl_getloadavg=no) ;;
+        esac
+        ;;
       bsd)     args+=( CFLAGS="-Wno-error=incompatible-pointer-types"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration"
