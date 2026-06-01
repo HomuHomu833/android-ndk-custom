@@ -25,13 +25,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     && rm -rf /var/lib/apt/lists/*
 
 # zig (provides the cross C/C++ toolchain for linux/bsd targets)
-RUN curl -fSL "https://ziglang.org/builds/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" \
+RUN curl -L --fail --retry 20 --retry-all-errors --retry-delay 2 --connect-timeout 15 --speed-limit 1024 --speed-time 30 --progress-bar "https://ziglang.org/builds/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" \
       | tar -xJ -C /opt \
     && mv "/opt/zig-x86_64-linux-${ZIG_VERSION}" /opt/zig \
     && chmod -R a+w /opt/zig/lib   # make-ndk.sh overlays patches/musl/zig here at run time (non-root)
 
 # llvm-mingw (windows targets)
-RUN curl -fSL "https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64.tar.xz" \
+RUN curl -L --fail --retry 20 --retry-all-errors --retry-delay 2 --connect-timeout 15 --speed-limit 1024 --speed-time 30 --progress-bar "https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64.tar.xz" \
       | tar -xJ -C /opt \
     && mv "/opt/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64" /opt/llvm-mingw
 

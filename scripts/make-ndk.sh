@@ -50,7 +50,7 @@ bsd_system_name() {
 download_official_ndk() {
   local base="https://dl.google.com/android/repository/${NDK_NAME}"
   log "Downloading official NDK (linux)"
-  curl -sSfL -o "$BUILD/ndk-linux.zip" "${base}-linux.zip"
+  curl -L --fail --retry 20 --retry-all-errors --retry-delay 2 --connect-timeout 15 --speed-limit 1024 --speed-time 30 --progress-bar -o "$BUILD/ndk-linux.zip" "${base}-linux.zip"
   unzip -qq "$BUILD/ndk-linux.zip" -d "$BUILD/ndk-linux"
   rm -f "$BUILD/ndk-linux.zip"
   LINUX_NDK="$BUILD/ndk-linux/$NDK_NAME"
@@ -58,7 +58,7 @@ download_official_ndk() {
 
   if [ "$PLATFORM" = windows ]; then
     log "Downloading official NDK (windows)"
-    curl -sSfL -o "$BUILD/ndk-windows.zip" "${base}-windows.zip"
+    curl -L --fail --retry 20 --retry-all-errors --retry-delay 2 --connect-timeout 15 --speed-limit 1024 --speed-time 30 --progress-bar -o "$BUILD/ndk-windows.zip" "${base}-windows.zip"
     unzip -qq "$BUILD/ndk-windows.zip" -d "$ROOTDIR/ndk-windows"
     rm -f "$BUILD/ndk-windows.zip"
     NDK="$ROOTDIR/ndk-windows/$NDK_NAME"
