@@ -34,7 +34,12 @@ RUN arch="$(uname -m)"; \
             "http://archive.ubuntu.com/ubuntu/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.1_amd64.deb" \
         && dpkg-deb -x /tmp/zlib.deb /tmp/zlib \
         && cp -a /tmp/zlib/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
-        && rm -rf /tmp/zlib.deb /tmp/zlib; \
+        && rm -rf /tmp/zlib.deb /tmp/zlib \
+        && curl -L -o /tmp/gcc.deb \
+            "http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-14/libgcc-s1_14.2.0-4ubuntu2~24.04.1_amd64.deb" \
+        && dpkg-deb -x /tmp/gcc.deb /tmp/gcc \
+        && cp -a /tmp/gcc/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
+        && rm -rf /tmp/gcc.deb /tmp/gcc; \
     fi
 
 # zig (provides the cross C/C++ toolchain for linux/bsd targets)
