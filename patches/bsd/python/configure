@@ -26375,10 +26375,6 @@ esac
  ;;
 esac
 
-
-MODULE_BUILDTYPE=static
-
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for additional Modules/Setup files" >&5
 printf %s "checking for additional Modules/Setup files... " >&6; }
 case $ac_sys_system in #(
