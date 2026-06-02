@@ -1,0 +1,41 @@
+name: Make NDK (Linux)
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} musl
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "NDK Release version:"
+        default: "30"
+        required: true
+        type: string
+      revision:
+        description: "NDK Release revision:"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  make:
+    uses: ./.github/workflows/make-ndk.yml
+    secrets: inherit
+    with:
+      platform: linux
+      version: ${{ inputs.version }}
+      revision: ${{ inputs.revision }}
+      # x86_64-linux-gnux32
+      targets: >-
+        ["aarch64-linux-musl", "aarch64-linux-gnu", "aarch64_be-linux-gnu",
+         "arm-linux-gnueabi", "arm-linux-musleabihf", "arm-linux-gnueabihf",
+         "armeb-linux-gnueabi", "armeb-linux-gnueabihf", "hexagon-linux-musl",
+         "loongarch64-linux-gnu", "loongarch64-linux-muslf32", "loongarch64-linux-gnusf",
+         "mips-linux-gnueabi", "mips-linux-gnueabihf", "mips64-linux-gnuabin32",
+         "mips64-linux-gnuabi64", "mips64el-linux-gnuabin32", "mips64el-linux-gnuabi64",
+         "mipsel-linux-gnueabi", "mipsel-linux-gnueabihf", "powerpc-linux-musleabi",
+         "powerpc-linux-musleabihf", "powerpc64-linux-musl", "powerpc64le-linux-gnu",
+         "riscv32-linux-gnu", "riscv64-linux-gnu", "s390x-linux-gnu",
+         "thumb-linux-musleabi", "thumb-linux-musleabihf", "thumbeb-linux-musleabi",
+         "thumbeb-linux-musleabihf", "x86-linux-musl", "x86-linux-gnu",
+         "x86_64-linux-musl", "x86_64-linux-gnu"]
