@@ -112,7 +112,7 @@ setup_toolchain() {
         if [ -d "$MACOS_SDK/System/Library/Frameworks" ]; then
           log "Using macOS SDK sysroot: $MACOS_SDK"
           CROSS_CFLAGS="$CROSS_CFLAGS -iframework $MACOS_SDK/System/Library/Frameworks"
-          CROSS_LDFLAGS="${CROSS_LDFLAGS:+$CROSS_LDFLAGS }-F $MACOS_SDK/System/Library/Frameworks -Wl,-syslibroot,$MACOS_SDK"
+          CROSS_LDFLAGS="${CROSS_LDFLAGS:+$CROSS_LDFLAGS} -F $MACOS_SDK/System/Library/Frameworks"
         else
           log "macOS SDK not found at $MACOS_SDK, is the path correct?"
           exit 1
