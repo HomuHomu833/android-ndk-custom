@@ -73,9 +73,6 @@ download_official_ndk() {
 # --- toolchain selection (mirrors build.sh's case "$PLATFORM") -------------
 setup_toolchain() {
   CROSS_CFLAGS="-fno-sanitize=undefined"; CROSS_LDFLAGS=""; SYSTEM_NAME=Linux
-  # -isysroot flag string for darwin host-tool builds; empty for every other
-  # target (incl. the real BSDs). Threaded into the bsd arms of build_*.
-  MACOS_SYSROOT=
   case "$PLATFORM" in
     bionic)
       API="${ANDROID_PLATFORM:-25}"; [ "$TARGET" = riscv64-linux-android ] && API=35
@@ -106,14 +103,19 @@ setup_toolchain() {
         macos|maccatalyst) SYSTEM_NAME=Darwin ;;
         *) SYSTEM_NAME="$(bsd_system_name)" ;;
       esac
-      # darwin host tools (CPython links Apple frameworks) need the macOS SDK;
-      # the zig toolchain ships libc stubs but no frameworks. Point at the baked
-      # sysroot (default /opt/macos-sdk, env-overridable via MACOS_SDK).
+      # darwin host tools (CPython/dsymutil link Apple frameworks) need the macOS
+      # SDK; the zig toolchain ships libc stubs but no frameworks. Point the
+      # compiler + linker at the baked sysroot (default /opt/macos-sdk,
+      # env-overridable via MACOS_SDK), mirroring build.sh exactly.
       if [ "$SYSTEM_NAME" = Darwin ]; then
         MACOS_SDK="${MACOS_SDK:-/opt/macos-sdk}"
         if [ -d "$MACOS_SDK/System/Library/Frameworks" ]; then
           log "Using macOS SDK sysroot: $MACOS_SDK"
-          MACOS_SYSROOT="-isysroot $MACOS_SDK"
+          CROSS_CFLAGS="$CROSS_CFLAGS -iframework $MACOS_SDK/System/Library/Frameworks"
+          CROSS_LDFLAGS="${CROSS_LDFLAGS:+$CROSS_LDFLAGS }-F $MACOS_SDK/System/Library/Frameworks -Wl,-syslibroot,$MACOS_SDK"
+        else
+          log "macOS SDK not found at $MACOS_SDK, is the path correct?"
+          exit 1
         fi
       fi
       ;;
@@ -164,9 +166,9 @@ build_make() {
                        ac_cv_func_getloadavg=no ac_cv_have_decl_getloadavg=no) ;;
         esac
         ;;
-      bsd)     args+=( CFLAGS="-Wno-error=incompatible-pointer-types $MACOS_SYSROOT"
-                       CXXFLAGS="-Wno-error=incompatible-pointer-types $MACOS_SYSROOT"
-                       LDFLAGS="$MACOS_SYSROOT" ) ;;
+      bsd)     args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration"
                        CXXFLAGS="-Wno-error=implicit-function-declaration" ) ;;
     esac
@@ -190,8 +192,8 @@ build_yasm() {
       linux)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
                        CXXFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      bsd)     args+=( CFLAGS="-fwrapv $MACOS_SYSROOT" CXXFLAGS="-fwrapv $MACOS_SYSROOT"
-                       LDFLAGS="$MACOS_SYSROOT" ) ;;
+      bsd)     args+=( CFLAGS="-fwrapv $CROSS_CFLAGS" CXXFLAGS="-fwrapv $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time"
                        CXXFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time" ) ;;
     esac
@@ -227,7 +229,7 @@ build_shaderc() {
     bionic)  exelink="-static-libstdc++ -static-libgcc" ;;
     linux)    exelink="$CROSS_LDFLAGS"; cflags="$CROSS_CFLAGS"
              [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $CROSS_CFLAGS" ;;
-    bsd)     cflags="-Wno-error=date-time $MACOS_SYSROOT"; exelink="$MACOS_SYSROOT" ;;
+    bsd)     cflags="-Wno-error=date-time $CROSS_CFLAGS"; exelink="$CROSS_LDFLAGS" ;;
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
   esac
   cmake -S "$SH" -B "$SH/build" -G Ninja \
@@ -300,8 +302,8 @@ MODULE_BUILDTYPE=static
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      bsd)    args+=( CFLAGS="-Wno-error=date-time $MACOS_SYSROOT" CXXFLAGS="-Wno-error=date-time $MACOS_SYSROOT"
-                      LDFLAGS="$MACOS_SYSROOT" ) ;;
+      bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
+                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
