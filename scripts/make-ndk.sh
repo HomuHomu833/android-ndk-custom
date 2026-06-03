@@ -330,6 +330,11 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
+    # macos: header detection under osxcross can come back negative for
+    # sys/socket.h, which drops posixmodule.c's `#include <sys/socket.h>`
+    # (guarded by HAVE_SYS_SOCKET_H on Apple) and leaves sendfile() implicitly
+    # declared -> a hard error under clang. Force the detection.
+    [ "$PLATFORM" = macos ] && printf 'ac_cv_header_sys_socket_h=yes\n' >> config.site
     # linux: force static extension modules
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
@@ -355,12 +360,16 @@ MODULE_BUILDTYPE=static
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      macos)  # macOS <sys/socket.h> hides sendfile() & other BSD extensions
-              # unless _DARWIN_C_SOURCE is set (Python defines _POSIX_C_SOURCE,
-              # which masks them); the cross build doesn't get the native
-              # AC_USE_SYSTEM_EXTENSIONS define, so force it here.
-              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time -Wno-error=implicit-function-declaration $CROSS_CFLAGS"
-                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time -Wno-error=implicit-function-declaration $CROSS_CFLAGS"
+      macos)  # macOS <sys/socket.h> only declares sendfile() & other BSD
+              # extensions when _DARWIN_C_SOURCE is set (Python defines
+              # _POSIX_C_SOURCE, which masks them); the cross build doesn't get
+              # the native AC_USE_SYSTEM_EXTENSIONS define, so force it. (The
+              # header itself is pulled in via config.site's HAVE_SYS_SOCKET_H.
+              # A -Wno-error=implicit-function-declaration here is useless:
+              # Python re-appends -Werror=implicit-function-declaration after
+              # user CFLAGS, so the fix has to make sendfile actually declared.)
+              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
     esac
     ./configure "${args[@]}"
