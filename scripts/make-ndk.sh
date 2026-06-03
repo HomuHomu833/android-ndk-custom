@@ -125,7 +125,7 @@ setup_toolchain() {
       CROSS_AR="$TC/bin/${HOST}-ar"; CROSS_RANLIB="$TC/bin/${HOST}-ranlib"
       CROSS_STRIP="$TC/bin/${HOST}-strip"; CROSS_LD="$TC/bin/${HOST}-ld"
       CROSS_OBJCOPY=""                  # cctools ships no objcopy; nothing here needs it
-      CROSS_LDFLAGS="-fuse-ld=$CROSS_LD" # else clang falls through to the host /usr/bin/ld
+      CROSS_LDFLAGS="--ld-path=$CROSS_LD" # else clang falls through to the host /usr/bin/ld
       NDK_HOST=linux-x86_64; SYSTEM_NAME=Darwin
       ;;
     windows)
