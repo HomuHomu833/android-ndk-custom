@@ -1,5 +1,9 @@
 # Prebuilt build image for the android-ndk-custom builds. Bakes the build tools
-# and the zig / llvm-mingw / zig-as-llvm toolchains so CI only pulls (fast).
+# and the zig / llvm-mingw / zig-as-llvm / osxcross toolchains so CI only pulls
+# (fast). zig drives the linux/bsd host tools, llvm-mingw the windows host
+# tools, and osxcross (which bundles cctools-port: ld64/ar/ranlib/strip/lipo/...)
+# the macOS host tools — zig segfaults building macOS binaries, so darwin uses
+# osxcross instead.
 # The build scripts are NOT copied in — they are bind-mounted from the checkout
 # at run time, so editing scripts/ needs no image rebuild.
 #
@@ -24,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
         ca-certificates aria2 xz-utils unzip git make cmake ninja-build \
         build-essential file p7zip-full python3 python3.11 \
         autoconf automake libtool \
+        clang lld zlib1g-dev libssl-dev libxml2-dev liblzma-dev libbz2-dev uuid-dev cpio bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
 # qemu-user-static + x86_64 libs so the NDK's prebuilt binaries run on non-x86 hosts
@@ -91,12 +96,25 @@ ENV QEMU_LD_PREFIX=/usr/x86_64-linux-gnu
 
 ENV PATH="/opt/zig:${PATH}"
 
-# macOS SDK -> /opt/macos-sdk. Arch-independent (headers + .tbd stubs), so no
-# host gating. make-ndk.sh points -isysroot here for darwin host-tool builds.
-RUN aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o macos-sdk.tar.xz \
+# osxcross -> /opt/osxcross: the macOS cross toolchain for darwin host-tool
+# builds, replacing the bare macOS SDK (and the old bsd/zig darwin path).
+# osxcross compiles cctools-port (ld64/ar/ranlib/strip/lipo/install_name_tool/
+# ...) and clang wrappers, and bakes the macOS SDK into /opt/osxcross/SDK.
+# make-ndk.sh points the darwin CC/CXX/AR/RANLIB/STRIP/LD at the arch-prefixed
+# wrappers in /opt/osxcross/bin (e.g. arm64-apple-darwin24-clang,
+# x86_64-apple-darwin24-ar). Arch-independent toolchain, so no host gating. Only
+# the macOS arches we target are built (x86_64 + the Haswell x86_64h slice +
+# arm64 + the PAC arm64e ABI) to keep the image build quick.
+ARG OSXCROSS_REF=master
+RUN git clone https://github.com/tpoechtrager/osxcross /tmp/osxcross \
+    && git -C /tmp/osxcross checkout "$OSXCROSS_REF" \
+    && aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 \
+        --dir=/tmp/osxcross/tarballs -o "MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" \
         "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_SDK_VERSION}/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" \
-    && tar -xJf /tmp/macos-sdk.tar.xz -C /opt \
-    && rm /tmp/macos-sdk.tar.xz \
-    && mv /opt/MacOSX*.sdk /opt/macos-sdk
+    && cd /tmp/osxcross \
+    && UNATTENDED=1 ENABLE_ARCHS="x86_64 x86_64h arm64 arm64e" OSX_VERSION_MIN=11.0 \
+       TARGET_DIR=/opt/osxcross ./build.sh \
+    && cd / \
+    && rm -rf /tmp/osxcross
 
 WORKDIR /work
