@@ -353,7 +353,12 @@ MODULE_BUILDTYPE=static
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      macos)  args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
+      macos)  # macOS <sys/socket.h> hides sendfile() & other BSD extensions
+              # unless _DARWIN_C_SOURCE is set (Python defines _POSIX_C_SOURCE,
+              # which masks them); the cross build doesn't get the native
+              # AC_USE_SYSTEM_EXTENSIONS define, so force it here.
+              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time -Wno-error=implicit-function-declaration $CROSS_CFLAGS"
+                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time -Wno-error=implicit-function-declaration $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
     esac
     ./configure "${args[@]}"
