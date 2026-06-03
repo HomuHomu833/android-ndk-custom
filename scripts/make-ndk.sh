@@ -132,6 +132,16 @@ setup_toolchain() {
       CROSS_STRIP="$TC/bin/${HOST}-strip"; CROSS_LD="$TC/bin/${HOST}-ld"
       CROSS_OBJCOPY=""                  # cctools ships no objcopy; nothing here needs it
       NDK_HOST=linux-x86_64; SYSTEM_NAME=Darwin
+      # shaderc's combined-archive step invokes a bare `libtool -static -o`
+      # (Apple's archive merge), hardcoded rather than CMAKE_LIBTOOL-aware. Host
+      # GNU libtool can't merge archives, so expose the cctools libtool under the
+      # plain `libtool` name on PATH via a shim dir.
+      LIBTOOLBIN="$(ls "$TC/bin/${ARCH}-apple-darwin"*-libtool 2>/dev/null | head -n1 || true)"
+      if [ -n "$LIBTOOLBIN" ]; then
+        mkdir -p "$BUILD/.macos-shims"
+        ln -sf "$LIBTOOLBIN" "$BUILD/.macos-shims/libtool"
+        export PATH="$BUILD/.macos-shims:$PATH"
+      fi
       ;;
     windows)
       TC=/opt/llvm-mingw
@@ -146,15 +156,14 @@ setup_toolchain() {
 
   # Extra flags for the cmake-based configure (shaderc): anything passed in via
   # the EXTRA_CMAKE_FLAGS env var, plus platform-specific additions. The Darwin
-  # (osxcross) block points CMake's Apple support at the osxcross SDK + cctools
-  # libtool (CMake builds static libs with libtool, not ar, on Darwin) so it
+  # (osxcross) block points CMake's Apple support at the osxcross SDK so it
   # doesn't probe a host Xcode, and pins the arch + deployment target; the
-  # zig/llvm-mingw/NDK platforms need none of this.
+  # zig/llvm-mingw/NDK platforms need none of this. (CMAKE_LIBTOOL is left to
+  # CMake's find_program, which picks up the cctools libtool shim on PATH.)
   EXTRA_CMAKE_FLAGS=(${EXTRA_CMAKE_FLAGS:-})
   if [ "$SYSTEM_NAME" = Darwin ]; then
     SDKROOT="$(ls -d "$TC/SDK/MacOSX"*.sdk 2>/dev/null | head -n1 || true)"
     [ -n "$SDKROOT" ] && EXTRA_CMAKE_FLAGS+=(-DCMAKE_OSX_SYSROOT="$SDKROOT")
-    [ -x "$TC/bin/${HOST}-libtool" ] && EXTRA_CMAKE_FLAGS+=(-DCMAKE_LIBTOOL="$TC/bin/${HOST}-libtool")
     EXTRA_CMAKE_FLAGS+=(-DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0)
   fi
 }
