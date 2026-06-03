@@ -361,17 +361,14 @@ MODULE_BUILDTYPE=static
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      macos)  # macOS <sys/socket.h> only declares sendfile() & other BSD
-              # extensions when _DARWIN_C_SOURCE is set (Python defines
-              # _POSIX_C_SOURCE, which masks them); the cross build doesn't get
-              # the native AC_USE_SYSTEM_EXTENSIONS define, so force it. (The
-              # header itself is pulled in via config.site's HAVE_SYS_SOCKET_H.
-              # A -Wno-error=implicit-function-declaration here is useless:
-              # Python re-appends -Werror=implicit-function-declaration after
-              # user CFLAGS, so the fix has to make sendfile actually declared.)
-              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
-                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
+      macos)
+        # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE.
+        # LDSHARED: use -bundle -undefined dynamic_lookup (not -shared -fPIC)
+        #   so ld64 defers Python API symbols to the interpreter at dlopen().
+        args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                LDFLAGS="$CROSS_LDFLAGS"
+                LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
