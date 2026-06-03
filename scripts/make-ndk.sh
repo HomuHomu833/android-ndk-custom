@@ -108,6 +108,12 @@ setup_toolchain() {
       # Apple cross toolchain. The wrappers carry the macOS SDK sysroot, so no
       # -isysroot/-iframework juggling is needed here.
       TC=/opt/osxcross
+      # Put osxcross bin on PATH so clang discovers the cctools linker by its
+      # prefixed name (<triple>-ld) instead of falling through to the host
+      # /usr/bin/ld. CMake's compiler-probe try-compiles don't honor
+      # CMAKE_EXE_LINKER_FLAGS, so a -fuse-ld/--ld-path flag alone wouldn't reach
+      # them — PATH-based discovery covers every link uniformly.
+      export PATH="$TC/bin:$PATH"
       case "$TARGET" in
         arm64e-*)          ARCH=arm64e ;;   # distinct PAC ABI, not arm64
         aarch64-*|arm64-*) ARCH=arm64 ;;
@@ -125,7 +131,6 @@ setup_toolchain() {
       CROSS_AR="$TC/bin/${HOST}-ar"; CROSS_RANLIB="$TC/bin/${HOST}-ranlib"
       CROSS_STRIP="$TC/bin/${HOST}-strip"; CROSS_LD="$TC/bin/${HOST}-ld"
       CROSS_OBJCOPY=""                  # cctools ships no objcopy; nothing here needs it
-      CROSS_LDFLAGS="--ld-path=$CROSS_LD" # else clang falls through to the host /usr/bin/ld
       NDK_HOST=linux-x86_64; SYSTEM_NAME=Darwin
       ;;
     windows)
