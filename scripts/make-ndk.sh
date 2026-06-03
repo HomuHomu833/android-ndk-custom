@@ -328,11 +328,14 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
-    # macos: header detection under osxcross can come back negative for
-    # sys/socket.h, which drops posixmodule.c's `#include <sys/socket.h>`
-    # (guarded by HAVE_SYS_SOCKET_H on Apple) and leaves sendfile() implicitly
-    # declared -> a hard error under clang. Force the detection.
-    [ "$PLATFORM" = macos ] && printf 'ac_cv_header_sys_socket_h=yes\n' >> config.site
+    # macos: configure detects sendfile() by a link test (the symbol lives in
+    # libSystem, so HAVE_SENDFILE gets defined), but posixmodule.c's Apple
+    # sendfile() branch needs the prototype from <sys/socket.h>, which is gated
+    # behind _DARWIN_C_SOURCE and stays hidden here -> implicit-declaration
+    # error. NDK host tools don't need os.sendfile, so just skip the whole path
+    # by forcing the cache var off (config.site is honored: the cross build
+    # already relies on it for the /dev/ptmx AC_CHECK_FILE).
+    [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\n' >> config.site
     # linux: force static extension modules
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
