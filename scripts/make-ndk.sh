@@ -335,7 +335,10 @@ EOF
     # error. NDK host tools don't need os.sendfile, so just skip the whole path
     # by forcing the cache var off (config.site is honored: the cross build
     # already relies on it for the /dev/ptmx AC_CHECK_FILE).
-    [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\n' >> config.site
+    # mkfifoat/mknodat: Python 3.11 wraps these in __builtin_available(macOS 13)
+    # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
+    # cross-links don't pull that in automatically; disable both to avoid it.
+    [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # linux: force static extension modules
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
@@ -361,14 +364,15 @@ MODULE_BUILDTYPE=static
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      macos)
-        # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE.
-        # LDSHARED: use -bundle -undefined dynamic_lookup (not -shared -fPIC)
-        #   so ld64 defers Python API symbols to the interpreter at dlopen().
-        args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
-                CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
-                LDFLAGS="$CROSS_LDFLAGS"
-                LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
+      macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
+              #   (needed so sendfile() is declared; -Wno-error alone won't help
+              #   because Python re-appends -Werror=implicit-function-declaration).
+              # LDSHARED: use -bundle -undefined dynamic_lookup (not -shared -fPIC)
+              #   so ld64 defers Python API symbols to the interpreter at dlopen().
+              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                      LDFLAGS="$CROSS_LDFLAGS"
+                      LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
