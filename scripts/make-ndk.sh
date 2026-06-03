@@ -301,9 +301,11 @@ build_python() {
     rm -rf python; mv Python-3.11.4 python
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" python/
     cd python
-    # the bsd configure carries the Darwin cross-build fixups too (darwin was
-    # built through the bsd path before it moved to its own osxcross platform)
-    case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
+    # bsd uses a pre-patched configure for the *BSD triples; darwin is a natively
+    # supported Python platform, so macos keeps the stock configure (it properly
+    # detects HAVE_SYS_SOCKET_H etc. against the osxcross SDK — the bsd-tailored
+    # one doesn't, which left posixmodule.c's sendfile() prototype unincluded).
+    [ "$PLATFORM" = bsd ] && cp "$ROOT/patches/bsd/python/configure" "$PWD/configure"
     mkdir -p build
     if [ "$PLATFORM" = linux ]; then
       cat > config.site <<'EOF'
