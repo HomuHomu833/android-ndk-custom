@@ -362,9 +362,16 @@ MODULE_BUILDTYPE=static
 ' configure ;;
       esac
     fi
+    # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
+    # cross builds, so a host pkg-config only ever reports x86_64-linux libs;
+    # letting CPython's configure see it wrongly flips Makefile-built modules
+    # (zlib/_lzma/_uuid/...) to "enabled" against libraries the cross sysroot
+    # lacks, which then fail to link. The image carries pkg-config purely so the
+    # windows autoreconf can expand PKG_CHECK_MODULES; this keeps every build's
+    # module set identical to a host without pkg-config installed at all.
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET"
                  --with-build-python --without-ensurepip
-                 CONFIG_SITE=config.site TARGET="$TARGET"
+                 CONFIG_SITE=config.site TARGET="$TARGET" PKG_CONFIG=/bin/false
                  CC="$CROSS_CC" AS="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY"
                  READELF="$NDK_LLVM_BIN/llvm-readelf" LLVM_PROFDATA="$NDK_LLVM_BIN/llvm-profdata"
                  AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
