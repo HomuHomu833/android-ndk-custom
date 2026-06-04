@@ -354,6 +354,12 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
+    # openbsd: memrchr is a glibc/*BSD-but-not-OpenBSD extension. zig's bundled
+    # libc exposes the symbol so configure's link test sets HAVE_MEMRCHR, but
+    # OpenBSD's <string.h> never declares it -> fastsearch.h's memrchr() call is
+    # an implicit decl, which clang 22 makes a hard error (plus int->pointer) and
+    # kills the core build. Force the cache var off so CPython uses its fallback.
+    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\n' >> config.site ;; esac
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
@@ -424,7 +430,14 @@ MODULE_BUILDTYPE=static
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
+      bsd)    # -fPIC: bsd keeps a static libpython but setup.py still emits the
+              # stdlib extensions as shared .so, and they reference external
+              # preemptible data (PyExc_*, type objects, _Py_NoneStruct) that needs
+              # GOT indirection. configure doesn't set CCSHARED=-fPIC for the
+              # "unknown" platform tag, so without this the .so links fail with
+              # R_AARCH64_* "recompile with -fPIC". Making the whole build PIC is
+              # harmless for a static host tool.
+              args+=( CFLAGS="-fPIC -Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-fPIC -Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
               #   (needed so sendfile() is declared; -Wno-error alone won't help
