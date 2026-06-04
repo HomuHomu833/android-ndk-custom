@@ -1,5 +1,5 @@
 name: Make NDK (BSD)
-run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} bsd
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}}
 on:
   workflow_dispatch:
     inputs:
