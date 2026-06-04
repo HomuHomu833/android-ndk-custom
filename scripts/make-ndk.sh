@@ -354,21 +354,6 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # openbsd: zig's bundled OpenBSD libc headers under-declare functions whose
-    # symbols it nonetheless exports, so configure's link tests set HAVE_* but the
-    # call sites are implicit decls that clang turns into hard errors, killing
-    # the core build. Force each such cache var off so CPython uses its portable
-    # fallback:
-    #   memrchr    - a glibc/BSD-but-not-OpenBSD extension (<string.h>); also
-    #                returns char* so an implicit int decl would truncate it.
-    #   getentropy - exists on OpenBSD but isn't declared here; CPython falls back
-    #                to reading /dev/urandom for bootstrap_hash.
-    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\n' >> config.site ;; esac
-    # getthrid() cannot be suppressed via config.site: configure has no
-    # AC_CHECK_FUNC(getthrid) check, so thread_pthread.h calls it unconditionally
-    # inside #elif defined(__OpenBSD__) with no HAVE_GETTHRID guard. Inject a
-    # forward declaration at the call site to satisfy clang.
-    case "$TARGET" in *openbsd*) sed -i 's/    native_id = getthrid();/    { extern pid_t getthrid(void); native_id = (unsigned long)getthrid(); }/' Python/thread_pthread.h ;; esac
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
