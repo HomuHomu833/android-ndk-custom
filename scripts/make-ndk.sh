@@ -356,16 +356,19 @@ EOF
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # openbsd: zig's bundled OpenBSD libc headers under-declare functions whose
     # symbols it nonetheless exports, so configure's link tests set HAVE_* but the
-    # call sites are implicit decls that clang 22 turns into hard errors, killing
+    # call sites are implicit decls that clang turns into hard errors, killing
     # the core build. Force each such cache var off so CPython uses its portable
     # fallback:
     #   memrchr    - a glibc/BSD-but-not-OpenBSD extension (<string.h>); also
     #                returns char* so an implicit int decl would truncate it.
     #   getentropy - exists on OpenBSD but isn't declared here; CPython falls back
     #                to reading /dev/urandom for bootstrap_hash.
-    #   getthrid   - OpenBSD native-thread-id syscall; not declared in zig's headers;
-    #                CPython falls back to pthread_self() for the thread ID.
-    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\nac_cv_func_getthrid=no\n' >> config.site ;; esac
+    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\n' >> config.site ;; esac
+    # getthrid() cannot be suppressed via config.site: configure has no
+    # AC_CHECK_FUNC(getthrid) check, so thread_pthread.h calls it unconditionally
+    # inside #elif defined(__OpenBSD__) with no HAVE_GETTHRID guard. Inject a
+    # forward declaration at the call site to satisfy clang.
+    case "$TARGET" in *openbsd*) sed -i 's/    native_id = getthrid();/    { extern pid_t getthrid(void); native_id = (unsigned long)getthrid(); }/' Python/thread_pthread.h ;; esac
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
@@ -421,7 +424,7 @@ MODULE_BUILDTYPE=static
     case "$PLATFORM" in
       bionic) # grp: bionic only declares/exports the getgrent/setgrent/endgrent
               # family from API 26, so below that grpmodule.c neither compiles
-              # (clang 22 hard-errors the implicit decls) nor links -- mark it n/a
+              # (clang hard-errors the implicit decls) nor links -- mark it n/a
               # only when targeting < 26; at 26+ let it build normally.
               # _ctypes_test: a test-only module that EXPORT()s data symbols, but
               # setup.py compiles bionic extensions without -fPIC, so those become
@@ -460,7 +463,7 @@ MODULE_BUILDTYPE=static
                # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
                # resource files (python_nt.o etc., needed by the DLL/exe links);
                # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
-               # -Wno-incompatible-pointer-types: clang 22 makes this diagnostic a
+               # -Wno-incompatible-pointer-types: clang makes this diagnostic a
                # hard error by default, but _multiprocessing/semaphore.c passes an
                # int* to _GetSemaphoreValue(HANDLE, long*) on every mingw target;
                # downgrade it so the extension (and any sibling) keeps building.
