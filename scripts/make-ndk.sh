@@ -354,12 +354,16 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # openbsd: memrchr is a glibc/*BSD-but-not-OpenBSD extension. zig's bundled
-    # libc exposes the symbol so configure's link test sets HAVE_MEMRCHR, but
-    # OpenBSD's <string.h> never declares it -> fastsearch.h's memrchr() call is
-    # an implicit decl, which clang 22 makes a hard error (plus int->pointer) and
-    # kills the core build. Force the cache var off so CPython uses its fallback.
-    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\n' >> config.site ;; esac
+    # openbsd: zig's bundled OpenBSD libc headers under-declare functions whose
+    # symbols it nonetheless exports, so configure's link tests set HAVE_* but the
+    # call sites are implicit decls that clang 22 turns into hard errors, killing
+    # the core build. Force each such cache var off so CPython uses its portable
+    # fallback:
+    #   memrchr    - a glibc/BSD-but-not-OpenBSD extension (<string.h>); also
+    #                returns char* so an implicit int decl would truncate it.
+    #   getentropy - exists on OpenBSD but isn't declared here; CPython falls back
+    #                to reading /dev/urandom for bootstrap_hash.
+    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\n' >> config.site ;;
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
