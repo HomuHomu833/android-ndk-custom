@@ -405,15 +405,26 @@ MODULE_BUILDTYPE=static
                # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
                # resource files (python_nt.o etc., needed by the DLL/exe links);
                # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
+               # -Wno-incompatible-pointer-types: clang 22 makes this diagnostic a
+               # hard error by default, but _multiprocessing/semaphore.c passes an
+               # int* to _GetSemaphoreValue(HANDLE, long*) on every mingw target;
+               # downgrade it so the extension (and any sibling) keeps building.
                local laa=""; [ "$TARGET" = i686-w64-mingw32 ] && laa=" -Wl,--large-address-aware"
                args+=( --enable-shared
-                       CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
-                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
+                       CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
+                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
                        LDFLAGS="-static-libstdc++ -static-libgcc$laa"
                        LDSHARED="$CROSS_CC -shared"
                        WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
     ./configure "${args[@]}"
+    # windows: the extension-module pass (sharedmods -> setup.py build) links each
+    # .pyd against -lpython3.11, but the Makefile's sharedmods rule has no
+    # dependency on the import library libpython3.11.dll.a (emitted as a side
+    # effect of the libpython3.11.dll link rule). Under -j that races -> a swarm
+    # of "lld: error: unable to find library -lpython3.11". Build the DLL (and
+    # thus its import lib) first so it always exists before the extensions link.
+    [ "$PLATFORM" = windows ] && make -j"$(ncpu)" libpython3.11.dll
     make -j"$(ncpu)" build_all
     make install
   )
