@@ -354,12 +354,24 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # linux: force static extension modules
+    # linux/musl: force every extension module to be linked into the interpreter
+    # (zig's musl is static-only -- it cannot produce the .so files setup.py would
+    # otherwise emit, and -static + -shared is contradictory). CPython builds the
+    # stdlib extensions via makesetup+Modules/Setup.stdlib only when
+    # MODULES_SETUP_STDLIB points at it, which configure does solely for
+    # Emscripten/WASI; every other host leaves it empty and the modules fall
+    # through to setup.py as shared .so. So (1) force MODULE_BUILDTYPE=static (the
+    # *static* marker makesetup honours) and (2) activate Setup.stdlib for this
+    # host too, matching the wasm static path. setup.py then skips the
+    # makesetup-built modules, so nothing is built shared.
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
-        *musl*) sed -i '/^case \$host_cpu in #(/,/^esac$/c\
+        *musl*)
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
 MODULE_BUILDTYPE=static
-' configure ;;
+' configure
+          sed -i 's#^\([[:space:]]*\)MODULES_SETUP_STDLIB=$#\1MODULES_SETUP_STDLIB=Modules/Setup.stdlib#' configure
+          ;;
       esac
     fi
     # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). It probes
