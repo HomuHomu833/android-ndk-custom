@@ -25,17 +25,26 @@ jobs:
       platform: linux
       version: ${{ inputs.version }}
       revision: ${{ inputs.revision }}
-      # x86_64-linux-gnux32
+      # powerpc64le-linux-gnu, x86_64-linux-gnux32, x86_64-linux-muslx32
       targets: >-
         ["aarch64-linux-musl", "aarch64-linux-gnu", "aarch64_be-linux-gnu",
-         "arm-linux-gnueabi", "arm-linux-musleabihf", "arm-linux-gnueabihf",
-         "armeb-linux-gnueabi", "armeb-linux-gnueabihf", "hexagon-linux-musl",
-         "loongarch64-linux-gnu", "loongarch64-linux-muslf32", "loongarch64-linux-gnusf",
-         "mips-linux-gnueabi", "mips-linux-gnueabihf", "mips64-linux-gnuabin32",
-         "mips64-linux-gnuabi64", "mips64el-linux-gnuabin32", "mips64el-linux-gnuabi64",
-         "mipsel-linux-gnueabi", "mipsel-linux-gnueabihf", "powerpc-linux-musleabi",
-         "powerpc-linux-musleabihf", "powerpc64-linux-musl", "powerpc64le-linux-gnu",
-         "riscv32-linux-gnu", "riscv64-linux-gnu", "s390x-linux-gnu",
-         "thumb-linux-musleabi", "thumb-linux-musleabihf", "thumbeb-linux-musleabi",
-         "thumbeb-linux-musleabihf", "x86-linux-musl", "x86-linux-gnu",
-         "x86_64-linux-musl", "x86_64-linux-gnu"]
+         "aarch64_be-linux-musl", "arm-linux-gnueabi", "arm-linux-gnueabihf",
+         "arm-linux-musleabi", "arm-linux-musleabihf", "armeb-linux-gnueabi",
+         "armeb-linux-gnueabihf", "armeb-linux-musleabi", "armeb-linux-musleabihf",
+         "hexagon-linux-musl", "loongarch64-linux-gnu", "loongarch64-linux-musl",
+         "loongarch64-linux-muslf32", "loongarch64-linux-gnusf",
+         "loongarch64-linux-muslsf", "m68k-linux-musl", "mips-linux-gnueabi",
+         "mips-linux-gnueabihf", "mips-linux-musleabi", "mips-linux-musleabihf",
+         "mips64-linux-gnuabin32", "mips64-linux-gnuabi64",
+         "mips64-linux-muslabin32", "mips64-linux-muslabi64",
+         "mips64el-linux-gnuabin32", "mips64el-linux-gnuabi64",
+         "mips64el-linux-muslabin32", "mips64el-linux-muslabi64",
+         "mipsel-linux-gnueabi", "mipsel-linux-gnueabihf",
+         "mipsel-linux-musleabi", "mipsel-linux-musleabihf",
+         "powerpc-linux-musleabi", "powerpc-linux-musleabihf",
+         "powerpc64-linux-musl", "powerpc64le-linux-musl",
+         "riscv32-linux-gnu", "riscv32-linux-musl",
+         "riscv64-linux-musl", "riscv64-linux-gnu", "s390x-linux-gnu",
+         "s390x-linux-musl", "thumb-linux-musleabi", "thumb-linux-musleabihf",
+         "thumbeb-linux-musleabi", "thumbeb-linux-musleabihf",
+         "x86-linux-gnu", "x86-linux-musl", "x86_64-linux-musl", "x86_64-linux-gnu"]
