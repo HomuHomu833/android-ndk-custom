@@ -1109,6 +1109,12 @@ case $cpu-$vendor in
 	amd64-*)
 		cpu=x86_64
 		;;
+	x86_64h-*)
+		# Apple's Haswell+ x86_64 slice; same ABI as x86_64, so canonicalize
+		# for the build system (the actual slice is picked by the compiler's
+		# -arch x86_64h, not the host triple).
+		cpu=x86_64
+		;;
 	blackfin-*)
 		cpu=bfin
 		basic_os=${basic_os:-linux}
