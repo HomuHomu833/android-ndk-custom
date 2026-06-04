@@ -402,13 +402,16 @@ MODULE_BUILDTYPE=static
       windows) # mingw: shared interpreter linking libpython3.11.dll. Static the
                # compiler runtime so python.exe/.dll don't drag in llvm-mingw's
                # libc++/unwind DLLs; i686 wants --large-address-aware (matches the
-               # msys2 mingw-w64-python recipe).
+               # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
+               # resource files (python_nt.o etc., needed by the DLL/exe links);
+               # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
                local laa=""; [ "$TARGET" = i686-w64-mingw32 ] && laa=" -Wl,--large-address-aware"
                args+=( --enable-shared
                        CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
                        CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
                        LDFLAGS="-static-libstdc++ -static-libgcc$laa"
-                       LDSHARED="$CROSS_CC -shared" ) ;;
+                       LDSHARED="$CROSS_CC -shared"
+                       WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
