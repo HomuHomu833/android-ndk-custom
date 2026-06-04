@@ -51,8 +51,9 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 
 **Architectures**
 - `x86`, `x86_64`
-- `armv7a` *(Android-only)*
 - `aarch64`
+- `armv7a` *(Android-only)*
+- `arm64e`, `x86_64h` *(macOS-only)*
 
 ---
 
