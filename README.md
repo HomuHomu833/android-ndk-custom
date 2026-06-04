@@ -32,13 +32,13 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 - ⚠️ OpenBSD (https://github.com/HomuHomu833/android-ndk-custom/issues/15#issuecomment-3378450872)
 
 **Architectures**
-- **X86 Family**: `x86`, `x86_64`
+- **X86 Family**: `x86`, `x86_64`, `x32`
 - **ARM Family**: `armhf`, `armeb`, `aarch64`, `aarch64_be`
 - **RISC-V**: `riscv32`, `riscv64`
 - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
 - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
 - **Thumb**: `thumb`, `thumbeb`
-- **Other**: `loongarch64`, `x32`, `s390x`, `hexagon`
+- **Other**: `loongarch64`, `s390x`, `hexagon`
 
 ---
 
