@@ -362,6 +362,19 @@ MODULE_BUILDTYPE=static
 ' configure ;;
       esac
     fi
+    # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). It probes
+    # `$(CC) -E -v` and adds every "#include <...>" dir that isn't a /gcc/ or
+    # /clang/ path -- but zig's clang reports the host's /usr/include and
+    # /usr/local/include there, so those leak into the cross build. The host
+    # glibc <stdlib.h> then pulls <bits/libc-header-start.h> from the Debian
+    # multiarch dir zig never searches -> every extension fails to compile. zig
+    # resolves its own sysroot internally (not via -I), so the probe is pure
+    # downside here; drop it. macos/osxcross and windows/mingw report correct
+    # sysroots from the same probe, so they keep it.
+    case "$PLATFORM" in
+      linux|bsd) sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
+    esac
+
     # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
     # cross builds, so a host pkg-config only ever reports x86_64-linux libs;
     # letting CPython's configure see it wrongly flips Makefile-built modules
