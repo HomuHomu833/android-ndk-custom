@@ -363,7 +363,9 @@ EOF
     #                returns char* so an implicit int decl would truncate it.
     #   getentropy - exists on OpenBSD but isn't declared here; CPython falls back
     #                to reading /dev/urandom for bootstrap_hash.
-    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\n' >> config.site ;; esac
+    #   getthrid   - OpenBSD native-thread-id syscall; not declared in zig's headers;
+    #                CPython falls back to pthread_self() for the thread ID.
+    case "$TARGET" in *openbsd*) printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\nac_cv_func_getthrid=no\n' >> config.site ;; esac
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
