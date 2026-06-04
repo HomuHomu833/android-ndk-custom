@@ -13,7 +13,7 @@
 #   NDK_REVISION  optional (e.g. b)
 #   ANDROID_PLATFORM  bionic API level (default 25, riscv64 forced to 35)
 #   ROOTDIR     work dir = checkout root (default: cwd); holds sources/ config/
-#               patches/ binaries/. HOME is also set here in CI.
+#               patches/. HOME is also set here in CI.
 #   REPO_OWNER  GitHub owner for the llvm-custom release download (default HomuHomu833)
 #   EXTRA_CMAKE_FLAGS  optional extra -D flags for the cmake (shaderc) configure
 #
@@ -23,7 +23,7 @@
 set -euo pipefail
 
 ROOTDIR="${ROOTDIR:-$PWD}"
-ROOT="$ROOTDIR"                       # repo assets: sources/ config/ patches/ binaries/
+ROOT="$ROOTDIR"                       # repo assets: sources/ config/ patches/
 : "${PLATFORM:?set PLATFORM}" "${TARGET:?set TARGET}" "${NDK_VERSION:?set NDK_VERSION}"
 NDK_REVISION="${NDK_REVISION:-}"
 REPO_OWNER="${REPO_OWNER:-HomuHomu833}"
@@ -292,18 +292,33 @@ build_shaderc() {
   cmake --build "$SH/build" --target install
 }
 
-# --- CPython (target build; windows uses prebuilt binaries/ instead) --------
+# --- CPython (cross-compiled for every host, windows included) --------------
+# Vanilla CPython can't be built with mingw, so the windows host builds the
+# msys2-contrib cpython-mingw fork instead of the python.org tarball; every
+# other host keeps using the upstream source.
 build_python() {
-  [ "$PLATFORM" = windows ] && return 0
   log "Building Python 3.11.4"
   ( cd "$BUILD"
-    aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o python.tar.xz https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz && xz -d < /tmp/python.tar.xz | tar -x && rm /tmp/python.tar.xz
-    rm -rf python; mv Python-3.11.4 python
-    cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" python/
+    if [ "$PLATFORM" = windows ]; then
+      # cpython-mingw's mingw-v3.11.4 branch == CPython 3.11.4 + the mingw patch
+      # set used by msys2's mingw-w64-python recipe. The branch ships a stale
+      # generated configure, so it is regenerated with autoreconf below.
+      aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o python.tar.gz "https://codeload.github.com/msys2-contrib/cpython-mingw/tar.gz/refs/heads/mingw-v3.11.4" && tar -xzf /tmp/python.tar.gz && rm /tmp/python.tar.gz
+      rm -rf python; mv cpython-mingw-mingw-v3.11.4 python
+    else
+      aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o python.tar.xz https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz && xz -d < /tmp/python.tar.xz | tar -x && rm /tmp/python.tar.xz
+      rm -rf python; mv Python-3.11.4 python
+    fi
     cd python
     # the bsd configure carries the Darwin cross-build fixups too (darwin was
     # built through the bsd path before it moved to its own osxcross platform)
     case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
+    # windows: regenerate configure (+ pyconfig.h.in) from the patched
+    # configure.ac (needs autoconf-archive + pkg.m4, baked into the build image)
+    [ "$PLATFORM" = windows ] && autoreconf -vfi
+    # newer config.sub/config.guess (recognise the exotic triples); copied after
+    # autoreconf, which rewrites them with the autotools-bundled copies
+    cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" "$PWD/"
     mkdir -p build
     if [ "$PLATFORM" = linux ]; then
       cat > config.site <<'EOF'
@@ -347,14 +362,25 @@ MODULE_BUILDTYPE=static
 ' configure ;;
       esac
     fi
+    # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
+    # cross builds, so a host pkg-config only ever reports x86_64-linux libs;
+    # letting CPython's configure see it wrongly flips Makefile-built modules
+    # (zlib/_lzma/_uuid/...) to "enabled" against libraries the cross sysroot
+    # lacks, which then fail to link. The image carries pkg-config purely so the
+    # windows autoreconf can expand PKG_CHECK_MODULES; this keeps every build's
+    # module set identical to a host without pkg-config installed at all.
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET"
-                 --disable-shared --disable-ipv6 --with-build-python --without-ensurepip
-                 CONFIG_SITE=config.site TARGET="$TARGET"
+                 --with-build-python --without-ensurepip
+                 CONFIG_SITE=config.site TARGET="$TARGET" PKG_CONFIG=/bin/false
                  CC="$CROSS_CC" AS="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY"
                  READELF="$NDK_LLVM_BIN/llvm-readelf" LLVM_PROFDATA="$NDK_LLVM_BIN/llvm-profdata"
-                 AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
-                 LDSHARED="$CROSS_CC -shared -fPIC"
-                 _PYTHON_HOST_PLATFORM="$TARGET" )
+                 AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
+    # mingw is a shared build (libpython3.11.dll) and lets configure derive
+    # _PYTHON_HOST_PLATFORM (mingw); every other host is a static interpreter.
+    if [ "$PLATFORM" != windows ]; then
+      args+=( --disable-shared --disable-ipv6 LDSHARED="$CROSS_CC -shared -fPIC"
+              _PYTHON_HOST_PLATFORM="$TARGET" )
+    fi
     case "$PLATFORM" in
       bionic) args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
@@ -373,6 +399,19 @@ MODULE_BUILDTYPE=static
                       CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS"
                       LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
+      windows) # mingw: shared interpreter linking libpython3.11.dll. Static the
+               # compiler runtime so python.exe/.dll don't drag in llvm-mingw's
+               # libc++/unwind DLLs; i686 wants --large-address-aware (matches the
+               # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
+               # resource files (python_nt.o etc., needed by the DLL/exe links);
+               # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
+               local laa=""; [ "$TARGET" = i686-w64-mingw32 ] && laa=" -Wl,--large-address-aware"
+               args+=( --enable-shared
+                       CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
+                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
+                       LDFLAGS="-static-libstdc++ -static-libgcc$laa"
+                       LDSHARED="$CROSS_CC -shared"
+                       WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
@@ -385,7 +424,8 @@ strip_deps() {
   local files f
   if [ "$PLATFORM" = windows ]; then
     files=( "$BUILD/make/build/bin/make.exe"
-            "$BUILD/yasm/build/bin/yasm.exe" "$BUILD/yasm/build/bin/ytasm.exe" "$BUILD/yasm/build/bin/vsyasm.exe" )
+            "$BUILD/yasm/build/bin/yasm.exe" "$BUILD/yasm/build/bin/ytasm.exe" "$BUILD/yasm/build/bin/vsyasm.exe"
+            "$BUILD/python/build/bin/python3.11.exe" "$BUILD/python/build/bin/libpython3.11.dll" )
   else
     files=( "$BUILD/make/build/bin/make"
             "$BUILD/yasm/build/bin/yasm" "$BUILD/yasm/build/bin/ytasm" "$BUILD/yasm/build/bin/vsyasm"
@@ -787,8 +827,18 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   cp "$BUILD/yasm/build/bin/vsyasm.exe" "$PREBUILT_BIN"
   "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
   "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
-  mkdir -p "$NDK_TOOLCHAIN/python3"
-  unzip -qq "$ROOT/binaries/python-3.11.4-${TARGET}.zip" -d "$NDK_TOOLCHAIN/python3"
+  # python3: the freshly cross-built mingw interpreter. python.exe sits at the
+  # python3/ root (the layout ndk-build expects on Windows); getpath walks up
+  # from there to find python3/lib/python3.11. libpython3.11.dll rides next to
+  # python.exe, as does the llvm-mingw winpthread runtime the binaries pull in.
+  mkdir -p "$NDK_TOOLCHAIN/python3/lib"
+  cp "$BUILD/python/build/bin/python3.11.exe" "$NDK_TOOLCHAIN/python3/python.exe"
+  cp "$BUILD/python/build/bin/libpython3.11.dll" "$NDK_TOOLCHAIN/python3/"
+  # libpython3.dll: the stable-ABI forwarder limited-API extensions link against
+  [ -f "$BUILD/python/build/bin/libpython3.dll" ] && cp "$BUILD/python/build/bin/libpython3.dll" "$NDK_TOOLCHAIN/python3/"
+  cp -R "$BUILD/python/build/lib/python3.11" "$NDK_TOOLCHAIN/python3/lib/"
+  pthread_dll="$(find "$TC" -name libwinpthread-1.dll -path "*${TARGET}*" 2>/dev/null | head -n1 || true)"
+  [ -n "$pthread_dll" ] && cp "$pthread_dll" "$NDK_TOOLCHAIN/python3/"
   find "$NDK/shader-tools/windows-x86_64" -type f | while IFS= read -r file; do
     bname="$(basename "$file")"; echo "Replacing $bname"
     cp "$BUILD/shaderc/install/bin/$bname" "$file" || true
