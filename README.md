@@ -38,7 +38,7 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
 - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
 - **Thumb**: `thumb`, `thumbeb`
-- **Other**: `loongarch64`, `s390x`, `hexagon`
+- **Other**: `loongarch64`, `x32`, `s390x`, `hexagon`
 
 ---
 
