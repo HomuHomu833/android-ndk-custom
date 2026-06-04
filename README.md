@@ -38,7 +38,7 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
 - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
 - **Thumb**: `thumb`, `thumbeb`
-- **Other**: `loongarch64`, `s390x`, `hexagon`
+- **Other**: `loongarch64`, `x32`, `s390x`, `hexagon`
 
 ---
 
@@ -46,13 +46,14 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 
 **Platforms**
 - Windows
-- ❌ ~~macOS~~ (https://github.com/HomuHomu833/android-ndk-custom/issues/14#issuecomment-3346720483)
+- macOS
 - Android
 
 **Architectures**
 - `x86`, `x86_64`
-- `armv7a` *(Android-only)*
 - `aarch64`
+- `armv7a` *(Android-only)*
+- `arm64e`, `x86_64h` *(macOS-only)*
 
 ---
 

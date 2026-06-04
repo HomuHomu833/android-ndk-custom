@@ -2,18 +2,20 @@
 # Assemble one Android NDK for a single cross target. Driven entirely by env vars
 # so it runs identically in CI and in `docker run`.
 #
-#   PLATFORM    bionic | linux | bsd | windows
+#   PLATFORM    bionic | linux | bsd | windows | macos
 #   TARGET      target triple, e.g.
 #                 aarch64-linux-android        (bionic)
 #                 x86_64-linux-gnu / -musl     (linux)
 #                 aarch64-freebsd-none         (bsd)
 #                 x86_64-w64-mingw32           (windows)
+#                 arm64-apple-darwin           (macos)
 #   NDK_VERSION   required (e.g. 30)
 #   NDK_REVISION  optional (e.g. b)
 #   ANDROID_PLATFORM  bionic API level (default 25, riscv64 forced to 35)
 #   ROOTDIR     work dir = checkout root (default: cwd); holds sources/ config/
 #               patches/ binaries/. HOME is also set here in CI.
 #   REPO_OWNER  GitHub owner for the llvm-custom release download (default HomuHomu833)
+#   EXTRA_CMAKE_FLAGS  optional extra -D flags for the cmake (shaderc) configure
 #
 # Steps mirror the old make_ndk_*.yml workflows 1:1: build make/yasm/shaderc/python,
 # download the matching llvm-custom toolchain, splice everything into the official
@@ -98,25 +100,47 @@ setup_toolchain() {
       TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
       CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
       CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
-      NDK_HOST=linux-x86_64
-      case "$(echo "$TARGET" | cut -d- -f2)" in
-        macos|maccatalyst) SYSTEM_NAME=Darwin ;;
-        *) SYSTEM_NAME="$(bsd_system_name)" ;;
+      NDK_HOST=linux-x86_64; SYSTEM_NAME="$(bsd_system_name)"
+      ;;
+    macos)
+      # Darwin host tools build with osxcross (cctools-port + clang wrappers),
+      # not zig: zig segfaults building macOS binaries, and osxcross is a proper
+      # Apple cross toolchain. The wrappers carry the macOS SDK sysroot, so no
+      # -isysroot/-iframework juggling is needed here.
+      TC=/opt/osxcross
+      # Put osxcross bin on PATH so clang discovers the cctools linker by its
+      # prefixed name (<triple>-ld) instead of falling through to the host
+      # /usr/bin/ld. CMake's compiler-probe try-compiles don't honor
+      # CMAKE_EXE_LINKER_FLAGS, so a -fuse-ld/--ld-path flag alone wouldn't reach
+      # them — PATH-based discovery covers every link uniformly.
+      export PATH="$TC/bin:$PATH"
+      case "$TARGET" in
+        arm64e-*)          ARCH=arm64e ;;   # distinct PAC ABI, not arm64
+        aarch64-*|arm64-*) ARCH=arm64 ;;
+        x86_64h-*)         ARCH=x86_64h ;;  # Haswell+ x86_64 slice (same ABI)
+        x86_64-*)          ARCH=x86_64 ;;
+        *) echo "Unsupported macOS arch in TARGET='$TARGET'" >&2; exit 1 ;;
       esac
-      # darwin host tools (CPython/dsymutil link Apple frameworks) need the macOS
-      # SDK; the zig toolchain ships libc stubs but no frameworks. Point the
-      # compiler + linker at the baked sysroot (default /opt/macos-sdk,
-      # env-overridable via MACOS_SDK), mirroring build.sh exactly.
-      if [ "$SYSTEM_NAME" = Darwin ]; then
-        MACOS_SDK="${MACOS_SDK:-/opt/macos-sdk}"
-        if [ -d "$MACOS_SDK/System/Library/Frameworks" ]; then
-          log "Using macOS SDK sysroot: $MACOS_SDK"
-          CROSS_CFLAGS="$CROSS_CFLAGS -iframework $MACOS_SDK/System/Library/Frameworks"
-          CROSS_LDFLAGS="${CROSS_LDFLAGS:+$CROSS_LDFLAGS} -F $MACOS_SDK/System/Library/Frameworks"
-        else
-          log "macOS SDK not found at $MACOS_SDK, is the path correct?"
-          exit 1
-        fi
+      # osxcross names its wrappers with the SDK's darwin version (e.g.
+      # arm64-apple-darwin24.5-clang); resolve that prefix by globbing rather
+      # than pinning a version that drifts with the baked SDK.
+      CCWRAP="$(ls "$TC/bin/${ARCH}-apple-darwin"*-clang 2>/dev/null | head -n1 || true)"
+      [ -n "$CCWRAP" ] || { echo "osxcross clang wrapper for $ARCH not found in $TC/bin" >&2; exit 1; }
+      HOST="$(basename "${CCWRAP%-clang}")"
+      CROSS_CC="$TC/bin/${HOST}-clang"; CROSS_CXX="$TC/bin/${HOST}-clang++"
+      CROSS_AR="$TC/bin/${HOST}-ar"; CROSS_RANLIB="$TC/bin/${HOST}-ranlib"
+      CROSS_STRIP="$TC/bin/${HOST}-strip"; CROSS_LD="$TC/bin/${HOST}-ld"
+      CROSS_OBJCOPY=""                  # cctools ships no objcopy; nothing here needs it
+      NDK_HOST=linux-x86_64; SYSTEM_NAME=Darwin
+      # shaderc's combined-archive step invokes a bare `libtool -static -o`
+      # (Apple's archive merge), hardcoded rather than CMAKE_LIBTOOL-aware. Host
+      # GNU libtool can't merge archives, so expose the cctools libtool under the
+      # plain `libtool` name on PATH via a shim dir.
+      LIBTOOLBIN="$(ls "$TC/bin/${ARCH}-apple-darwin"*-libtool 2>/dev/null | head -n1 || true)"
+      if [ -n "$LIBTOOLBIN" ]; then
+        mkdir -p "$BUILD/.macos-shims"
+        ln -sf "$LIBTOOLBIN" "$BUILD/.macos-shims/libtool"
+        export PATH="$BUILD/.macos-shims:$PATH"
       fi
       ;;
     windows)
@@ -129,6 +153,19 @@ setup_toolchain() {
     *) echo "Unknown PLATFORM='$PLATFORM'" >&2; exit 1 ;;
   esac
   NDK_TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/$NDK_HOST"
+
+  # Extra flags for the cmake-based configure (shaderc): anything passed in via
+  # the EXTRA_CMAKE_FLAGS env var, plus platform-specific additions. The Darwin
+  # (osxcross) block points CMake's Apple support at the osxcross SDK so it
+  # doesn't probe a host Xcode, and pins the arch + deployment target; the
+  # zig/llvm-mingw/NDK platforms need none of this. (CMAKE_LIBTOOL is left to
+  # CMake's find_program, which picks up the cctools libtool shim on PATH.)
+  EXTRA_CMAKE_FLAGS=(${EXTRA_CMAKE_FLAGS:-})
+  if [ "$SYSTEM_NAME" = Darwin ]; then
+    SDKROOT="$(ls -d "$TC/SDK/MacOSX"*.sdk 2>/dev/null | head -n1 || true)"
+    [ -n "$SDKROOT" ] && EXTRA_CMAKE_FLAGS+=(-DCMAKE_OSX_SYSROOT="$SDKROOT")
+    EXTRA_CMAKE_FLAGS+=(-DCMAKE_OSX_ARCHITECTURES="$ARCH" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0)
+  fi
 }
 
 # --- GNU Make ---------------------------------------------------------------
@@ -169,6 +206,9 @@ build_make() {
       bsd)     args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
+      macos)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration"
                        CXXFLAGS="-Wno-error=implicit-function-declaration" ) ;;
     esac
@@ -193,6 +233,8 @@ build_yasm() {
                        CXXFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)     args+=( CFLAGS="-fwrapv $CROSS_CFLAGS" CXXFLAGS="-fwrapv $CROSS_CFLAGS"
+                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
+      macos)   args+=( CFLAGS="-fwrapv $CROSS_CFLAGS" CXXFLAGS="-fwrapv $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
       windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time"
                        CXXFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time" ) ;;
@@ -230,18 +272,23 @@ build_shaderc() {
     linux)    exelink="$CROSS_LDFLAGS"; cflags="$CROSS_CFLAGS"
              [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $CROSS_CFLAGS" ;;
     bsd)     cflags="-Wno-error=date-time $CROSS_CFLAGS"; exelink="$CROSS_LDFLAGS" ;;
+    macos)   cflags="-Wno-error=date-time $CROSS_CFLAGS"; exelink="$CROSS_LDFLAGS" ;;
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
   esac
+  # cctools has no objcopy, so CROSS_OBJCOPY is empty for macos; only pass
+  # CMAKE_OBJCOPY when the toolchain actually provides one. The Darwin SDK/
+  # libtool/arch settings ride in via EXTRA_CMAKE_FLAGS (see setup_toolchain).
   cmake -S "$SH" -B "$SH/build" -G Ninja \
     -DCMAKE_INSTALL_PREFIX="$SH/install" \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_C_FLAGS="$cflags" -DCMAKE_CXX_FLAGS="$cflags" \
-    -DCMAKE_EXE_LINKER_FLAGS="$exelink" \
+    -DCMAKE_EXE_LINKER_FLAGS="$exelink" -DCMAKE_SHARED_LINKER_FLAGS="$exelink" \
     -DCMAKE_CROSSCOMPILING=True -DCMAKE_SYSTEM_NAME="$SYSTEM_NAME" \
     -DCMAKE_C_COMPILER="$CROSS_CC" -DCMAKE_CXX_COMPILER="$CROSS_CXX" -DCMAKE_ASM_COMPILER="$CROSS_CC" \
-    -DCMAKE_LINKER="$CROSS_LD" -DCMAKE_OBJCOPY="$CROSS_OBJCOPY" -DCMAKE_AR="$CROSS_AR" \
+    -DCMAKE_LINKER="$CROSS_LD" ${CROSS_OBJCOPY:+-DCMAKE_OBJCOPY="$CROSS_OBJCOPY"} -DCMAKE_AR="$CROSS_AR" \
     -DCMAKE_RANLIB="$CROSS_RANLIB" -DCMAKE_STRIP="$CROSS_STRIP" \
-    -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    -DSHADERC_SKIP_TESTS=ON -DSHADERC_SKIP_EXAMPLES=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    "${EXTRA_CMAKE_FLAGS[@]}"
   cmake --build "$SH/build" --target install
 }
 
@@ -254,7 +301,9 @@ build_python() {
     rm -rf python; mv Python-3.11.4 python
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" python/
     cd python
-    [ "$PLATFORM" = bsd ] && cp "$ROOT/patches/bsd/python/configure" "$PWD/configure"
+    # the bsd configure carries the Darwin cross-build fixups too (darwin was
+    # built through the bsd path before it moved to its own osxcross platform)
+    case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
     mkdir -p build
     if [ "$PLATFORM" = linux ]; then
       cat > config.site <<'EOF'
@@ -279,6 +328,17 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
+    # macos: configure detects sendfile() by a link test (the symbol lives in
+    # libSystem, so HAVE_SENDFILE gets defined), but posixmodule.c's Apple
+    # sendfile() branch needs the prototype from <sys/socket.h>, which is gated
+    # behind _DARWIN_C_SOURCE and stays hidden here -> implicit-declaration
+    # error. NDK host tools don't need os.sendfile, so just skip the whole path
+    # by forcing the cache var off (config.site is honored: the cross build
+    # already relies on it for the /dev/ptmx AC_CHECK_FILE).
+    # mkfifoat/mknodat: Python 3.11 wraps these in __builtin_available(macOS 13)
+    # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
+    # cross-links don't pull that in automatically; disable both to avoid it.
+    [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # linux: force static extension modules
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
@@ -304,6 +364,15 @@ MODULE_BUILDTYPE=static
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
       bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
+      macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
+              #   (needed so sendfile() is declared; -Wno-error alone won't help
+              #   because Python re-appends -Werror=implicit-function-declaration).
+              # LDSHARED: use -bundle -undefined dynamic_lookup (not -shared -fPIC)
+              #   so ld64 defers Python API symbols to the interpreter at dlopen().
+              args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                      CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
+                      LDFLAGS="$CROSS_LDFLAGS"
+                      LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" build_all
@@ -332,7 +401,7 @@ strip_deps() {
 fetch_llvm() {
   local name="${LLVM_PKG}-r${NDK_VERSION}${NDK_REVISION}-${TARGET}"
   log "Fetching LLVM ($name)"
-  aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o llvm-custom.tar.xz "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" && tar -xJf /tmp/llvm-custom.tar.xz -C "$BUILD" && rm /tmp/llvm-custom.tar.xz
+  aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o llvm-custom.tar.xz "https://github.com/${REPO_OWNER}/llvm-custom-experimental/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" && tar -xJf /tmp/llvm-custom.tar.xz -C "$BUILD" && rm /tmp/llvm-custom.tar.xz
   HOST_TOOLCHAIN="$BUILD/$name"
 }
 
@@ -374,6 +443,7 @@ assemble_unix() {
 
   fixup_host_arch
   [ "$PLATFORM" = bsd ] && fixup_bsd_host_os
+  [ "$PLATFORM" = macos ] && fixup_macos_host_os
 
   # remove unused resources
   rm -rf "$NDK_TOOLCHAIN/python3"
@@ -445,6 +515,14 @@ NetBSD) HOST_OS=netbsd;;\
 OpenBSD) HOST_OS=openbsd;;' "$NDK/build/tools/ndk_bin_common.sh"
 }
 
+# macos: stock ndk_bin_common.sh folds darwin-arm64 onto darwin-x86_64 because
+# Google ships *universal* darwin binaries in the darwin-x86_64 dir. We ship a
+# separate per-arch artifact per darwin host, so drop that remap and let ndk-build
+# resolve the real darwin-<arch> prebuilt dir that rename_host produced.
+fixup_macos_host_os() {
+  sed -i '/if \[ \$HOST_TAG = darwin-arm64 \]; then/,/^fi$/d' "$NDK/build/tools/ndk_bin_common.sh"
+}
+
 # map a target triple's arch field to the NDK host-tag arch
 host_tag_arch() {
   local arch="${TARGET%%-*}"
@@ -479,6 +557,7 @@ rename_host() {
     bionic)  [ "$TARGET" = x86_64-linux-android ] && return 0; tag="linux-$arch" ;;
     linux)    case "$TARGET" in x86_64-linux-musl|x86_64-linux-muslx32|x86_64-linux-gnu|x86_64-linux-gnux32) return 0 ;; esac; tag="linux-$arch" ;;
     bsd)     tag="${SYSTEM_NAME,,}-$arch" ;;
+    macos)   tag="darwin-$arch" ;;
   esac
 
   mv "$NDK/prebuilt/linux-x86_64" "$NDK/prebuilt/$tag"
@@ -630,6 +709,33 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux)\
     set(ANDROID_HOST_TAG "linux-x86_64")\
 elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)\
     set(ANDROID_HOST_TAG "darwin-x86_64")\
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
+    set(ANDROID_HOST_TAG "windows-x86_64")\
+endif()' "${files[@]}"
+      ;;
+    macos)
+      # uname -m on a Mac reports only arm64 / x86_64 (never the arm64e / x86_64h
+      # sub-slices), so collapse both variants onto the base arch's host tag.
+      sed -i -E '/^if\(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux\)$/,/^endif\(\)$/c\
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)\
+    execute_process(\
+        COMMAND uname -m\
+        OUTPUT_VARIABLE HOST_ARCH\
+        OUTPUT_STRIP_TRAILING_WHITESPACE\
+    )\
+\
+    if(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")\
+        set(ARCH "arm64")\
+    elseif(HOST_ARCH STREQUAL "x86_64" OR HOST_ARCH STREQUAL "x86_64h")\
+        set(ARCH "x86_64")\
+    else()\
+        set(ARCH "${HOST_ARCH}")\
+    endif()\
+\
+    set(ANDROID_HOST_TAG "darwin-${ARCH}")\
+\
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux)\
+    set(ANDROID_HOST_TAG "linux-x86_64")\
 elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
     set(ANDROID_HOST_TAG "windows-x86_64")\
 endif()' "${files[@]}"

@@ -1,0 +1,30 @@
+name: Make NDK (macOS)
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} macos
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "NDK Release version:"
+        default: "30"
+        required: true
+        type: string
+      revision:
+        description: "NDK Release revision:"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  make:
+    uses: ./.github/workflows/make-ndk.yml
+    secrets: inherit
+    with:
+      platform: macos
+      version: ${{ inputs.version }}
+      revision: ${{ inputs.revision }}
+      targets: >-
+        ["arm64-apple-darwin", "arm64e-apple-darwin",
+         "x86_64-apple-darwin", "x86_64h-apple-darwin"]
