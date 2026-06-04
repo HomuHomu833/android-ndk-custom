@@ -384,7 +384,8 @@ MODULE_BUILDTYPE=static
     # downside here; drop it. macos/osxcross and windows/mingw report correct
     # sysroots from the same probe, so they keep it.
     case "$PLATFORM" in
-      linux|bsd) sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
+      linux) sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
+      bsd) [ "$SYSTEM_NAME" != "OpenBSD" ] && sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
     esac
 
     # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
