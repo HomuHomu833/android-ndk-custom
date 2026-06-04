@@ -408,18 +408,19 @@ MODULE_BUILDTYPE=static
     fi
     case "$PLATFORM" in
       bionic) # grp: bionic only declares/exports the getgrent/setgrent/endgrent
-              # family at API 26, but we target API $API, so grpmodule.c neither
-              # compiles (clang 22 errors on the implicit decls) nor links there.
-              # _ctypes_test: a test-only module that EXPORT()s data symbols;
+              # family from API 26, so below that grpmodule.c neither compiles
+              # (clang 22 hard-errors the implicit decls) nor links -- mark it n/a
+              # only when targeting < 26; at 26+ let it build normally.
+              # _ctypes_test: a test-only module that EXPORT()s data symbols, but
               # setup.py compiles bionic extensions without -fPIC, so those become
-              # preemptible in the .so and lld rejects the relocations. Mark both
-              # n/a so configure/setup.py skip them. (_ctypes itself is a setup.py
-              # module with no configure knob; it self-skips on missing ffi.h, as
-              # on every target.)
+              # preemptible in the .so and lld rejects the relocations -- always
+              # skip. (_ctypes itself is a setup.py module with no configure knob;
+              # it self-skips on missing ffi.h, as on every target.)
+              local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static-libstdc++ -static-libgcc"
-                      py_cv_module_grp=n/a py_cv_module__ctypes_test=n/a ) ;;
+                      py_cv_module__ctypes_test=n/a $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
