@@ -1,4 +1,4 @@
-name: Make NDK (Bionic libc)
+name: Make NDK (Bionic)
 run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} bionic
 on:
   workflow_dispatch:
