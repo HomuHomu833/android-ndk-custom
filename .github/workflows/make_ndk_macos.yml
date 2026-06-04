@@ -1,5 +1,5 @@
 name: Make NDK (macOS)
-run-name: Make NDK-r${{inputs.version}}${{inputs.revision}} macos
+run-name: Make NDK-r${{inputs.version}}${{inputs.revision}}
 on:
   workflow_dispatch:
     inputs:
