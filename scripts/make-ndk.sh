@@ -462,10 +462,14 @@ MODULE_BUILDTYPE=static
               # explicit opt-in to BSD visibility even when POSIX macros are set.
               # _GNU_SOURCE has no effect on OpenBSD headers (it is not handled
               # by sys/cdefs.h) and was removed.
-              local obsd=""; [ "$SYSTEM_NAME" = OpenBSD ] && obsd="-D_BSD_SOURCE"
+              # nis: OpenBSD removed YP/NIS support, so zig ships no
+              # rpcsvc/yp_prot.h and nismodule.c can't compile. Mark it n/a only
+              # for OpenBSD; FreeBSD/NetBSD still provide the rpcsvc headers.
+              local obsd="" nisna=""
+              if [ "$SYSTEM_NAME" = OpenBSD ]; then obsd="-D_BSD_SOURCE"; nisna="py_cv_module_nis=n/a"; fi
               args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
+                      LDFLAGS="$CROSS_LDFLAGS" $nisna ) ;;
       macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
               #   (needed so sendfile() is declared; -Wno-error alone won't help
               #   because Python re-appends -Werror=implicit-function-declaration).
