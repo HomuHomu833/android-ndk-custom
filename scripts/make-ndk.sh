@@ -356,21 +356,22 @@ EOF
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # OpenBSD: -D_GNU_SOURCE (CFLAGS above) makes zig/musl headers expose
     # functions that are gated behind _GNU_SOURCE (wait4, strndup, ...).
-    # memrchr is a special case: zig uses actual OpenBSD headers for OpenBSD
-    # targets (not musl's), and OpenBSD's <string.h> never declares memrchr
-    # under any feature-test macro.  The configure link test still passes
-    # (the symbol is present in zig's bundled libc), so HAVE_MEMRCHR gets set,
-    # but fastsearch.h's call then fires -Werror=implicit-function-declaration.
-    # Force the cache var off so CPython uses its own fallback implementation.
+    # memrchr / getentropy: zig uses actual OpenBSD headers for OpenBSD targets
+    # (not musl's).  OpenBSD's <string.h> never declares memrchr and its
+    # <unistd.h> doesn't expose getentropy under the feature-test macros zig
+    # emits.  Both configure link tests still pass (the symbols exist in zig's
+    # bundled libc), so HAVE_* gets set, but the calls then fire
+    # -Werror=implicit-function-declaration.  Force them off so CPython uses
+    # its own fallbacks (pure-C memrchr loop; /dev/urandom for entropy).
     # Also block functions whose configure link test would pass but whose
     # runtime semantics are wrong on OpenBSD:
-    #   sendfile  — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
-    #               variants; OpenBSD's sendfile(2) has BSD arguments and falls
-    #               through to the Linux path if HAVE_SENDFILE is set.
-    #   getrandom — Linux-specific syscall; OpenBSD uses getentropy(3) instead.
+    #   sendfile    — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
+    #                 variants; OpenBSD's sendfile(2) has BSD arguments and
+    #                 falls through to the Linux path if HAVE_SENDFILE is set.
+    #   getrandom   — Linux-specific syscall; OpenBSD uses getentropy(3).
     #   posix_fadvise / posix_fallocate — absent from OpenBSD entirely.
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
-      printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
+      printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
