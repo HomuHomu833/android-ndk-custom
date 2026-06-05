@@ -363,24 +363,19 @@ EOF
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # OpenBSD: -D_BSD_SOURCE (CFLAGS above) keeps __BSD_VISIBLE=1 even when
     # CPython defines _POSIX_C_SOURCE, restoring BSD function visibility.
-    # memrchr / getentropy: zig uses actual OpenBSD headers for OpenBSD targets
-    # (not musl's), and those headers don't expose these symbols under the
-    # feature-test macros zig emits.  Configure link tests still pass (symbols
-    # present in zig's bundled libc), so HAVE_* gets set, but the bare calls
-    # fire -Werror=implicit-function-declaration.  Force them off so CPython
-    # uses its own fallbacks (pure-C memrchr loop; /dev/urandom for entropy).
-    # getthrid is handled differently: thread_pthread.h guards it with
-    # #ifdef __OpenBSD__ (not HAVE_GETTHRID), so config.site has no effect;
-    # a forward declaration is injected into the source above instead.
-    # Also block functions whose configure link test would pass but whose
-    # runtime semantics are wrong on OpenBSD:
+    # memrchr: OpenBSD's <string.h> never declares it even with __BSD_VISIBLE=1
+    # — it is simply absent from OpenBSD's libc interface.  The configure link
+    # test passes (symbol present in zig's bundled libc from musl), so force
+    # the cache var off so CPython uses its own pure-C fallback.
+    # Block functions whose configure link test passes but whose runtime
+    # semantics are wrong on OpenBSD:
     #   sendfile    — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
     #                 variants; OpenBSD's sendfile(2) has BSD arguments and
     #                 falls through to the Linux path if HAVE_SENDFILE is set.
     #   getrandom   — Linux-specific syscall; OpenBSD uses getentropy(3).
     #   posix_fadvise / posix_fallocate — absent from OpenBSD entirely.
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
-      printf 'ac_cv_func_memrchr=no\nac_cv_func_getentropy=no\nac_cv_func_getthrid=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
+      printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
