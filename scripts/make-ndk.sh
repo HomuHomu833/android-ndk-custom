@@ -429,21 +429,20 @@ MODULE_BUILDTYPE=static
       args+=( --disable-shared --disable-ipv6 LDSHARED="$CROSS_CC -shared -fPIC"
               _PYTHON_HOST_PLATFORM="$TARGET" )
     fi
+    # _ctypes_test: test-only module, never useful in an NDK host tool.
+    # _ctypes has no py_cv_module_ knob; it self-skips when ffi.h is absent,
+    # which is always the case here since libffi is never built.
+    args+=( py_cv_module__ctypes_test=n/a )
     case "$PLATFORM" in
       bionic) # grp: bionic only declares/exports the getgrent/setgrent/endgrent
               # family from API 26, so below that grpmodule.c neither compiles
               # (clang hard-errors the implicit decls) nor links -- mark it n/a
               # only when targeting < 26; at 26+ let it build normally.
-              # _ctypes_test: a test-only module that EXPORT()s data symbols, but
-              # setup.py compiles bionic extensions without -fPIC, so those become
-              # preemptible in the .so and lld rejects the relocations -- always
-              # skip. (_ctypes itself is a setup.py module with no configure knob;
-              # it self-skips on missing ffi.h, as on every target.)
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static-libstdc++ -static-libgcc"
-                      py_cv_module__ctypes_test=n/a $grpna ) ;;
+                      $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
