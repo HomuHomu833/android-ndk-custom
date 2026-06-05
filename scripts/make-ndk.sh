@@ -112,7 +112,7 @@ setup_toolchain() {
       # prefixed name (<triple>-ld) instead of falling through to the host
       # /usr/bin/ld. CMake's compiler-probe try-compiles don't honor
       # CMAKE_EXE_LINKER_FLAGS, so a -fuse-ld/--ld-path flag alone wouldn't reach
-      # them — PATH-based discovery covers every link uniformly.
+      # them, PATH-based discovery covers every link uniformly.
       export PATH="$TC/bin:$PATH"
       case "$TARGET" in
         arm64e-*)          ARCH=arm64e ;;   # distinct PAC ABI, not arm64
@@ -313,6 +313,13 @@ build_python() {
     # the bsd configure carries the Darwin cross-build fixups too (darwin was
     # built through the bsd path before it moved to its own osxcross platform)
     case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
+    # OpenBSD: thread_pthread.h uses `#ifdef __OpenBSD__` (not HAVE_GETTHRID)
+    # to call getthrid(), so config.site can't suppress it.  zig's OpenBSD
+    # headers don't expose getthrid() transitively, so inject a forward
+    # declaration before the call site to satisfy -Werror=implicit-function-declaration.
+    if [ "$SYSTEM_NAME" = OpenBSD ]; then
+      sed -i 's|#elif defined(__OpenBSD__)|#elif defined(__OpenBSD__)\n    extern pid_t getthrid(void); /* not in zig cross headers */|' Python/thread_pthread.h
+    fi
     # windows: regenerate configure (+ pyconfig.h.in) from the patched
     # configure.ac (needs autoconf-archive + pkg.m4, baked into the build image)
     [ "$PLATFORM" = windows ] && autoreconf -vfi
@@ -354,14 +361,55 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # linux: force static extension modules
+    # OpenBSD: -D_BSD_SOURCE (CFLAGS above) keeps __BSD_VISIBLE=1 even when
+    # CPython defines _POSIX_C_SOURCE, restoring BSD function visibility.
+    # memrchr: OpenBSD's <string.h> never declares it even with __BSD_VISIBLE=1
+    # — it is simply absent from OpenBSD's libc interface.  The configure link
+    # test passes (symbol present in zig's bundled libc from musl), so force
+    # the cache var off so CPython uses its own pure-C fallback.
+    # Block functions whose configure link test passes but whose runtime
+    # semantics are wrong on OpenBSD:
+    #   sendfile    — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
+    #                 variants; OpenBSD's sendfile(2) has BSD arguments and
+    #                 falls through to the Linux path if HAVE_SENDFILE is set.
+    #   getrandom   — Linux-specific syscall; OpenBSD uses getentropy(3).
+    #   posix_fadvise / posix_fallocate — absent from OpenBSD entirely.
+    if [ "$SYSTEM_NAME" = OpenBSD ]; then
+      printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
+    fi
+    # linux/musl: force every extension module to be linked into the interpreter
+    # (zig's musl is static-only -- it cannot produce the .so files setup.py would
+    # otherwise emit, and -static + -shared is contradictory). CPython builds the
+    # stdlib extensions via makesetup+Modules/Setup.stdlib only when
+    # MODULES_SETUP_STDLIB points at it, which configure does solely for
+    # Emscripten/WASI; every other host leaves it empty and the modules fall
+    # through to setup.py as shared .so. So (1) force MODULE_BUILDTYPE=static (the
+    # *static* marker makesetup honours) and (2) activate Setup.stdlib for this
+    # host too, matching the wasm static path. setup.py then skips the
+    # makesetup-built modules, so nothing is built shared.
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
-        *musl*) sed -i '/^case \$host_cpu in #(/,/^esac$/c\
+        *musl*)
+          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
 MODULE_BUILDTYPE=static
-' configure ;;
+' configure
+          sed -i 's#^\([[:space:]]*\)MODULES_SETUP_STDLIB=$#\1MODULES_SETUP_STDLIB=Modules/Setup.stdlib#' configure
+          ;;
       esac
     fi
+    # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). It probes
+    # `$(CC) -E -v` and adds every "#include <...>" dir that isn't a /gcc/ or
+    # /clang/ path -- but zig's clang reports the host's /usr/include and
+    # /usr/local/include there, so those leak into the cross build. The host
+    # glibc <stdlib.h> then pulls <bits/libc-header-start.h> from the Debian
+    # multiarch dir zig never searches -> every extension fails to compile. zig
+    # resolves its own sysroot internally (not via -I), so the probe is pure
+    # downside here; drop it. macos/osxcross and windows/mingw report correct
+    # sysroots from the same probe, so they keep it.
+    case "$PLATFORM" in
+      linux|bsd) sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
+    esac
+
     # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
     # cross builds, so a host pkg-config only ever reports x86_64-linux libs;
     # letting CPython's configure see it wrongly flips Makefile-built modules
@@ -381,15 +429,46 @@ MODULE_BUILDTYPE=static
       args+=( --disable-shared --disable-ipv6 LDSHARED="$CROSS_CC -shared -fPIC"
               _PYTHON_HOST_PLATFORM="$TARGET" )
     fi
+    # _ctypes_test: test-only module, never useful in an NDK host tool.
+    # _ctypes has no py_cv_module_ knob; it self-skips when ffi.h is absent,
+    # which is always the case here since libffi is never built.
+    args+=( py_cv_module__ctypes_test=n/a )
     case "$PLATFORM" in
-      bionic) args+=( TOOLCHAIN="$TC" API="$API"
+      bionic) # grp: bionic only declares/exports the getgrent/setgrent/endgrent
+              # family from API 26, so below that grpmodule.c neither compiles
+              # (clang hard-errors the implicit decls) nor links -- mark it n/a
+              # only when targeting < 26; at 26+ let it build normally.
+              local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
+              args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
-                      LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
+                      LDFLAGS="-static-libstdc++ -static-libgcc"
+                      $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      bsd)    args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS" CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
+      bsd)    # -fPIC: bsd keeps a static libpython but setup.py still emits the
+              # stdlib extensions as shared .so, and they reference external
+              # preemptible data (PyExc_*, type objects, _Py_NoneStruct) that needs
+              # GOT indirection. configure doesn't set CCSHARED=-fPIC for the
+              # "unknown" platform tag, so without this the .so links fail with
+              # R_AARCH64_* "recompile with -fPIC". Making the whole build PIC is
+              # harmless for a static host tool.
+              # OpenBSD via zig: CPython (or its transitive headers) defines
+              # _POSIX_C_SOURCE, which causes OpenBSD's sys/cdefs.h to set
+              # __BSD_VISIBLE=0, hiding u_long (sys/types.h), chflags, wait3/4,
+              # dup3, pipe2, preadv/pwritev, getloadavg, etc.  The correct
+              # override is -D_BSD_SOURCE, which sys/cdefs.h recognises as an
+              # explicit opt-in to BSD visibility even when POSIX macros are set.
+              # _GNU_SOURCE has no effect on OpenBSD headers (it is not handled
+              # by sys/cdefs.h) and was removed.
+              # nis: OpenBSD removed YP/NIS support, so zig ships no
+              # rpcsvc/yp_prot.h and nismodule.c can't compile. Mark it n/a only
+              # for OpenBSD; FreeBSD/NetBSD still provide the rpcsvc headers.
+              local obsd="" nisna=""
+              if [ "$SYSTEM_NAME" = OpenBSD ]; then obsd="-D_BSD_SOURCE"; nisna="py_cv_module_nis=n/a"; fi
+              args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
+                      CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
+                      LDFLAGS="$CROSS_LDFLAGS" $nisna ) ;;
       macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
               #   (needed so sendfile() is declared; -Wno-error alone won't help
               #   because Python re-appends -Werror=implicit-function-declaration).
@@ -405,15 +484,26 @@ MODULE_BUILDTYPE=static
                # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
                # resource files (python_nt.o etc., needed by the DLL/exe links);
                # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
+               # -Wno-incompatible-pointer-types: clang makes this diagnostic a
+               # hard error by default, but _multiprocessing/semaphore.c passes an
+               # int* to _GetSemaphoreValue(HANDLE, long*) on every mingw target;
+               # downgrade it so the extension (and any sibling) keeps building.
                local laa=""; [ "$TARGET" = i686-w64-mingw32 ] && laa=" -Wl,--large-address-aware"
                args+=( --enable-shared
-                       CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
-                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time"
+                       CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
+                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
                        LDFLAGS="-static-libstdc++ -static-libgcc$laa"
                        LDSHARED="$CROSS_CC -shared"
                        WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
     ./configure "${args[@]}"
+    # windows: the extension-module pass (sharedmods -> setup.py build) links each
+    # .pyd against -lpython3.11, but the Makefile's sharedmods rule has no
+    # dependency on the import library libpython3.11.dll.a (emitted as a side
+    # effect of the libpython3.11.dll link rule). Under -j that races -> a swarm
+    # of "lld: error: unable to find library -lpython3.11". Build the DLL (and
+    # thus its import lib) first so it always exists before the extensions link.
+    [ "$PLATFORM" = windows ] && make -j"$(ncpu)" libpython3.11.dll
     make -j"$(ncpu)" build_all
     make install
   )
