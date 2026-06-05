@@ -364,12 +364,12 @@ EOF
     # Force the cache var off so CPython uses its own fallback implementation.
     # Also block functions whose configure link test would pass but whose
     # runtime semantics are wrong on OpenBSD:
-    #   sendfile  â€” CPython's posixmodule.c only handles Linux/macOS/FreeBSD
+    #   sendfile  — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
     #               variants; OpenBSD's sendfile(2) has BSD arguments and falls
     #               through to the Linux path if HAVE_SENDFILE is set.
-    #   getrandom â€” Linux-specific syscall; OpenBSD uses getentropy(3) instead.
-    #   posix_fadvise / posix_fallocate â€” absent from OpenBSD entirely.
-    if [ “$SYSTEM_NAME” = OpenBSD ]; then
+    #   getrandom — Linux-specific syscall; OpenBSD uses getentropy(3) instead.
+    #   posix_fadvise / posix_fallocate — absent from OpenBSD entirely.
+    if [ "$SYSTEM_NAME" = OpenBSD ]; then
       printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
     # linux/musl: force every extension module to be linked into the interpreter
