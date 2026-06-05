@@ -313,6 +313,13 @@ build_python() {
     # the bsd configure carries the Darwin cross-build fixups too (darwin was
     # built through the bsd path before it moved to its own osxcross platform)
     case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
+    # OpenBSD: thread_pthread.h uses `#ifdef __OpenBSD__` (not HAVE_GETTHRID)
+    # to call getthrid(), so config.site can't suppress it.  zig's OpenBSD
+    # headers don't expose getthrid() transitively, so inject a forward
+    # declaration before the call site to satisfy -Werror=implicit-function-declaration.
+    if [ "$SYSTEM_NAME" = OpenBSD ]; then
+      sed -i 's|#elif defined(__OpenBSD__)|#elif defined(__OpenBSD__)\n    extern pid_t getthrid(void); /* not in zig cross headers */|' Python/thread_pthread.h
+    fi
     # windows: regenerate configure (+ pyconfig.h.in) from the patched
     # configure.ac (needs autoconf-archive + pkg.m4, baked into the build image)
     [ "$PLATFORM" = windows ] && autoreconf -vfi
@@ -356,13 +363,15 @@ EOF
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
     # OpenBSD: -D_GNU_SOURCE (CFLAGS above) makes zig/musl headers expose
     # functions that are gated behind _GNU_SOURCE (wait4, strndup, ...).
-    # memrchr / getentropy / getthrid: zig uses actual OpenBSD headers for
-    # OpenBSD targets (not musl's), and those headers don't expose these
-    # symbols under the feature-test macros zig emits.  Configure link tests
-    # still pass (symbols present in zig's bundled libc), so HAVE_* gets set,
-    # but the bare calls then fire -Werror=implicit-function-declaration.
-    # Force them off so CPython uses its own fallbacks (pure-C memrchr loop;
-    # /dev/urandom for entropy; pthread_self() cast for the thread id).
+    # memrchr / getentropy: zig uses actual OpenBSD headers for OpenBSD targets
+    # (not musl's), and those headers don't expose these symbols under the
+    # feature-test macros zig emits.  Configure link tests still pass (symbols
+    # present in zig's bundled libc), so HAVE_* gets set, but the bare calls
+    # fire -Werror=implicit-function-declaration.  Force them off so CPython
+    # uses its own fallbacks (pure-C memrchr loop; /dev/urandom for entropy).
+    # getthrid is handled differently: thread_pthread.h guards it with
+    # #ifdef __OpenBSD__ (not HAVE_GETTHRID), so config.site has no effect;
+    # a forward declaration is injected into the source above instead.
     # Also block functions whose configure link test would pass but whose
     # runtime semantics are wrong on OpenBSD:
     #   sendfile    — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
