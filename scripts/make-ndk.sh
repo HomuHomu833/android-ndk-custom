@@ -354,20 +354,23 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # OpenBSD: -D_GNU_SOURCE (CFLAGS above) fixes the whole class of "musl has
-    # the symbol but its header gates the prototype behind _GNU_SOURCE" errors
-    # (memrchr, wait4, ...) by making those prototypes visible.  What still
-    # needs to be blocked here are functions whose configure link test would
-    # pass but whose runtime semantics are wrong on OpenBSD because zig/musl
-    # exposes a Linux-specific syscall wrapper with a different ABI or a stub
-    # that would fail at runtime:
-    #   sendfile  â€“ CPython's posixmodule.c only handles Linux/macOS/FreeBSD
+    # OpenBSD: -D_GNU_SOURCE (CFLAGS above) makes zig/musl headers expose
+    # functions that are gated behind _GNU_SOURCE (wait4, strndup, ...).
+    # memrchr is a special case: zig uses actual OpenBSD headers for OpenBSD
+    # targets (not musl's), and OpenBSD's <string.h> never declares memrchr
+    # under any feature-test macro.  The configure link test still passes
+    # (the symbol is present in zig's bundled libc), so HAVE_MEMRCHR gets set,
+    # but fastsearch.h's call then fires -Werror=implicit-function-declaration.
+    # Force the cache var off so CPython uses its own fallback implementation.
+    # Also block functions whose configure link test would pass but whose
+    # runtime semantics are wrong on OpenBSD:
+    #   sendfile  â€” CPython's posixmodule.c only handles Linux/macOS/FreeBSD
     #               variants; OpenBSD's sendfile(2) has BSD arguments and falls
     #               through to the Linux path if HAVE_SENDFILE is set.
-    #   getrandom â€“ Linux-specific syscall; OpenBSD uses getentropy(3) instead.
-    #   posix_fadvise / posix_fallocate â€“ absent from OpenBSD entirely.
-    if [ "$SYSTEM_NAME" = OpenBSD ]; then
-      printf 'ac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
+    #   getrandom â€” Linux-specific syscall; OpenBSD uses getentropy(3) instead.
+    #   posix_fadvise / posix_fallocate â€” absent from OpenBSD entirely.
+    if [ “$SYSTEM_NAME” = OpenBSD ]; then
+      printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
@@ -446,16 +449,16 @@ MODULE_BUILDTYPE=static
               # "unknown" platform tag, so without this the .so links fail with
               # R_AARCH64_* "recompile with -fPIC". Making the whole build PIC is
               # harmless for a static host tool.
-              # OpenBSD via zig: zig uses a musl-based libc whose headers gate
-              # many functions (wait4, memrchr, strndup, ...) behind _GNU_SOURCE.
-              # Without this, AC_CHECK_FUNCS link tests succeed (the symbol exists
-              # in musl), HAVE_X is set, but the final compile fires
-              # -Werror=implicit-function-declaration because the prototype is
-              # absent from the headers.  -D_DARWIN_C_SOURCE plays the same role
-              # for macOS.  The functions enabled by this are pure C library
-              # routines statically linked from musl, so there is no syscall-ABI
-              # concern; Linux-specific syscall wrappers are blocked separately
-              # in config.site below.
+              # OpenBSD via zig: for functions whose symbols exist in zig's
+              # bundled libc but whose prototypes are gated behind _GNU_SOURCE
+              # in zig/musl headers (wait4, strndup, ...), without this flag
+              # AC_CHECK_FUNCS would succeed, HAVE_X would be set, but the final
+              # compile would fire -Werror=implicit-function-declaration.
+              # Note: memrchr is NOT fixed by this — zig uses actual OpenBSD
+              # headers for OpenBSD targets and OpenBSD's <string.h> never
+              # declares memrchr; that is blocked via ac_cv_func_memrchr=no in
+              # config.site instead.  Linux-specific syscall wrappers are also
+              # blocked in config.site below.
               local obsd=""; [ "$SYSTEM_NAME" = OpenBSD ] && obsd="-D_GNU_SOURCE"
               args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
