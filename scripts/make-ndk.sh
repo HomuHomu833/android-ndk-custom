@@ -361,8 +361,8 @@ EOF
     # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
     # cross-links don't pull that in automatically; disable both to avoid it.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # OpenBSD: -D_GNU_SOURCE (CFLAGS above) makes zig/musl headers expose
-    # functions that are gated behind _GNU_SOURCE (wait4, strndup, ...).
+    # OpenBSD: -D_BSD_SOURCE (CFLAGS above) keeps __BSD_VISIBLE=1 even when
+    # CPython defines _POSIX_C_SOURCE, restoring BSD function visibility.
     # memrchr / getentropy: zig uses actual OpenBSD headers for OpenBSD targets
     # (not musl's), and those headers don't expose these symbols under the
     # feature-test macros zig emits.  Configure link tests still pass (symbols
@@ -459,17 +459,15 @@ MODULE_BUILDTYPE=static
               # "unknown" platform tag, so without this the .so links fail with
               # R_AARCH64_* "recompile with -fPIC". Making the whole build PIC is
               # harmless for a static host tool.
-              # OpenBSD via zig: for functions whose symbols exist in zig's
-              # bundled libc but whose prototypes are gated behind _GNU_SOURCE
-              # in zig/musl headers (wait4, strndup, ...), without this flag
-              # AC_CHECK_FUNCS would succeed, HAVE_X would be set, but the final
-              # compile would fire -Werror=implicit-function-declaration.
-              # Note: memrchr is NOT fixed by this — zig uses actual OpenBSD
-              # headers for OpenBSD targets and OpenBSD's <string.h> never
-              # declares memrchr; that is blocked via ac_cv_func_memrchr=no in
-              # config.site instead.  Linux-specific syscall wrappers are also
-              # blocked in config.site below.
-              local obsd=""; [ "$SYSTEM_NAME" = OpenBSD ] && obsd="-D_GNU_SOURCE"
+              # OpenBSD via zig: CPython (or its transitive headers) defines
+              # _POSIX_C_SOURCE, which causes OpenBSD's sys/cdefs.h to set
+              # __BSD_VISIBLE=0, hiding u_long (sys/types.h), chflags, wait3/4,
+              # dup3, pipe2, preadv/pwritev, getloadavg, etc.  The correct
+              # override is -D_BSD_SOURCE, which sys/cdefs.h recognises as an
+              # explicit opt-in to BSD visibility even when POSIX macros are set.
+              # _GNU_SOURCE has no effect on OpenBSD headers (it is not handled
+              # by sys/cdefs.h) and was removed.
+              local obsd=""; [ "$SYSTEM_NAME" = OpenBSD ] && obsd="-D_BSD_SOURCE"
               args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
