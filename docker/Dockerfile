@@ -66,8 +66,12 @@ RUN arch="$(uname -m)"; \
         *) echo "WARNING: unsupported zig host arch '$arch'; skipping zig and zig-as-llvm"; touch /opt/.no-zig ;; \
     esac; \
     if [ ! -f /opt/.no-zig ]; then \
+        case "$ZIG_VERSION" in \
+            *dev*) zig_base="https://ziglang.org/builds" ;;        \
+            *)     zig_base="https://ziglang.org/download/${ZIG_VERSION}" ;; \
+        esac; \
         aria2c --max-tries=20 --retry-wait=2 --connect-timeout=15 --dir=/tmp -o zig.tar.xz \
-            "https://ziglang.org/builds/zig-${zig_arch}-linux-${ZIG_VERSION}.tar.xz" \
+            "${zig_base}/zig-${zig_arch}-linux-${ZIG_VERSION}.tar.xz" \
         && tar -xJf /tmp/zig.tar.xz -C /opt \
         && rm /tmp/zig.tar.xz \
         && mv "/opt/zig-${zig_arch}-linux-${ZIG_VERSION}" /opt/zig \
