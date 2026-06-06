@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     && apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates aria2 xz-utils unzip git make cmake ninja-build \
         build-essential file p7zip-full python3 python3.11 \
-        autoconf automake libtool autoconf-archive pkg-config \
+        autoconf automake libtool autoconf-archive pkg-config re2c \
         clang lld zlib1g-dev libssl-dev libxml2-dev liblzma-dev libbz2-dev uuid-dev cpio bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
