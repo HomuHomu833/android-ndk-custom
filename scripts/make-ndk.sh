@@ -240,7 +240,8 @@ build_yasm() {
                        CXXFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time" ) ;;
     esac
     ./configure "${args[@]}"
-    make -j"$(ncpu)" RE2C=/usr/bin/re2c install
+    make CC=/usr/bin/cc re2c genperf genmacro genversion genstring
+    make -j"$(ncpu)" install
   )
 }
 
