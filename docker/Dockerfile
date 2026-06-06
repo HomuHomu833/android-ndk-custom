@@ -34,18 +34,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
         clang lld zlib1g-dev libssl-dev libxml2-dev liblzma-dev libbz2-dev uuid-dev cpio bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
+# fetch: download with retries — re-runs aria2c on any failure so transient GitHub
+# 501/504 (and the like) recover, without relying on aria2's --retry-on-unknown
+# (older aria2 builds lack it). make-ndk.sh defines an identical shell helper for
+# standalone (non-container) runs.
+RUN printf '%s\n' '#!/bin/sh' \
+    'i=0; until aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 "$@"; do' \
+    '  i=$((i+1)); [ "$i" -ge 5 ] && { echo "fetch: giving up after $i attempts" >&2; exit 1; }' \
+    '  echo "fetch: aria2c failed, retry $i/5 in 2s..." >&2; sleep 2' \
+    'done' > /usr/local/bin/fetch && chmod +x /usr/local/bin/fetch
+
 # qemu-user-static + x86_64 libs so the NDK's prebuilt binaries run on non-x86 hosts
 RUN arch="$(uname -m)"; \
     if [ "$arch" != x86_64 ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
             qemu-user-static libc6-amd64-cross \
         && rm -rf /var/lib/apt/lists/* \
-        && aria2c --max-tries=5 --retry-wait=2 --retry-on-unknown=true --connect-timeout=15 --dir=/tmp -o zlib.deb \
+        && fetch --dir=/tmp -o zlib.deb \
             "http://archive.ubuntu.com/ubuntu/pool/main/z/zlib/zlib1g_1.3.dfsg-3.1ubuntu2.1_amd64.deb" \
         && dpkg-deb -x /tmp/zlib.deb /tmp/zlib \
         && cp -a /tmp/zlib/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
         && rm -rf /tmp/zlib.deb /tmp/zlib \
-        && aria2c --max-tries=5 --retry-wait=2 --retry-on-unknown=true --connect-timeout=15 --dir=/tmp -o gcc.deb \
+        && fetch --dir=/tmp -o gcc.deb \
             "http://archive.ubuntu.com/ubuntu/pool/main/g/gcc-14/libgcc-s1_14.2.0-4ubuntu2~24.04.1_amd64.deb" \
         && dpkg-deb -x /tmp/gcc.deb /tmp/gcc \
         && cp -a /tmp/gcc/usr/lib/x86_64-linux-gnu/* /usr/x86_64-linux-gnu/lib/ \
@@ -70,7 +80,7 @@ RUN arch="$(uname -m)"; \
             *dev*) zig_base="https://ziglang.org/builds" ;;        \
             *)     zig_base="https://ziglang.org/download/${ZIG_VERSION}" ;; \
         esac; \
-        aria2c --max-tries=20 --retry-wait=2 --retry-on-unknown=true --connect-timeout=15 --dir=/tmp -o zig.tar.xz \
+        fetch --dir=/tmp -o zig.tar.xz \
             "${zig_base}/zig-${zig_arch}-linux-${ZIG_VERSION}.tar.xz" \
         && tar -xJf /tmp/zig.tar.xz -C /opt \
         && rm /tmp/zig.tar.xz \
@@ -82,7 +92,7 @@ RUN arch="$(uname -m)"; \
 RUN arch="$(uname -m)"; \
     case "$arch" in \
         x86_64|aarch64) \
-            aria2c --max-tries=20 --retry-wait=2 --retry-on-unknown=true --connect-timeout=15 --dir=/tmp -o llvm-mingw.tar.xz \
+            fetch --dir=/tmp -o llvm-mingw.tar.xz \
                 "https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-${arch}.tar.xz" \
             && tar -xJf /tmp/llvm-mingw.tar.xz -C /opt \
             && rm /tmp/llvm-mingw.tar.xz \
@@ -115,7 +125,7 @@ ENV PATH="/opt/zig:${PATH}"
 ARG OSXCROSS_REF=master
 RUN git clone https://github.com/tpoechtrager/osxcross /tmp/osxcross \
     && git -C /tmp/osxcross checkout "$OSXCROSS_REF" \
-    && aria2c --max-tries=20 --retry-wait=2 --retry-on-unknown=true --connect-timeout=15 \
+    && fetch \
         --dir=/tmp/osxcross/tarballs -o "MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" \
         "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_SDK_VERSION}/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" \
     && cd /tmp/osxcross \
