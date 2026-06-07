@@ -693,9 +693,11 @@ host_tag_arch() {
   echo "$arch"
 }
 
-# rename prebuilt/<host> dirs to the target host tag + leave linux-x86_64 symlinks
+# rename prebuilt/<host> dirs to the target host tag + leave a fallback symlink.
+# The fallback tag is host-OS specific: linux hosts fall back to linux-x86_64,
+# but darwin hosts must fall back to darwin-x86_64 (never linux-x86_64).
 rename_host() {
-  local tag arch
+  local tag arch link
   arch="$(host_tag_arch)"
   case "$PLATFORM" in
     bionic)  [ "$TARGET" = x86_64-linux-android ] && return 0; tag="linux-$arch" ;;
@@ -704,12 +706,20 @@ rename_host() {
     macos)   tag="darwin-$arch" ;;
   esac
 
+  case "$PLATFORM" in
+    macos)   link="darwin-x86_64" ;;
+    *)       link="linux-x86_64" ;;
+  esac
+
   mv "$NDK/prebuilt/linux-x86_64" "$NDK/prebuilt/$tag"
   mv "$NDK/toolchains/llvm/prebuilt/linux-x86_64" "$NDK/toolchains/llvm/prebuilt/$tag"
   mv "$NDK/shader-tools/linux-x86_64" "$NDK/shader-tools/$tag"
-  ( cd "$NDK/toolchains/llvm/prebuilt" && ln -s "$tag" linux-x86_64 )
-  ( cd "$NDK/prebuilt" && ln -s "$tag" linux-x86_64 )
-  ( cd "$NDK/shader-tools" && ln -s "$tag" linux-x86_64 )
+  # only add the fallback symlink when the real dir isn't already that tag
+  if [ "$tag" != "$link" ]; then
+    ( cd "$NDK/toolchains/llvm/prebuilt" && ln -s "$tag" "$link" )
+    ( cd "$NDK/prebuilt" && ln -s "$tag" "$link" )
+    ( cd "$NDK/shader-tools" && ln -s "$tag" "$link" )
+  fi
   local f
   for f in "$NDK/ndk-gdb" "$NDK/ndk-lldb" "$NDK/ndk-stack" "$NDK/ndk-which"; do
     sed -i "s|linux-x86_64|$tag|g" "$f"
