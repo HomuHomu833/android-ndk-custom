@@ -2,7 +2,7 @@
 
 **Android NDK Custom** is a custom-built Android NDK that replaces the default toolchain with a rebuilt **LLVM** and related binaries.
 
-It integrates alternative libc implementations like **musl** (via **[Zig](https://ziglang.org)**), **Bionic** (from the official Android NDK) and **[llvm-mingw](https://github.com/mstorsjo/llvm-mingw)** to provide a more flexible and portable build environment.
+It integrates alternative libc implementations like **musl** (via **[Zig](https://ziglang.org)**), **Bionic** (from the official Android NDK), **[llvm-mingw](https://github.com/mstorsjo/llvm-mingw)** and the macOS SDK (via **[osxcross](https://github.com/tpoechtrager/osxcross)**) to provide a more flexible and portable build environment.
 
 This project is inspired by [Zongou’s build system](https://github.com/zongou/build/tree/main/.github/workflows).
 
