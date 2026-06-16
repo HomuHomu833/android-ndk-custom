@@ -25,15 +25,15 @@ jobs:
       platform: bsd
       version: ${{ inputs.version }}
       revision: ${{ inputs.revision }}
-      # riscv32-netbsd-none, powerpc-freebsd-eabihf, sparc64-openbsd-none, sparc-netbsd-none, sparc64-netbsd-none, sparc64-openbsd-none
+      # riscv32-netbsd-none, powerpc-netbsd-eabi, powerpc-freebsd-eabihf
       targets: >-
         ["aarch64-freebsd-none", "aarch64-netbsd-none", "aarch64-openbsd-none",
          "aarch64_be-netbsd-none", "arm-freebsd-eabihf", "arm-netbsd-eabi",
          "arm-netbsd-eabihf", "armeb-netbsd-eabi", "armeb-netbsd-eabihf",
          "mips-netbsd-eabi", "mips-netbsd-eabihf", "mipsel-netbsd-eabi",
-         "mipsel-netbsd-eabihf", "mips64el-openbsd-none", "powerpc-netbsd-eabi",
-         "powerpc-netbsd-eabihf", "powerpc64-freebsd-none", "powerpc64le-freebsd-none",
-         "riscv64-freebsd-none", "x86-freebsd-none", "x86-netbsd-none",
-         "x86_64-freebsd-none", "x86_64-netbsd-none", "arm-openbsd-eabi",
-         "mips64-openbsd-none", "powerpc-openbsd-eabihf", "riscv64-openbsd-none",
+         "mipsel-netbsd-eabihf", "mips64el-openbsd-none", "mips64-openbsd-none",
+         "powerpc-netbsd-eabihf", "powerpc64-freebsd-none",
+         "powerpc64le-freebsd-none", "riscv64-freebsd-none", "x86-freebsd-none",
+         "x86-netbsd-none", "x86_64-freebsd-none", "x86_64-netbsd-none",
+         "arm-openbsd-eabi", "powerpc-openbsd-eabihf", "riscv64-openbsd-none",
          "x86-openbsd-none", "x86_64-openbsd-none"]
