@@ -268,7 +268,14 @@ build_yasm() {
                        CXXFLAGS="-Wno-error=implicit-function-declaration -fwrapv -Wno-error=date-time" ) ;;
     esac
     ./configure "${args[@]}"
-    make CC=/usr/bin/cc re2c genperf genmacro genversion genstring
+    case "$PLATFORM" in
+      windows|macos)
+        make CC=/usr/bin/cc genperf genmacro genversion genstring
+        ;;
+      *)
+        make CC=/usr/bin/cc re2c genperf genmacro genversion genstring
+        ;;
+    esac
     make -j"$(ncpu)" install
   )
 }
