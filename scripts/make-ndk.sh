@@ -269,14 +269,18 @@ build_yasm() {
     esac
     ./configure "${args[@]}"
     case "$PLATFORM" in
-      windows|macos)
+      windows)
+        make -j"$(ncpu)" install
+        ;;
+      macos)
         make CC=/usr/bin/cc genperf genmacro genversion genstring
+        make -j"$(ncpu)" install
         ;;
       *)
         make CC=/usr/bin/cc re2c genperf genmacro genversion genstring
+        make -j"$(ncpu)" install
         ;;
     esac
-    make -j"$(ncpu)" install
   )
 }
 
