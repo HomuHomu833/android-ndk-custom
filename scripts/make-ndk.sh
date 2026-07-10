@@ -51,6 +51,22 @@ fetch() {
   done
 }
 
+resolve_shaderc_ref() {
+  local tag_url="$SHADERC_BASE/shaderc/+archive/refs/tags/$NDK_TAG.tar.gz"
+
+  if aria2c \
+      --console-log-level=error \
+      --check-certificate=false \
+      --max-tries=1 \
+      --connect-timeout=15 \
+      --dry-run=true \
+      "$tag_url" >/dev/null 2>&1; then
+    echo "refs/tags/$NDK_TAG"
+  else
+    echo "refs/heads/mirror-goog-main-ndk"
+  fi
+}
+
 # Lowercased BSD system name (FreeBSD/NetBSD/OpenBSD) derived from the triple,
 # matching the old workflow's char-twiddling on field 2 of the triple.
 bsd_system_name() {
@@ -261,18 +277,19 @@ build_yasm() {
 build_shaderc() {
   log "Building shaderc"
   local SH="$BUILD/shaderc"
+  local SHADERC_REF="$(resolve_shaderc_ref)"
   rm -rf "$SH"; mkdir -p "$SH"
-  ( cd "$SH" && fetch --dir=/tmp -o shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
+  ( cd "$SH" && fetch --dir=/tmp -o shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
   mkdir -p "$SH/third_party/spirv-tools"
-  ( cd "$SH/third_party/spirv-tools" && fetch --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
+  ( cd "$SH/third_party/spirv-tools" && fetch --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
   if [ "$PLATFORM" = bsd ]; then
     # spirv-tools refuses unknown platforms; downgrade to a warning + assume Linux
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
   fi
   mkdir -p "$SH/third_party/spirv-tools/external/spirv-headers"
-  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && fetch --dir=/tmp -o spirv-headers.tar.gz "$SHADERC_BASE/spirv-headers/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/spirv-headers.tar.gz && rm /tmp/spirv-headers.tar.gz )
+  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && fetch --dir=/tmp -o spirv-headers.tar.gz "$SHADERC_BASE/spirv-headers/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-headers.tar.gz && rm /tmp/spirv-headers.tar.gz )
   mkdir -p "$SH/third_party/glslang"
-  ( cd "$SH/third_party/glslang" && fetch --dir=/tmp -o glslang.tar.gz "$SHADERC_BASE/glslang/+archive/refs/tags/$NDK_TAG.tar.gz" && tar -xzf /tmp/glslang.tar.gz && rm /tmp/glslang.tar.gz )
+  ( cd "$SH/third_party/glslang" && fetch --dir=/tmp -o glslang.tar.gz "$SHADERC_BASE/glslang/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/glslang.tar.gz && rm /tmp/glslang.tar.gz )
   if [ "$PLATFORM" = bionic ]; then
     sed -i '/^elseif(UNIX)$/,/^[[:space:]]*endif()$/d' "$SH/third_party/glslang/StandAlone/CMakeLists.txt"
   fi
