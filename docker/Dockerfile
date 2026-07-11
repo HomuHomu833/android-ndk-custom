@@ -1,11 +1,8 @@
-# Prebuilt build image for the android-ndk-custom builds. Bakes the build tools
-# and the zig / llvm-mingw / zig-as-llvm / osxcross toolchains so CI only pulls
-# (fast). zig drives the linux/bsd host tools, llvm-mingw the windows host
-# tools, and osxcross (which bundles cctools-port: ld64/ar/ranlib/strip/lipo/...)
-# the macOS host tools — zig segfaults building macOS binaries, so darwin uses
-# osxcross instead.
-# The build scripts are NOT copied in — they are bind-mounted from the checkout
-# at run time, so editing scripts/ needs no image rebuild.
+# Prebuilt build image for android-ndk-custom. Bakes the build tools and the
+# zig / llvm-mingw / zig-as-llvm / osxcross toolchains so CI only pulls.
+# zig: linux/bsd host tools; llvm-mingw: windows; osxcross (cctools-port):
+# macOS (zig segfaults on macOS binaries).
+# Build scripts are bind-mounted from the checkout at run time, not copied in.
 #
 #   docker run --rm -v "$PWD:/work" -w /work \
 #     -e PLATFORM=bionic -e TARGET=x86_64-linux-android -e NDK_VERSION=30 \
@@ -19,12 +16,10 @@ ARG REPO_OWNER=HomuHomu833
 ARG MACOS_SDK_VERSION=15.5
 
 ENV DEBIAN_FRONTEND=noninteractive
-# python3.11 is the *build* interpreter for cross-compiling target CPython 3.11.4
-# (configure --with-build-python); 24.04 ships 3.12, so pull 3.11 from deadsnakes.
-# p7zip-full provides 7z for the windows NDK archive.
-# autoconf-archive + pkg-config (pkg.m4) are needed by `autoreconf` when the
-# windows build regenerates the cpython-mingw configure from its patched
-# configure.ac (it uses AX_* macros and PKG_CHECK_MODULES).
+# python3.11: build interpreter for cross-compiling CPython 3.11.4 (24.04 ships
+#   3.12, so pull 3.11 from deadsnakes).
+# p7zip-full: 7z for the windows NDK archive.
+# autoconf-archive + pkg-config: needed by the windows autoreconf.
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common \
     && add-apt-repository -y ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -34,10 +29,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
         clang lld zlib1g-dev libssl-dev libxml2-dev liblzma-dev libbz2-dev uuid-dev cpio bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-# fetch: download with retries — re-runs aria2c on any failure so transient GitHub
-# 501/504 (and the like) recover, without relying on aria2's --retry-on-unknown
-# (older aria2 builds lack it). make-ndk.sh defines an identical shell helper for
-# standalone (non-container) runs.
+# fetch: download with retries, re-running aria2c on any failure so transient
+# GitHub errors recover. make-ndk.sh defines an identical helper for standalone
+# runs.
 RUN printf '%s\n' '#!/bin/sh' \
     'i=0; until aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 "$@"; do' \
     '  i=$((i+1)); [ "$i" -ge 5 ] && { echo "fetch: giving up after $i attempts" >&2; exit 1; }' \
@@ -106,22 +100,16 @@ RUN if [ ! -f /opt/.no-zig ]; then \
         git clone --depth 1 "https://github.com/${REPO_OWNER}/zig-as-llvm" /opt/zig-as-llvm; \
     fi
 
-# zig on PATH so the zig-as-llvm wrappers resolve it. llvm-mingw is intentionally
-# *not* on PATH — the windows branch calls it by absolute path, and keeping its
-# windows-targeting clang off PATH avoids it shadowing the zig toolchain.
+# zig on PATH so the zig-as-llvm wrappers resolve it. llvm-mingw stays off PATH
+# (called by absolute path) so its clang doesn't shadow zig.
 ENV QEMU_LD_PREFIX=/usr/x86_64-linux-gnu
 
 ENV PATH="/opt/zig:${PATH}"
 
-# osxcross -> /opt/osxcross: the macOS cross toolchain for darwin host-tool
-# builds, replacing the bare macOS SDK (and the old bsd/zig darwin path).
-# osxcross compiles cctools-port (ld64/ar/ranlib/strip/lipo/install_name_tool/
-# ...) and clang wrappers, and bakes the macOS SDK into /opt/osxcross/SDK.
-# make-ndk.sh points the darwin CC/CXX/AR/RANLIB/STRIP/LD at the arch-prefixed
-# wrappers in /opt/osxcross/bin (e.g. arm64-apple-darwin24-clang,
-# x86_64-apple-darwin24-ar). Arch-independent toolchain, so no host gating. Only
-# the macOS arches we target are built (x86_64 + the Haswell x86_64h slice +
-# arm64 + the PAC arm64e ABI) to keep the image build quick.
+# osxcross -> /opt/osxcross: macOS cross toolchain (cctools-port + clang
+# wrappers) with the SDK baked into /opt/osxcross/SDK. make-ndk.sh points the
+# darwin tools at the arch-prefixed wrappers in /opt/osxcross/bin. Only the
+# target arches (x86_64/x86_64h/arm64/arm64e) are built to keep it quick.
 ARG OSXCROSS_REF=master
 RUN git clone https://github.com/tpoechtrager/osxcross /tmp/osxcross \
     && git -C /tmp/osxcross checkout "$OSXCROSS_REF" \

@@ -17,9 +17,8 @@
 #   REPO_OWNER  GitHub owner for the llvm-custom release download (default HomuHomu833)
 #   EXTRA_CMAKE_FLAGS  optional extra -D flags for the cmake (shaderc) configure
 #
-# Steps mirror the old make_ndk_*.yml workflows 1:1: build make/yasm/shaderc/python,
-# download the matching llvm-custom toolchain, splice everything into the official
-# NDK, then archive (xz; 7z for windows).
+# Build make/yasm/shaderc/python, fetch the llvm-custom toolchain, splice into the
+# official NDK, then archive (xz; 7z for windows).
 set -euo pipefail
 
 ROOTDIR="${ROOTDIR:-$PWD}"
@@ -39,9 +38,8 @@ mkdir -p "$BUILD"
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 ncpu() { nproc 2>/dev/null || echo 4; }
 
-# Download with retries: re-run aria2c on any failure so transient GitHub 501/504
-# (and the like) recover. Doesn't rely on aria2's --retry-on-unknown, which older
-# aria2 builds don't have. Pass aria2c args, e.g. fetch --dir=/tmp -o f.zip URL.
+# Download with retries: re-run aria2c on any failure so transient GitHub errors
+# recover. Pass aria2c args, e.g. fetch --dir=/tmp -o f.zip URL.
 fetch() {
   local i=0
   until aria2c --console-log-level=error --check-certificate=false \
@@ -67,8 +65,7 @@ resolve_shaderc_ref() {
   fi
 }
 
-# Lowercased BSD system name (FreeBSD/NetBSD/OpenBSD) derived from the triple,
-# matching the old workflow's char-twiddling on field 2 of the triple.
+# BSD system name (FreeBSD/NetBSD/OpenBSD) from field 2 of the triple.
 bsd_system_name() {
   local field first middle last
   field=$(echo "$TARGET" | cut -d- -f2)
@@ -96,7 +93,7 @@ download_official_ndk() {
     NDK="$LINUX_NDK"
   fi
 
-  # yasm version comes from the official NDK's (linux) prebuilt yasm
+  # yasm version from the official NDK's prebuilt yasm
   YASM_VERSION=$("$LINUX_NDK/prebuilt/linux-x86_64/bin/yasm" --version | sed -n '1s/.*yasm \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
 }
 
@@ -131,16 +128,11 @@ setup_toolchain() {
       NDK_HOST=linux-x86_64; SYSTEM_NAME="$(bsd_system_name)"
       ;;
     macos)
-      # Darwin host tools build with osxcross (cctools-port + clang wrappers),
-      # not zig: zig segfaults building macOS binaries, and osxcross is a proper
-      # Apple cross toolchain. The wrappers carry the macOS SDK sysroot, so no
-      # -isysroot/-iframework juggling is needed here.
+      # Darwin host tools use osxcross (cctools + clang wrappers); zig segfaults
+      # on macOS targets. Wrappers carry the SDK sysroot.
       TC=/opt/osxcross
-      # Put osxcross bin on PATH so clang discovers the cctools linker by its
-      # prefixed name (<triple>-ld) instead of falling through to the host
-      # /usr/bin/ld. CMake's compiler-probe try-compiles don't honor
-      # CMAKE_EXE_LINKER_FLAGS, so a -fuse-ld/--ld-path flag alone wouldn't reach
-      # them, PATH-based discovery covers every link uniformly.
+      # osxcross bin on PATH so clang finds the cctools linker (<triple>-ld) for
+      # every link, including CMake's compiler probes.
       export PATH="$TC/bin:$PATH"
       case "$TARGET" in
         arm64e-*)          ARCH=arm64e ;;   # distinct PAC ABI, not arm64
@@ -149,21 +141,17 @@ setup_toolchain() {
         x86_64-*)          ARCH=x86_64 ;;
         *) echo "Unsupported macOS arch in TARGET='$TARGET'" >&2; exit 1 ;;
       esac
-      # osxcross names its wrappers with the SDK's darwin version (e.g.
-      # arm64-apple-darwin24.5-clang); resolve that prefix by globbing rather
-      # than pinning a version that drifts with the baked SDK.
+      # wrapper names carry the SDK's darwin version; glob it rather than pin.
       CCWRAP="$(ls "$TC/bin/${ARCH}-apple-darwin"*-clang 2>/dev/null | head -n1 || true)"
       [ -n "$CCWRAP" ] || { echo "osxcross clang wrapper for $ARCH not found in $TC/bin" >&2; exit 1; }
       HOST="$(basename "${CCWRAP%-clang}")"
       CROSS_CC="$TC/bin/${HOST}-clang"; CROSS_CXX="$TC/bin/${HOST}-clang++"
       CROSS_AR="$TC/bin/${HOST}-ar"; CROSS_RANLIB="$TC/bin/${HOST}-ranlib"
       CROSS_STRIP="$TC/bin/${HOST}-strip"; CROSS_LD="$TC/bin/${HOST}-ld"
-      CROSS_OBJCOPY=""                  # cctools ships no objcopy; nothing here needs it
+      CROSS_OBJCOPY=""                  # cctools ships no objcopy; unused here
       NDK_HOST=linux-x86_64; SYSTEM_NAME=Darwin
-      # shaderc's combined-archive step invokes a bare `libtool -static -o`
-      # (Apple's archive merge), hardcoded rather than CMAKE_LIBTOOL-aware. Host
-      # GNU libtool can't merge archives, so expose the cctools libtool under the
-      # plain `libtool` name on PATH via a shim dir.
+      # shaderc calls a bare `libtool -static -o`; shim the cctools libtool onto
+      # PATH so it wins over host GNU libtool (which can't merge archives).
       LIBTOOLBIN="$(ls "$TC/bin/${ARCH}-apple-darwin"*-libtool 2>/dev/null | head -n1 || true)"
       if [ -n "$LIBTOOLBIN" ]; then
         mkdir -p "$BUILD/.macos-shims"
@@ -182,12 +170,8 @@ setup_toolchain() {
   esac
   NDK_TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/$NDK_HOST"
 
-  # Extra flags for the cmake-based configure (shaderc): anything passed in via
-  # the EXTRA_CMAKE_FLAGS env var, plus platform-specific additions. The Darwin
-  # (osxcross) block points CMake's Apple support at the osxcross SDK so it
-  # doesn't probe a host Xcode, and pins the arch + deployment target; the
-  # zig/llvm-mingw/NDK platforms need none of this. (CMAKE_LIBTOOL is left to
-  # CMake's find_program, which picks up the cctools libtool shim on PATH.)
+  # Extra cmake (shaderc) flags: env-supplied plus Darwin SDK/arch/deployment
+  # pins so CMake doesn't probe a host Xcode. Other platforms need none.
   EXTRA_CMAKE_FLAGS=(${EXTRA_CMAKE_FLAGS:-})
   if [ "$SYSTEM_NAME" = Darwin ]; then
     SDKROOT="$(ls -d "$TC/SDK/MacOSX"*.sdk 2>/dev/null | head -n1 || true)"
@@ -294,7 +278,7 @@ build_shaderc() {
   mkdir -p "$SH/third_party/spirv-tools"
   ( cd "$SH/third_party/spirv-tools" && fetch --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
   if [ "$PLATFORM" = bsd ]; then
-    # spirv-tools refuses unknown platforms; downgrade to a warning + assume Linux
+    # spirv-tools rejects unknown platforms; downgrade to a warning, assume Linux
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
   fi
   mkdir -p "$SH/third_party/spirv-tools/external/spirv-headers"
@@ -316,9 +300,7 @@ build_shaderc() {
     macos)   cflags="-Wno-error=date-time $CROSS_CFLAGS"; exelink="$CROSS_LDFLAGS" ;;
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
   esac
-  # cctools has no objcopy, so CROSS_OBJCOPY is empty for macos; only pass
-  # CMAKE_OBJCOPY when the toolchain actually provides one. The Darwin SDK/
-  # libtool/arch settings ride in via EXTRA_CMAKE_FLAGS (see setup_toolchain).
+  # pass CMAKE_OBJCOPY only when the toolchain has one (empty on macos).
   cmake -S "$SH" -B "$SH/build" -G Ninja \
     -DCMAKE_INSTALL_PREFIX="$SH/install" \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -334,16 +316,14 @@ build_shaderc() {
 }
 
 # --- CPython (cross-compiled for every host, windows included) --------------
-# Vanilla CPython can't be built with mingw, so the windows host builds the
-# msys2-contrib cpython-mingw fork instead of the python.org tarball; every
-# other host keeps using the upstream source.
+# windows builds the msys2-contrib cpython-mingw fork (vanilla CPython can't
+# build under mingw); every other host uses the upstream tarball.
 build_python() {
   log "Building Python 3.11.4"
   ( cd "$BUILD"
     if [ "$PLATFORM" = windows ]; then
-      # cpython-mingw's mingw-v3.11.4 branch == CPython 3.11.4 + the mingw patch
-      # set used by msys2's mingw-w64-python recipe. The branch ships a stale
-      # generated configure, so it is regenerated with autoreconf below.
+      # mingw-v3.11.4 branch = CPython 3.11.4 + msys2 mingw patches; its
+      # generated configure is stale, regenerated via autoreconf below.
       fetch --dir=/tmp -o python.tar.gz "https://codeload.github.com/msys2-contrib/cpython-mingw/tar.gz/refs/heads/mingw-v3.11.4" && tar -xzf /tmp/python.tar.gz && rm /tmp/python.tar.gz
       rm -rf python; mv cpython-mingw-mingw-v3.11.4 python
     else
@@ -351,21 +331,17 @@ build_python() {
       rm -rf python; mv Python-3.11.4 python
     fi
     cd python
-    # the bsd configure carries the Darwin cross-build fixups too (darwin was
-    # built through the bsd path before it moved to its own osxcross platform)
+    # the bsd configure carries the Darwin cross-build fixups too
     case "$PLATFORM" in bsd|macos) cp "$ROOT/patches/bsd/python/configure" "$PWD/configure" ;; esac
-    # OpenBSD: thread_pthread.h uses `#ifdef __OpenBSD__` (not HAVE_GETTHRID)
-    # to call getthrid(), so config.site can't suppress it.  zig's OpenBSD
-    # headers don't expose getthrid() transitively, so inject a forward
-    # declaration before the call site to satisfy -Werror=implicit-function-declaration.
+    # OpenBSD: thread_pthread.h calls getthrid() under #ifdef __OpenBSD__ (not a
+    # HAVE_ knob); zig's headers don't declare it, so inject a forward decl.
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
       sed -i 's|#elif defined(__OpenBSD__)|#elif defined(__OpenBSD__)\n    extern pid_t getthrid(void); /* not in zig cross headers */|' Python/thread_pthread.h
     fi
-    # windows: regenerate configure (+ pyconfig.h.in) from the patched
-    # configure.ac (needs autoconf-archive + pkg.m4, baked into the build image)
+    # windows: regenerate configure from the patched configure.ac
     [ "$PLATFORM" = windows ] && autoreconf -vfi
-    # newer config.sub/config.guess (recognise the exotic triples); copied after
-    # autoreconf, which rewrites them with the autotools-bundled copies
+    # newer config.sub/config.guess (exotic triples); after autoreconf, which
+    # would otherwise overwrite them
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" "$PWD/"
     mkdir -p build
     if [ "$PLATFORM" = linux ]; then
@@ -391,54 +367,26 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
-    # macos: configure detects sendfile() by a link test (the symbol lives in
-    # libSystem, so HAVE_SENDFILE gets defined), but posixmodule.c's Apple
-    # sendfile() branch needs the prototype from <sys/socket.h>, which is gated
-    # behind _DARWIN_C_SOURCE and stays hidden here -> implicit-declaration
-    # error. NDK host tools don't need os.sendfile, so just skip the whole path
-    # by forcing the cache var off (config.site is honored: the cross build
-    # already relies on it for the /dev/ptmx AC_CHECK_FILE).
-    # mkfifoat/mknodat: Python 3.11 wraps these in __builtin_available(macOS 13)
-    # which compiles to ___isPlatformVersionAtLeast (compiler-rt). osxcross
-    # cross-links don't pull that in automatically; disable both to avoid it.
+    # macos: configure defines HAVE_SENDFILE, but the prototype is hidden without
+    # _DARWIN_C_SOURCE; mkfifoat/mknodat pull in compiler-rt availability checks.
+    # Host tools need none, so disable all three.
     [ "$PLATFORM" = macos ] && printf 'ac_cv_func_sendfile=no\nac_cv_func_mkfifoat=no\nac_cv_func_mknodat=no\n' >> config.site
-    # OpenBSD: -D_BSD_SOURCE (CFLAGS above) keeps __BSD_VISIBLE=1 even when
-    # CPython defines _POSIX_C_SOURCE, restoring BSD function visibility.
-    # memrchr: OpenBSD's <string.h> never declares it even with __BSD_VISIBLE=1
-    # — it is simply absent from OpenBSD's libc interface.  The configure link
-    # test passes (symbol present in zig's bundled libc from musl), so force
-    # the cache var off so CPython uses its own pure-C fallback.
-    # Block functions whose configure link test passes but whose runtime
-    # semantics are wrong on OpenBSD:
-    #   sendfile    — CPython's posixmodule.c only handles Linux/macOS/FreeBSD
-    #                 variants; OpenBSD's sendfile(2) has BSD arguments and
-    #                 falls through to the Linux path if HAVE_SENDFILE is set.
-    #   getrandom   — Linux-specific syscall; OpenBSD uses getentropy(3).
-    #   posix_fadvise / posix_fallocate — absent from OpenBSD entirely.
+    # OpenBSD: configure link tests pass (zig's libc is musl-derived) but these
+    # are wrong/absent on OpenBSD, so force CPython's fallbacks: memrchr (not
+    # declared), sendfile (BSD ABI), getrandom (use getentropy), posix_fadvise/
+    # posix_fallocate (absent).
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
       printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
-    # NetBSD: block functions whose configure test passes but that don't link
-    # against zig's bundled NetBSD libc, breaking the python interpreter link:
-    #   memfd_create — Linux-only syscall; absent from NetBSD, but the cross
-    #                  configure defines HAVE_MEMFD_CREATE anyway.
-    #   dup3         — present on NetBSD but exported under the versioned symbol
-    #                  __dup3100, which zig's libc stubs don't provide, so
-    #                  os_dup2's reference stays undefined at link time.
-    # Forcing both off makes posixmodule.c fall back to portable paths.
+    # NetBSD: memfd_create is Linux-only, and dup3 is exported as __dup3100 which
+    # zig's libc stubs lack; both break the interpreter link. Use the fallbacks.
     if [ "$SYSTEM_NAME" = NetBSD ]; then
       printf 'ac_cv_func_memfd_create=no\nac_cv_func_dup3=no\n' >> config.site
     fi
-    # linux/musl: force every extension module to be linked into the interpreter
-    # (zig's musl is static-only -- it cannot produce the .so files setup.py would
-    # otherwise emit, and -static + -shared is contradictory). CPython builds the
-    # stdlib extensions via makesetup+Modules/Setup.stdlib only when
-    # MODULES_SETUP_STDLIB points at it, which configure does solely for
-    # Emscripten/WASI; every other host leaves it empty and the modules fall
-    # through to setup.py as shared .so. So (1) force MODULE_BUILDTYPE=static (the
-    # *static* marker makesetup honours) and (2) activate Setup.stdlib for this
-    # host too, matching the wasm static path. setup.py then skips the
-    # makesetup-built modules, so nothing is built shared.
+    # linux/musl: zig's musl is static-only, so link every stdlib extension into
+    # the interpreter instead of emitting .so. Force MODULE_BUILDTYPE=static and
+    # point MODULES_SETUP_STDLIB at Setup.stdlib (as the wasm path does) so
+    # setup.py builds nothing shared.
     if [ "$PLATFORM" = linux ]; then
       case "$TARGET" in
         *musl*)
@@ -449,47 +397,33 @@ MODULE_BUILDTYPE=static
           ;;
       esac
     fi
-    # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). It probes
-    # `$(CC) -E -v` and adds every "#include <...>" dir that isn't a /gcc/ or
-    # /clang/ path -- but zig's clang reports the host's /usr/include and
-    # /usr/local/include there, so those leak into the cross build. The host
-    # glibc <stdlib.h> then pulls <bits/libc-header-start.h> from the Debian
-    # multiarch dir zig never searches -> every extension fails to compile. zig
-    # resolves its own sysroot internally (not via -I), so the probe is pure
-    # downside here; drop it. macos/osxcross and windows/mingw report correct
-    # sysroots from the same probe, so they keep it.
+    # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). Its
+    # `$(CC) -E -v` probe leaks the host's /usr/include into the cross build,
+    # breaking every extension. zig resolves its own sysroot internally, so drop
+    # the probe. macos/mingw report correct sysroots and keep it.
     case "$PLATFORM" in
       linux|bsd) sed -i 's/^\( *\)def add_cross_compiling_paths(self):/\1def add_cross_compiling_paths(self):\n\1    return  # NDK: zig embeds its sysroot; host \/usr\/include must not leak in/' setup.py ;;
     esac
 
-    # Neutralise the build host's pkg-config (PKG_CONFIG=/bin/false). These are
-    # cross builds, so a host pkg-config only ever reports x86_64-linux libs;
-    # letting CPython's configure see it wrongly flips Makefile-built modules
-    # (zlib/_lzma/_uuid/...) to "enabled" against libraries the cross sysroot
-    # lacks, which then fail to link. The image carries pkg-config purely so the
-    # windows autoreconf can expand PKG_CHECK_MODULES; this keeps every build's
-    # module set identical to a host without pkg-config installed at all.
+    # PKG_CONFIG=/bin/false: host pkg-config reports x86_64-linux libs and would
+    # wrongly enable modules (zlib/_lzma/_uuid/...) the cross sysroot lacks.
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET"
                  --with-build-python --without-ensurepip
                  CONFIG_SITE=config.site TARGET="$TARGET" PKG_CONFIG=/bin/false
                  CC="$CROSS_CC" AS="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY"
                  READELF="$NDK_LLVM_BIN/llvm-readelf" LLVM_PROFDATA="$NDK_LLVM_BIN/llvm-profdata"
                  AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
-    # mingw is a shared build (libpython3.11.dll) and lets configure derive
-    # _PYTHON_HOST_PLATFORM (mingw); every other host is a static interpreter.
+    # mingw is a shared build (libpython3.11.dll); every other host is static.
     if [ "$PLATFORM" != windows ]; then
       args+=( --disable-shared --disable-ipv6 LDSHARED="$CROSS_CC -shared -fPIC"
               _PYTHON_HOST_PLATFORM="$TARGET" )
     fi
-    # _ctypes_test: test-only module, never useful in an NDK host tool.
-    # _ctypes has no py_cv_module_ knob; it self-skips when ffi.h is absent,
-    # which is always the case here since libffi is never built.
+    # _ctypes_test: test-only, unused. (_ctypes has no knob; it self-skips when
+    # ffi.h is absent, which it always is since libffi is never built.)
     args+=( py_cv_module__ctypes_test=n/a )
     case "$PLATFORM" in
-      bionic) # grp: bionic only declares/exports the getgrent/setgrent/endgrent
-              # family from API 26, so below that grpmodule.c neither compiles
-              # (clang hard-errors the implicit decls) nor links -- mark it n/a
-              # only when targeting < 26; at 26+ let it build normally.
+      bionic) # grp: bionic exports getgrent/setgrent/endgrent only from API 26,
+              # so mark it n/a below 26 (grpmodule.c won't compile/link).
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
@@ -498,48 +432,28 @@ MODULE_BUILDTYPE=static
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      bsd)    # -fPIC: bsd keeps a static libpython but setup.py still emits the
-              # stdlib extensions as shared .so, and they reference external
-              # preemptible data (PyExc_*, type objects, _Py_NoneStruct) that needs
-              # GOT indirection. configure doesn't set CCSHARED=-fPIC for the
-              # "unknown" platform tag, so without this the .so links fail with
-              # R_AARCH64_* "recompile with -fPIC". Making the whole build PIC is
-              # harmless for a static host tool.
-              # OpenBSD via zig: CPython (or its transitive headers) defines
-              # _POSIX_C_SOURCE, which causes OpenBSD's sys/cdefs.h to set
-              # __BSD_VISIBLE=0, hiding u_long (sys/types.h), chflags, wait3/4,
-              # dup3, pipe2, preadv/pwritev, getloadavg, etc.  The correct
-              # override is -D_BSD_SOURCE, which sys/cdefs.h recognises as an
-              # explicit opt-in to BSD visibility even when POSIX macros are set.
-              # _GNU_SOURCE has no effect on OpenBSD headers (it is not handled
-              # by sys/cdefs.h) and was removed.
-              # nis: OpenBSD removed YP/NIS support, so zig ships no
-              # rpcsvc/yp_prot.h and nismodule.c can't compile. Mark it n/a only
-              # for OpenBSD; FreeBSD/NetBSD still provide the rpcsvc headers.
+      bsd)    # -fPIC: configure omits CCSHARED for the "unknown" platform tag,
+              # so the shared stdlib .so fail to link (R_AARCH64_* "recompile
+              # with -fPIC"); build everything PIC. OpenBSD: -D_BSD_SOURCE
+              # restores BSD visibility hidden when CPython sets _POSIX_C_SOURCE.
+              # nis: OpenBSD dropped YP/NIS (no rpcsvc/yp_prot.h), so mark n/a.
               local obsd="" nisna=""
               if [ "$SYSTEM_NAME" = OpenBSD ]; then obsd="-D_BSD_SOURCE"; nisna="py_cv_module_nis=n/a"; fi
               args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" $nisna ) ;;
-      macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE
-              #   (needed so sendfile() is declared; -Wno-error alone won't help
-              #   because Python re-appends -Werror=implicit-function-declaration).
-              # LDSHARED: use -bundle -undefined dynamic_lookup (not -shared -fPIC)
-              #   so ld64 defers Python API symbols to the interpreter at dlopen().
+      macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE.
+              # LDSHARED -bundle -undefined dynamic_lookup: defer Python API
+              # symbols to the interpreter at dlopen().
               args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS"
                       LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
-      windows) # mingw: shared interpreter linking libpython3.11.dll. Static the
-               # compiler runtime so python.exe/.dll don't drag in llvm-mingw's
-               # libc++/unwind DLLs; i686 wants --large-address-aware (matches the
-               # msys2 mingw-w64-python recipe). WINDRES compiles the PC/*.rc
-               # resource files (python_nt.o etc., needed by the DLL/exe links);
-               # llvm-mingw's bin is off PATH, so configure can't auto-detect it.
-               # -Wno-incompatible-pointer-types: clang makes this diagnostic a
-               # hard error by default, but _multiprocessing/semaphore.c passes an
-               # int* to _GetSemaphoreValue(HANDLE, long*) on every mingw target;
-               # downgrade it so the extension (and any sibling) keeps building.
+      windows) # mingw shared interpreter. Static the compiler runtime so
+               # python.exe/.dll don't drag in llvm-mingw DLLs; i686 wants
+               # --large-address-aware. WINDRES compiles the PC/*.rc resources
+               # (off-PATH, so pass it explicitly). -Wno-incompatible-pointer-
+               # types: semaphore.c mispasses int*/long* on every mingw target.
                local laa=""; [ "$TARGET" = i686-w64-mingw32 ] && laa=" -Wl,--large-address-aware"
                args+=( --enable-shared
                        CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
@@ -549,12 +463,9 @@ MODULE_BUILDTYPE=static
                        WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
     ./configure "${args[@]}"
-    # windows: the extension-module pass (sharedmods -> setup.py build) links each
-    # .pyd against -lpython3.11, but the Makefile's sharedmods rule has no
-    # dependency on the import library libpython3.11.dll.a (emitted as a side
-    # effect of the libpython3.11.dll link rule). Under -j that races -> a swarm
-    # of "lld: error: unable to find library -lpython3.11". Build the DLL (and
-    # thus its import lib) first so it always exists before the extensions link.
+    # windows: sharedmods links .pyd against -lpython3.11 but doesn't depend on
+    # the import lib, so under -j it races. Build the DLL (and its import lib)
+    # first.
     [ "$PLATFORM" = windows ] && make -j"$(ncpu)" libpython3.11.dll
     make -j"$(ncpu)" build_all
     make install
@@ -600,9 +511,8 @@ assemble_ndk() {
 assemble_unix() {
   local PREBUILT_BIN="$NDK/prebuilt/linux-x86_64/bin"
 
-  # cmp/echo are built before the replace loop so bionic uses the *official* NDK
-  # clang (the loop overwrites it with llvm-custom's). Harmless for musl/bsd,
-  # which use zig cc and write to a different dir than the loop touches.
+  # build cmp/echo before the replace loop (bionic needs the official clang the
+  # loop later overwrites)
   "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
   "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
 
@@ -698,10 +608,8 @@ NetBSD) HOST_OS=netbsd;;\
 OpenBSD) HOST_OS=openbsd;;' "$NDK/build/tools/ndk_bin_common.sh"
 }
 
-# macos: stock ndk_bin_common.sh folds darwin-arm64 onto darwin-x86_64 because
-# Google ships *universal* darwin binaries in the darwin-x86_64 dir. We ship a
-# separate per-arch artifact per darwin host, so drop that remap and let ndk-build
-# resolve the real darwin-<arch> prebuilt dir that rename_host produced.
+# macos: stock ndk_bin_common.sh folds darwin-arm64 onto darwin-x86_64 (Google
+# ships universal binaries); we ship per-arch, so drop that remap.
 fixup_macos_host_os() {
   sed -i '/if \[ \$HOST_TAG = darwin-arm64 \]; then/,/^fi$/d' "$NDK/build/tools/ndk_bin_common.sh"
 }
@@ -732,9 +640,8 @@ host_tag_arch() {
   echo "$arch"
 }
 
-# rename prebuilt/<host> dirs to the target host tag + leave a fallback symlink.
-# The fallback tag is host-OS specific: linux hosts fall back to linux-x86_64,
-# but darwin hosts must fall back to darwin-x86_64 (never linux-x86_64).
+# rename prebuilt/<host> dirs to the target host tag + a fallback symlink
+# (linux->linux-x86_64, darwin->darwin-x86_64).
 rename_host() {
   local tag arch link
   arch="$(host_tag_arch)"
@@ -907,8 +814,7 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)\
 endif()' "${files[@]}"
       ;;
     macos)
-      # uname -m on a Mac reports only arm64 / x86_64 (never the arm64e / x86_64h
-      # sub-slices), so collapse both variants onto the base arch's host tag.
+      # uname -m reports only arm64/x86_64, so collapse the sub-slices onto them.
       sed -i -E '/^if\(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux\)$/,/^endif\(\)$/c\
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Darwin)\
     execute_process(\
@@ -939,8 +845,8 @@ endif()' "${files[@]}"
 assemble_windows() {
   local PREBUILT_BIN="$NDK/prebuilt/windows-x86_64/bin"
 
-  # llvm-custom ships some bin/ entries as symlinks; turn them into hard links
-  # so the copy below picks up real PE files
+  # llvm-custom ships some bin/ entries as symlinks; hard-link them so the copy
+  # below picks up real PE files
   find "$HOST_TOOLCHAIN/bin" -type l | while IFS= read -r file; do
     if [ -L "$file" ]; then
       target="$(readlink -f "$file")"; echo "Hard linking $(basename "$file")"
@@ -981,14 +887,12 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   cp "$BUILD/yasm/build/bin/vsyasm.exe" "$PREBUILT_BIN"
   "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
   "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
-  # python3: the freshly cross-built mingw interpreter. python.exe sits at the
-  # python3/ root (the layout ndk-build expects on Windows); getpath walks up
-  # from there to find python3/lib/python3.11. libpython3.11.dll rides next to
-  # python.exe, as does the llvm-mingw winpthread runtime the binaries pull in.
+  # python3: python.exe at the python3/ root (ndk-build's Windows layout);
+  # libpython3.11.dll and the winpthread runtime ride next to it.
   mkdir -p "$NDK_TOOLCHAIN/python3/lib"
   cp "$BUILD/python/build/bin/python3.11.exe" "$NDK_TOOLCHAIN/python3/python.exe"
   cp "$BUILD/python/build/bin/libpython3.11.dll" "$NDK_TOOLCHAIN/python3/"
-  # libpython3.dll: the stable-ABI forwarder limited-API extensions link against
+  # libpython3.dll: stable-ABI forwarder for limited-API extensions
   [ -f "$BUILD/python/build/bin/libpython3.dll" ] && cp "$BUILD/python/build/bin/libpython3.dll" "$NDK_TOOLCHAIN/python3/"
   cp -R "$BUILD/python/build/lib/python3.11" "$NDK_TOOLCHAIN/python3/lib/"
   pthread_dll="$(find "$TC" -name libwinpthread-1.dll -path "*${TARGET}*" 2>/dev/null | head -n1 || true)"
