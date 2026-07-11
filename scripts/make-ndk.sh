@@ -418,6 +418,17 @@ EOF
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
       printf 'ac_cv_func_memrchr=no\nac_cv_func_sendfile=no\nac_cv_func_getrandom=no\nac_cv_func_posix_fadvise=no\nac_cv_func_posix_fallocate=no\n' >> config.site
     fi
+    # NetBSD: block functions whose configure test passes but that don't link
+    # against zig's bundled NetBSD libc, breaking the python interpreter link:
+    #   memfd_create — Linux-only syscall; absent from NetBSD, but the cross
+    #                  configure defines HAVE_MEMFD_CREATE anyway.
+    #   dup3         — present on NetBSD but exported under the versioned symbol
+    #                  __dup3100, which zig's libc stubs don't provide, so
+    #                  os_dup2's reference stays undefined at link time.
+    # Forcing both off makes posixmodule.c fall back to portable paths.
+    if [ "$SYSTEM_NAME" = NetBSD ]; then
+      printf 'ac_cv_func_memfd_create=no\nac_cv_func_dup3=no\n' >> config.site
+    fi
     # linux/musl: force every extension module to be linked into the interpreter
     # (zig's musl is static-only -- it cannot produce the .so files setup.py would
     # otherwise emit, and -static + -shared is contradictory). CPython builds the
