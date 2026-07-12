@@ -199,7 +199,7 @@ build_make() {
       bionic)  args+=( --disable-posix-spawn
                        CFLAGS="-Wno-error=implicit-function-declaration"
                        CXXFLAGS="-Wno-error=implicit-function-declaration"
-                       LDFLAGS="-static-libstdc++ -static-libgcc"
+                       LDFLAGS="-static"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
       linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
@@ -240,7 +240,7 @@ build_yasm() {
     local args=( --prefix="$PWD/build" --build=x86_64-linux-gnu --host="$TARGET" --disable-nls
                  CC="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
     case "$PLATFORM" in
-      bionic)  args+=( LDFLAGS="-static-libstdc++ -static-libgcc" ) ;;
+      bionic)  args+=( LDFLAGS="-static" ) ;;
       linux)    args+=( CFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
                        CXXFLAGS="-fwrapv -Wno-error=date-time $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
@@ -293,7 +293,7 @@ build_shaderc() {
 
   local cflags="" exelink=""
   case "$PLATFORM" in
-    bionic)  exelink="-static-libstdc++ -static-libgcc" ;;
+    bionic)  exelink="-static" ;;
     linux)    exelink="$CROSS_LDFLAGS"; cflags="$CROSS_CFLAGS"
              [ "$TARGET" = hexagon-linux-musl ] && cflags="-Wno-bitfield-width -Wno-error=bitfield-width $CROSS_CFLAGS" ;;
     bsd)     cflags="-Wno-error=date-time $CROSS_CFLAGS"; exelink="$CROSS_LDFLAGS" ;;
@@ -383,19 +383,20 @@ EOF
     if [ "$SYSTEM_NAME" = NetBSD ]; then
       printf 'ac_cv_func_memfd_create=no\nac_cv_func_dup3=no\n' >> config.site
     fi
-    # linux/musl: zig's musl is static-only, so link every stdlib extension into
-    # the interpreter instead of emitting .so. Force MODULE_BUILDTYPE=static and
-    # point MODULES_SETUP_STDLIB at Setup.stdlib (as the wasm path does) so
-    # setup.py builds nothing shared.
-    if [ "$PLATFORM" = linux ]; then
-      case "$TARGET" in
-        *musl*)
-          sed -i '/^case \$host_cpu in #(/,/^esac$/c\
+    # Link every stdlib extension into the interpreter instead of emitting .so:
+    # force MODULE_BUILDTYPE=static and point MODULES_SETUP_STDLIB at Setup.stdlib
+    # (as the wasm path does) so setup.py builds nothing shared. Needed when the
+    # interpreter is a static executable with no working dlopen at runtime:
+    #  - linux/musl: zig's musl is static-only.
+    #  - bionic:     host tools are linked -static.
+    force_static_modules=no
+    [ "$PLATFORM" = bionic ] && force_static_modules=yes
+    case "$TARGET" in *musl*) [ "$PLATFORM" = linux ] && force_static_modules=yes ;; esac
+    if [ "$force_static_modules" = yes ]; then
+      sed -i '/^case \$host_cpu in #(/,/^esac$/c\
 MODULE_BUILDTYPE=static
 ' configure
-          sed -i 's#^\([[:space:]]*\)MODULES_SETUP_STDLIB=$#\1MODULES_SETUP_STDLIB=Modules/Setup.stdlib#' configure
-          ;;
-      esac
+      sed -i 's#^\([[:space:]]*\)MODULES_SETUP_STDLIB=$#\1MODULES_SETUP_STDLIB=Modules/Setup.stdlib#' configure
     fi
     # linux/bsd (zig): neuter setup.py's add_cross_compiling_paths(). Its
     # `$(CC) -E -v` probe leaks the host's /usr/include into the cross build,
@@ -427,7 +428,7 @@ MODULE_BUILDTYPE=static
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
-                      LDFLAGS="-static-libstdc++ -static-libgcc"
+                      LDFLAGS="-static"
                       $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
