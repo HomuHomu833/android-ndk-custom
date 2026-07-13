@@ -456,14 +456,22 @@ MODULE_BUILDTYPE=static
     # ffi.h is absent, which it always is since libffi is never built.)
     args+=( py_cv_module__ctypes_test=n/a )
     case "$PLATFORM" in
-      bionic) # grp/pwd: bionic exports getgrent/setpwent only from API 26,
-              # so mark them n/a below 26.
+      bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
               local pwdna=""; [ "$API" -lt 26 ] && pwdna="py_cv_module_pwd=n/a"
+              # Stub LIBC_N version script for 32-bit ARM __aeabi_* symbols.
+              # Disable test .so modules: -static + i686 libc.a non-PIC conflict.
+              local testna="py_cv_module__testimportmultiple=n/a py_cv_module__testmultiphase=n/a"
+              local ndk_vs=""
+              case "$TARGET" in arm-*|armv7a-*|armv7l-*)
+                ndk_vs="$PWD/ndk_version.map"
+                [ -f "$ndk_vs" ] || printf '%s\n' 'LIBC_N { };' > "$ndk_vs"
+                ndk_vs="-Wl,--version-script=$ndk_vs"
+              esac
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
-                      LDFLAGS="-static"
-                      $grpna $pwdna ) ;;
+                      LDFLAGS="-static $ndk_vs"
+                      $grpna $pwdna $testna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
