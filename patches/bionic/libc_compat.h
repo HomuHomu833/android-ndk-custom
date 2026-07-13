@@ -18,10 +18,13 @@
 /* close_range   — syscall-backed, API < 34  (already injected separately) */
 /* sem_clockwait — futex-backed,  API < 30  (injected into thread_pthread.h) */
 
-#include "ctermid.h"      /* ctermid,        never in bionic              */
-#include "futimes.h"      /* futimes,        API < 26 (via futimens)      */
-#include "lutimes.h"      /* lutimes,        API < 26 (via utimensat)     */
-#include "fexecve.h"      /* fexecve,        hidden by _POSIX_C_SOURCE    */
-#include "posix_spawn.h"  /* posix_spawn/p,  API < 28 (via fork+exec)    */
+#include "ctermid.h"         /* ctermid,           never in bionic              */
+#include "futimes.h"         /* futimes,           API < 26 (via futimens)      */
+#include "lutimes.h"         /* lutimes,           API < 26 (via utimensat)     */
+#include "fexecve.h"         /* fexecve,           hidden by _POSIX_C_SOURCE    */
+#include "posix_spawn.h"     /* posix_spawn/p,     API < 28 (via fork+exec)    */
+#include "preadv2.h"         /* preadv2/pwritev2,  API < 24 or hidden by FTM   */
+#include "copy_file_range.h" /* copy_file_range,   API < 30 (via syscall)      */
+#include "getloadavg.h"      /* getloadavg,        never in bionic              */
 
 #endif /* NDK_BIONIC_LIBC_COMPAT_H */

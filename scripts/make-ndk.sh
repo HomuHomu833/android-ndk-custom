@@ -363,7 +363,7 @@ build_python() {
       # (fexecve).  Inject the compat header after Python.h in every file that
       # references one of the affected functions.
       lc="$ROOT/patches/bionic/libc_compat.h"
-      for fn in ctermid futimes lutimes fexecve posix_spawn; do
+      for fn in ctermid futimes lutimes fexecve posix_spawn preadv2 pwritev2 copy_file_range getloadavg; do
         grep -rl "${fn}(" Python Modules 2>/dev/null | while IFS= read -r f; do
           grep -qF "$lc" "$f" && continue
           sed -i "s|#include \"Python.h\"|#include \"Python.h\"\n#include \"$lc\"|" "$f"
@@ -399,6 +399,7 @@ ac_cv_file__dev_ptmx=no
 ac_cv_file__dev_ptc=no
 EOF
     fi
+    [ "$PLATFORM" = bionic ] && printf 'ac_cv_header_spawn_h=no\n' >> config.site
     # macos: configure defines HAVE_SENDFILE, but the prototype is hidden without
     # _DARWIN_C_SOURCE; mkfifoat/mknodat pull in compiler-rt availability checks.
     # Host tools need none, so disable all three.
