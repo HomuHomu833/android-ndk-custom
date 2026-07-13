@@ -338,6 +338,16 @@ build_python() {
     if [ "$SYSTEM_NAME" = OpenBSD ]; then
       sed -i 's|#elif defined(__OpenBSD__)|#elif defined(__OpenBSD__)\n    extern pid_t getthrid(void); /* not in zig cross headers */|' Python/thread_pthread.h
     fi
+    # bionic: configure sets HAVE_SEM_CLOCKWAIT but bionic only ships
+    # sem_clockwait from API 30. Supply an implementation for API < 30 by
+    # including it into thread_pthread.h (its only user). It goes here, not via a
+    # global -include, because the header pulls system headers and CPython
+    # requires Python.h before any system header — thread_pthread.h is included
+    # well after Python.h, so the ordering stays correct.
+    if [ "$PLATFORM" = bionic ]; then
+      cp "$ROOT/patches/bionic/sem_clockwait.h" Python/sem_clockwait.h
+      sed -i '1i #include "sem_clockwait.h"' Python/thread_pthread.h
+    fi
     # windows: regenerate configure from the patched configure.ac
     [ "$PLATFORM" = windows ] && autoreconf -vfi
     # newer config.sub/config.guess (exotic triples); after autoreconf, which
@@ -425,14 +435,10 @@ MODULE_BUILDTYPE=static
     case "$PLATFORM" in
       bionic) # grp: bionic exports getgrent/setgrent/endgrent only from API 26,
               # so mark it n/a below 26 (grpmodule.c won't compile/link).
-              # sem_clockwait.h: implements sem_clockwait for API < 30 (configure
-              # enables HAVE_SEM_CLOCKWAIT but bionic only ships it from API 30).
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
-              local semcw="-include $ROOT/patches/bionic/sem_clockwait.h"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static"
-                      CFLAGS="$semcw" CXXFLAGS="$semcw"
                       $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
