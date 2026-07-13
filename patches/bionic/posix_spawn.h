@@ -9,6 +9,10 @@
  * with full support for file actions and spawn attributes.  The child applies
  * all requested settings before exec; if exec fails it calls _exit(127).
  *
+ * The posix_spawnattr_t and posix_spawn_file_actions_t types are defined by
+ * the NDK's <spawn.h> (API 24+) as opaque pointers.  We include that header
+ * (it exists at every API >= 24) and define the underlying struct bodies.
+ *
  * Injected after #include "Python.h" by scripts/make-ndk.sh.
  */
 #ifndef NDK_BIONIC_POSIX_SPAWN_H
@@ -29,7 +33,7 @@
 #include <unistd.h>
 
 /* ------------------------------------------------------------------ */
-/*  Types (opaque, as specified by POSIX)                              */
+/*  Types (opaque pointers, matching the NDK's <spawn.h>)              */
 /* ------------------------------------------------------------------ */
 
 #ifndef POSIX_SPAWN_RESETIDS
@@ -41,15 +45,31 @@
 #define POSIX_SPAWN_SETSCHEDULER  0x0020
 #endif
 
-typedef struct {
+/*
+ * Include the NDK's <spawn.h> for its opaque-pointer typedefs:
+ *   typedef struct __posix_spawnattr*           posix_spawnattr_t;
+ *   typedef struct __posix_spawn_file_actions*  posix_spawn_file_actions_t;
+ * Then define the struct bodies ourselves.
+ */
+#if __has_include(<spawn.h>)
+#include <spawn.h>
+#else
+/* Should not happen at API >= 24, but keep a fallback. */
+typedef struct __posix_spawnattr           *posix_spawnattr_t;
+typedef struct __posix_spawn_file_actions  *posix_spawn_file_actions_t;
+#endif
+
+/* Underlying struct for posix_spawnattr_t. */
+struct __posix_spawnattr {
     short       flags;
     pid_t       pgroup;
     sigset_t    sigmask;
     sigset_t    sigdefault;
     struct sched_param schedparam;
     int         schedpolicy;
-} posix_spawnattr_t;
+};
 
+/* File-actions linked-list node. */
 typedef struct __ndk_fa_node {
     int                     type;   /* 0 = open, 1 = close, 2 = dup2 */
     int                     fd;
@@ -60,63 +80,71 @@ typedef struct __ndk_fa_node {
     struct __ndk_fa_node   *next;
 } __ndk_fa_node;
 
-typedef struct {
+/* Underlying struct for posix_spawn_file_actions_t. */
+struct __posix_spawn_file_actions {
     __ndk_fa_node *head;
     __ndk_fa_node *tail;
-} posix_spawn_file_actions_t;
+};
 
 /* ------------------------------------------------------------------ */
 /*  posix_spawnattr                                                   */
 /* ------------------------------------------------------------------ */
 
+/* posix_spawnattr_t is an opaque pointer (struct __posix_spawnattr *).
+ * These functions receive posix_spawnattr_t *, so *attr is the handle. */
+
 static inline int posix_spawnattr_init(posix_spawnattr_t *attr) {
     if (attr == NULL) { errno = EINVAL; return -1; }
-    memset(attr, 0, sizeof(*attr));
-    attr->schedpolicy = SCHED_OTHER;
+    *attr = (struct __posix_spawnattr *)calloc(1, sizeof(struct __posix_spawnattr));
+    if (*attr == NULL) { errno = ENOMEM; return -1; }
+    (*attr)->schedpolicy = SCHED_OTHER;
     return 0;
 }
 
 static inline int posix_spawnattr_destroy(posix_spawnattr_t *attr) {
-    (void)attr;
+    if (attr != NULL && *attr != NULL) {
+        free(*attr);
+        *attr = NULL;
+    }
     return 0;
 }
 
 static inline int posix_spawnattr_setflags(posix_spawnattr_t *attr, short flags) {
-    if (attr == NULL) { errno = EINVAL; return -1; }
-    attr->flags = flags;
+    if (attr == NULL || *attr == NULL) { errno = EINVAL; return -1; }
+    (*attr)->flags = flags;
     return 0;
 }
 
 static inline int posix_spawnattr_setpgroup(posix_spawnattr_t *attr, pid_t pgroup) {
-    if (attr == NULL) { errno = EINVAL; return -1; }
-    attr->pgroup = pgroup;
+    if (attr == NULL || *attr == NULL) { errno = EINVAL; return -1; }
+    (*attr)->pgroup = pgroup;
     return 0;
 }
 
 static inline int posix_spawnattr_setsigmask(posix_spawnattr_t *attr,
                                              const sigset_t *sigmask) {
-    if (attr == NULL || sigmask == NULL) { errno = EINVAL; return -1; }
-    attr->sigmask = *sigmask;
+    if (attr == NULL || *attr == NULL || sigmask == NULL) { errno = EINVAL; return -1; }
+    (*attr)->sigmask = *sigmask;
     return 0;
 }
 
 static inline int posix_spawnattr_setsigdefault(posix_spawnattr_t *attr,
                                                 const sigset_t *sigdefault) {
-    if (attr == NULL || sigdefault == NULL) { errno = EINVAL; return -1; }
-    attr->sigdefault = *sigdefault;
+    if (attr == NULL || *attr == NULL || sigdefault == NULL) { errno = EINVAL; return -1; }
+    (*attr)->sigdefault = *sigdefault;
     return 0;
 }
 
 static inline int posix_spawnattr_setschedparam(posix_spawnattr_t *attr,
                                                 const struct sched_param *schedparam) {
-    if (attr == NULL || schedparam == NULL) { errno = EINVAL; return -1; }
-    attr->schedparam = *schedparam;
+    if (attr == NULL || *attr == NULL || schedparam == NULL) { errno = EINVAL; return -1; }
+    (*attr)->schedparam = *schedparam;
     return 0;
 }
 
 static inline int posix_spawnattr_setschedpolicy(posix_spawnattr_t *attr, int policy) {
-    if (attr == NULL) { errno = EINVAL; return -1; }
-    attr->schedpolicy = policy;
+    if (attr == NULL || *attr == NULL) { errno = EINVAL; return -1; }
+    (*attr)->schedpolicy = policy;
     return 0;
 }
 
@@ -137,31 +165,33 @@ static inline char *__ndk_strdup(const char *s) {
 /*  posix_spawn_file_actions                                           */
 /* ------------------------------------------------------------------ */
 
+/* posix_spawn_file_actions_t is an opaque pointer too. */
+
 static inline int posix_spawn_file_actions_init(posix_spawn_file_actions_t *fa) {
     if (fa == NULL) { errno = EINVAL; return -1; }
-    fa->head = NULL;
-    fa->tail = NULL;
+    *fa = (struct __posix_spawn_file_actions *)calloc(1, sizeof(struct __posix_spawn_file_actions));
+    if (*fa == NULL) { errno = ENOMEM; return -1; }
     return 0;
 }
 
 static inline int posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *fa) {
-    if (fa == NULL) { errno = EINVAL; return -1; }
-    __ndk_fa_node *cur = fa->head;
+    if (fa == NULL || *fa == NULL) { errno = EINVAL; return -1; }
+    __ndk_fa_node *cur = (*fa)->head;
     while (cur != NULL) {
         __ndk_fa_node *next = cur->next;
         free(cur->path);
         free(cur);
         cur = next;
     }
-    fa->head = NULL;
-    fa->tail = NULL;
+    free(*fa);
+    *fa = NULL;
     return 0;
 }
 
 static inline int posix_spawn_file_actions_addopen(
     posix_spawn_file_actions_t *fa, int fd, const char *path,
     int oflag, mode_t mode) {
-    if (fa == NULL || path == NULL || fd < 0) { errno = EINVAL; return -1; }
+    if (fa == NULL || *fa == NULL || path == NULL || fd < 0) { errno = EINVAL; return -1; }
     __ndk_fa_node *node = (__ndk_fa_node *)malloc(sizeof(__ndk_fa_node));
     if (node == NULL) return -1;
     node->path = __ndk_strdup(path);
@@ -172,18 +202,18 @@ static inline int posix_spawn_file_actions_addopen(
     node->mode  = mode;
     node->src_fd = -1;
     node->next  = NULL;
-    if (fa->tail == NULL) {
-        fa->head = fa->tail = node;
+    if ((*fa)->tail == NULL) {
+        (*fa)->head = (*fa)->tail = node;
     } else {
-        fa->tail->next = node;
-        fa->tail = node;
+        (*fa)->tail->next = node;
+        (*fa)->tail = node;
     }
     return 0;
 }
 
 static inline int posix_spawn_file_actions_addclose(
     posix_spawn_file_actions_t *fa, int fd) {
-    if (fa == NULL || fd < 0) { errno = EINVAL; return -1; }
+    if (fa == NULL || *fa == NULL || fd < 0) { errno = EINVAL; return -1; }
     __ndk_fa_node *node = (__ndk_fa_node *)malloc(sizeof(__ndk_fa_node));
     if (node == NULL) return -1;
     node->type  = 1;
@@ -191,18 +221,18 @@ static inline int posix_spawn_file_actions_addclose(
     node->path  = NULL;
     node->src_fd = -1;
     node->next  = NULL;
-    if (fa->tail == NULL) {
-        fa->head = fa->tail = node;
+    if ((*fa)->tail == NULL) {
+        (*fa)->head = (*fa)->tail = node;
     } else {
-        fa->tail->next = node;
-        fa->tail = node;
+        (*fa)->tail->next = node;
+        (*fa)->tail = node;
     }
     return 0;
 }
 
 static inline int posix_spawn_file_actions_adddup2(
     posix_spawn_file_actions_t *fa, int fd, int newfd) {
-    if (fa == NULL || fd < 0 || newfd < 0) { errno = EINVAL; return -1; }
+    if (fa == NULL || *fa == NULL || fd < 0 || newfd < 0) { errno = EINVAL; return -1; }
     __ndk_fa_node *node = (__ndk_fa_node *)malloc(sizeof(__ndk_fa_node));
     if (node == NULL) return -1;
     node->type   = 2;
@@ -210,11 +240,11 @@ static inline int posix_spawn_file_actions_adddup2(
     node->src_fd = fd;     /* source      */
     node->path   = NULL;
     node->next   = NULL;
-    if (fa->tail == NULL) {
-        fa->head = fa->tail = node;
+    if ((*fa)->tail == NULL) {
+        (*fa)->head = (*fa)->tail = node;
     } else {
-        fa->tail->next = node;
-        fa->tail = node;
+        (*fa)->tail->next = node;
+        (*fa)->tail = node;
     }
     return 0;
 }
@@ -229,8 +259,8 @@ static inline void __ndk_spawn_child(const char *path,
     char *const argv[], char *const envp[]) {
 
     /* 1. Apply file actions. */
-    if (fa != NULL) {
-        for (const __ndk_fa_node *n = fa->head; n != NULL; n = n->next) {
+    if (fa != NULL && *fa != NULL) {
+        for (const __ndk_fa_node *n = (*fa)->head; n != NULL; n = n->next) {
             switch (n->type) {
             case 0: { /* open */
                 int f = open(n->path, n->oflag, n->mode);
@@ -252,30 +282,30 @@ static inline void __ndk_spawn_child(const char *path,
     }
 
     /* 2. Apply attributes. */
-    if (attrp != NULL) {
-        if (attrp->flags & POSIX_SPAWN_RESETIDS) {
+    if (attrp != NULL && *attrp != NULL) {
+        if ((*attrp)->flags & POSIX_SPAWN_RESETIDS) {
             /* Best-effort: bionic may ignore these (no-op on typical
              * Android kernels), but try for correctness. */
             (void)setegid(getgid());
             (void)seteuid(getuid());
         }
-        if (attrp->flags & POSIX_SPAWN_SETPGROUP)
-            (void)setpgid(0, attrp->pgroup);
-        if (attrp->flags & POSIX_SPAWN_SETSIGMASK)
-            pthread_sigmask(SIG_SETMASK, &attrp->sigmask, NULL);
-        if (attrp->flags & POSIX_SPAWN_SETSIGDEF) {
+        if ((*attrp)->flags & POSIX_SPAWN_SETPGROUP)
+            (void)setpgid(0, (*attrp)->pgroup);
+        if ((*attrp)->flags & POSIX_SPAWN_SETSIGMASK)
+            pthread_sigmask(SIG_SETMASK, &(*attrp)->sigmask, NULL);
+        if ((*attrp)->flags & POSIX_SPAWN_SETSIGDEF) {
             struct sigaction sa;
             memset(&sa, 0, sizeof(sa));
             sa.sa_handler = SIG_DFL;
             for (int sig = 1; sig < NSIG; sig++) {
-                if (sigismember(&attrp->sigdefault, sig))
+                if (sigismember(&(*attrp)->sigdefault, sig))
                     (void)sigaction(sig, &sa, NULL);
             }
         }
-        if (attrp->flags & POSIX_SPAWN_SETSCHEDPARAM)
-            (void)sched_setparam(0, &attrp->schedparam);
-        if (attrp->flags & POSIX_SPAWN_SETSCHEDULER)
-            (void)sched_setscheduler(0, attrp->schedpolicy, &attrp->schedparam);
+        if ((*attrp)->flags & POSIX_SPAWN_SETSCHEDPARAM)
+            (void)sched_setparam(0, &(*attrp)->schedparam);
+        if ((*attrp)->flags & POSIX_SPAWN_SETSCHEDULER)
+            (void)sched_setscheduler(0, (*attrp)->schedpolicy, &(*attrp)->schedparam);
     }
 
     /* 3. Execute; _exit(127) on failure. */
@@ -317,8 +347,8 @@ static inline int posix_spawnp(pid_t *pid, const char *file,
 
     if (child == 0) {
         /* Apply file_actions and attrs first, then exec with PATH search. */
-        if (file_actions != NULL) {
-            for (const __ndk_fa_node *n = file_actions->head; n != NULL; n = n->next) {
+        if (file_actions != NULL && *file_actions != NULL) {
+            for (const __ndk_fa_node *n = (*file_actions)->head; n != NULL; n = n->next) {
                 switch (n->type) {
                 case 0: {
                     int f = open(n->path, n->oflag, n->mode);
@@ -331,27 +361,27 @@ static inline int posix_spawnp(pid_t *pid, const char *file,
                 }
             }
         }
-        if (attrp != NULL) {
-            if (attrp->flags & POSIX_SPAWN_RESETIDS) {
+        if (attrp != NULL && *attrp != NULL) {
+            if ((*attrp)->flags & POSIX_SPAWN_RESETIDS) {
                 (void)setegid(getgid());
                 (void)seteuid(getuid());
             }
-            if (attrp->flags & POSIX_SPAWN_SETPGROUP)
-                (void)setpgid(0, attrp->pgroup);
-            if (attrp->flags & POSIX_SPAWN_SETSIGMASK)
-                pthread_sigmask(SIG_SETMASK, &attrp->sigmask, NULL);
-            if (attrp->flags & POSIX_SPAWN_SETSIGDEF) {
+            if ((*attrp)->flags & POSIX_SPAWN_SETPGROUP)
+                (void)setpgid(0, (*attrp)->pgroup);
+            if ((*attrp)->flags & POSIX_SPAWN_SETSIGMASK)
+                pthread_sigmask(SIG_SETMASK, &(*attrp)->sigmask, NULL);
+            if ((*attrp)->flags & POSIX_SPAWN_SETSIGDEF) {
                 struct sigaction sa;
                 memset(&sa, 0, sizeof(sa));
                 sa.sa_handler = SIG_DFL;
                 for (int sig = 1; sig < NSIG; sig++)
-                    if (sigismember(&attrp->sigdefault, sig))
+                    if (sigismember(&(*attrp)->sigdefault, sig))
                         (void)sigaction(sig, &sa, NULL);
             }
-            if (attrp->flags & POSIX_SPAWN_SETSCHEDPARAM)
-                (void)sched_setparam(0, &attrp->schedparam);
-            if (attrp->flags & POSIX_SPAWN_SETSCHEDULER)
-                (void)sched_setscheduler(0, attrp->schedpolicy, &attrp->schedparam);
+            if ((*attrp)->flags & POSIX_SPAWN_SETSCHEDPARAM)
+                (void)sched_setparam(0, &(*attrp)->schedparam);
+            if ((*attrp)->flags & POSIX_SPAWN_SETSCHEDULER)
+                (void)sched_setscheduler(0, (*attrp)->schedpolicy, &(*attrp)->schedparam);
         }
         execvp(file, argv);
         _exit(127);
