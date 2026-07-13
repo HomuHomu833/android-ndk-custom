@@ -456,13 +456,14 @@ MODULE_BUILDTYPE=static
     # ffi.h is absent, which it always is since libffi is never built.)
     args+=( py_cv_module__ctypes_test=n/a )
     case "$PLATFORM" in
-      bionic) # grp: bionic exports getgrent/setgrent/endgrent only from API 26,
-              # so mark it n/a below 26 (grpmodule.c won't compile/link).
+      bionic) # grp/pwd: bionic exports getgrent/setpwent only from API 26,
+              # so mark them n/a below 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
+              local pwdna=""; [ "$API" -lt 26 ] && pwdna="py_cv_module_pwd=n/a"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static"
-                      $grpna ) ;;
+                      $grpna $pwdna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       LDFLAGS="$CROSS_LDFLAGS" ) ;;
