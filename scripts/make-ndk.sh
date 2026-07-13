@@ -425,10 +425,14 @@ MODULE_BUILDTYPE=static
     case "$PLATFORM" in
       bionic) # grp: bionic exports getgrent/setgrent/endgrent only from API 26,
               # so mark it n/a below 26 (grpmodule.c won't compile/link).
+              # sem_clockwait.h: implements sem_clockwait for API < 30 (configure
+              # enables HAVE_SEM_CLOCKWAIT but bionic only ships it from API 30).
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
+              local semcw="-include $ROOT/patches/bionic/sem_clockwait.h"
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
                       LDFLAGS="-static"
+                      CFLAGS="$semcw" CXXFLAGS="$semcw"
                       $grpna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
