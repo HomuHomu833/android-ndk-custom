@@ -356,6 +356,19 @@ build_python() {
       grep -rl 'close_range(' Python Modules 2>/dev/null | while IFS= read -r f; do
         sed -i "s|#include \"Python.h\"|#include \"Python.h\"\n#include \"$cr\"|" "$f"
       done
+      # libc_compat: aggregate shim for ctermid, futimes, lutimes, fexecve,
+      # and posix_spawn.  Each function is either missing from bionic entirely
+      # (ctermid) or hidden from headers below its API level (futimes/lutimes
+      # at API<26, posix_spawn at API<28) or suppressed by CPython's _POSIX_C_SOURCE
+      # (fexecve).  Inject the compat header after Python.h in every file that
+      # references one of the affected functions.
+      lc="$ROOT/patches/bionic/libc_compat.h"
+      for fn in ctermid futimes lutimes fexecve posix_spawn; do
+        grep -rl "${fn}(" Python Modules 2>/dev/null | while IFS= read -r f; do
+          grep -qF "$lc" "$f" && continue
+          sed -i "s|#include \"Python.h\"|#include \"Python.h\"\n#include \"$lc\"|" "$f"
+        done
+      done
     fi
     # windows: regenerate configure from the patched configure.ac
     [ "$PLATFORM" = windows ] && autoreconf -vfi
