@@ -199,7 +199,7 @@ build_make() {
       bionic)  args+=( --disable-posix-spawn
                        CFLAGS="-Wno-error=implicit-function-declaration"
                        CXXFLAGS="-Wno-error=implicit-function-declaration"
-                       LDFLAGS="-static"
+                      LDFLAGS="-static -Wl,--undefined-version"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
       linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
