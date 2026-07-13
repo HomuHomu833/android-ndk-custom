@@ -556,8 +556,8 @@ assemble_unix() {
 
   # build cmp/echo before the replace loop (bionic needs the official clang the
   # loop later overwrites)
-  "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
-  "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
+  "$CROSS_CC" "$CROSS_CFLAGS" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
+  "$CROSS_CC" "$CROSS_CFLAGS" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
 
   # replace ELF tools with the rebuilt ones; convert bash shebangs; drop the rest
   find "$NDK_TOOLCHAIN/bin" -type f | while IFS= read -r file; do
@@ -928,8 +928,8 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   cp "$BUILD/yasm/build/bin/yasm.exe" "$NDK_TOOLCHAIN/bin"
   cp "$BUILD/yasm/build/bin/ytasm.exe" "$PREBUILT_BIN"
   cp "$BUILD/yasm/build/bin/vsyasm.exe" "$PREBUILT_BIN"
-  "$CROSS_CC" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
-  "$CROSS_CC" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
+  "$CROSS_CC" "$CROSS_CFLAGS" "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
+  "$CROSS_CC" "$CROSS_CFLAGS" "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
   # python3: python.exe at the python3/ root (ndk-build's Windows layout);
   # libpython3.11.dll and the winpthread runtime ride next to it.
   mkdir -p "$NDK_TOOLCHAIN/python3/lib"
