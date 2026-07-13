@@ -347,6 +347,15 @@ build_python() {
     if [ "$PLATFORM" = bionic ]; then
       cp "$ROOT/patches/bionic/sem_clockwait.h" Python/sem_clockwait.h
       sed -i '1i #include "sem_clockwait.h"' Python/thread_pthread.h
+      # close_range: bionic ships it from API 34, but configure enables
+      # HAVE_CLOSE_RANGE, so its callers (fileutils.c, _posixsubprocess.c) fail to
+      # compile below 34. Inject a syscall-backed impl right after each caller's
+      # Python.h (so it follows Python's feature macros). grep tracks the caller
+      # set across CPython versions.
+      cr="$ROOT/patches/bionic/close_range.h"
+      grep -rl 'close_range(' Python Modules 2>/dev/null | while IFS= read -r f; do
+        sed -i "s|#include \"Python.h\"|#include \"Python.h\"\n#include \"$cr\"|" "$f"
+      done
     fi
     # windows: regenerate configure from the patched configure.ac
     [ "$PLATFORM" = windows ] && autoreconf -vfi
