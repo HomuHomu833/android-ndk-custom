@@ -30,7 +30,7 @@ BUILD="${BUILD:-$ROOTDIR/build}"      # scratch for tool source trees (NOT the c
 
 NDK_NAME="android-ndk-r${NDK_VERSION}${NDK_REVISION}"
 NDK_TAG="ndk-r${NDK_VERSION}${NDK_REVISION}"
-MAKE_VERSION=4.4
+MAKE_VERSION=4.4.1
 LLVM_PKG="${LLVM_PKG:-bolt+clang+clang-tools-extra+lld}"
 SHADERC_BASE="https://android.googlesource.com/platform/external/shaderc"
 
@@ -189,8 +189,18 @@ build_make() {
     rm -rf make; mv "make-$MAKE_VERSION" make
     cd make
     if [ "$PLATFORM" = windows ]; then
+      # Verbatim from msys2/MINGW-packages mingw-w64-make, applied in its
+      # PKGBUILD's order (they target the make version that package builds).
       git init --quiet
-      for p in "$ROOT"/patches/windows/make/*.patch; do git apply "$p" || true; done
+      for p in make-linebuf-mingw.patch \
+               make-4.3_undef-HAVE_STRUCT_DIRENT_D_TYPE.patch \
+               005-fix-default-cxx.patch \
+               006-fix-build-with-gcc-15.patch \
+               007-fix-w32-printf-modifier.patch \
+               make-4.4-timestamps.patch \
+               make-4.2.1-Makefile.am-gcc-only-link-libgnumake-1.dll.a.patch; do
+        git apply "$ROOT/patches/windows/make/$p"
+      done
       rm -rf .git
     fi
     cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" build-aux/
@@ -278,6 +288,9 @@ build_shaderc() {
   ( cd "$SH" && fetch --dir=/tmp -o shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
   mkdir -p "$SH/third_party/spirv-tools"
   ( cd "$SH/third_party/spirv-tools" && fetch --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
+  # small_vector.h uses std::alignment_of/std::aligned_storage but never includes
+  # <type_traits> — it relied on a transitive include that newer libc++ dropped.
+  sed -i 's|#include <cassert>|#include <cassert>\n#include <type_traits>|' "$SH/third_party/spirv-tools/source/util/small_vector.h"
   if [ "$PLATFORM" = bsd ]; then
     # spirv-tools rejects unknown platforms; downgrade to a warning, assume Linux
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
