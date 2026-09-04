@@ -24,13 +24,6 @@ set -euo pipefail
 ROOTDIR="${ROOTDIR:-$PWD}"
 ROOT="$ROOTDIR"                       # repo assets: sources/ config/ patches/
 : "${PLATFORM:?set PLATFORM}" "${TARGET:?set TARGET}" "${NDK_VERSION:?set NDK_VERSION}"
-
-# zig target for the compiler wrappers. powerpc64le-linux-gnu needs an explicit
-# glibc >= 2.32: clang gives it IEEE-128 long double, so zig's libc++ calls
-# glibc's __snprintfieee128 / __fprintfieee128 / __vfprintfieee128, added in
-# 2.32. Without a version zig picks an older glibc and the link fails.
-ZIG_TRIPLE="$TARGET"
-if [ "$TARGET" = powerpc64le-linux-gnu ]; then ZIG_TRIPLE="powerpc64le-linux-gnu.2.32"; fi
 NDK_REVISION="${NDK_REVISION:-}"
 REPO_OWNER="${REPO_OWNER:-HomuHomu833}"
 BUILD="${BUILD:-$ROOTDIR/build}"      # scratch for tool source trees (NOT the checkout root)
@@ -118,7 +111,10 @@ setup_toolchain() {
       CROSS_LDFLAGS="-static"
       ;;
     linux)
-      TC=/opt/zig-as-llvm; export ZIG_TARGET="$ZIG_TRIPLE"
+      TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
+      # ppc64le glibc: clang's IEEE-128 long double makes libc++ call
+      # glibc's __*ieee128 printf entries, which arrived in 2.32.
+      case "$TARGET" in powerpc64le-*-gnu*) export ZIG_TARGET="$TARGET.2.32" ;; esac
       # overlay the musl libc source fixes onto zig's bundled musl (lib is a+w)
       [ -d "$ROOT/patches/musl/zig" ] && cp -R "$ROOT/patches/musl/zig/." /opt/zig/ || true
       CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
@@ -130,7 +126,10 @@ setup_toolchain() {
       esac
       ;;
     bsd)
-      TC=/opt/zig-as-llvm; export ZIG_TARGET="$ZIG_TRIPLE"
+      TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
+      # ppc64le glibc: clang's IEEE-128 long double makes libc++ call
+      # glibc's __*ieee128 printf entries, which arrived in 2.32.
+      case "$TARGET" in powerpc64le-*-gnu*) export ZIG_TARGET="$TARGET.2.32" ;; esac
       CROSS_CC="$TC/bin/cc"; CROSS_CXX="$TC/bin/c++"; CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/ar"
       CROSS_RANLIB="$TC/bin/ranlib"; CROSS_STRIP="$TC/bin/strip"; CROSS_OBJCOPY="$TC/bin/objcopy"
       NDK_HOST=linux-x86_64; SYSTEM_NAME="$(bsd_system_name)"
