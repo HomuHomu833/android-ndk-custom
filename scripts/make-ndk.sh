@@ -30,8 +30,6 @@ BUILD="${BUILD:-$ROOTDIR/build}"      # scratch for tool source trees (NOT the c
 
 NDK_NAME="android-ndk-r${NDK_VERSION}${NDK_REVISION}"
 NDK_TAG="ndk-r${NDK_VERSION}${NDK_REVISION}"
-# windows tracks the msys2 mingw-w64-make patch set, which targets the 4.4.1 that
-# package builds; every other platform builds make unpatched, so it stays on 4.4.
 if [ "$PLATFORM" = windows ]; then MAKE_VERSION=4.4.1; else MAKE_VERSION=4.4; fi
 LLVM_PKG="${LLVM_PKG:-bolt+clang+clang-tools-extra+lld}"
 SHADERC_BASE="https://android.googlesource.com/platform/external/shaderc"
@@ -191,7 +189,6 @@ build_make() {
     rm -rf make; mv "make-$MAKE_VERSION" make
     cd make
     if [ "$PLATFORM" = windows ]; then
-      # Verbatim from msys2/MINGW-packages mingw-w64-make, in its PKGBUILD's order.
       git init --quiet
       for p in make-linebuf-mingw.patch \
                make-4.3_undef-HAVE_STRUCT_DIRENT_D_TYPE.patch \
