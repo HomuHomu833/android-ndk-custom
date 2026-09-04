@@ -25,6 +25,7 @@ jobs:
       platform: linux
       version: ${{ inputs.version }}
       revision: ${{ inputs.revision }}
+      # loongarch32-linux-gnu, loongarch32-linux-gnusf
       targets: >-
         ["aarch64-linux-musl", "aarch64-linux-gnu", "aarch64_be-linux-gnu",
          "aarch64_be-linux-musl", "arm-linux-gnueabi", "arm-linux-gnueabihf",
@@ -32,8 +33,7 @@ jobs:
          "armeb-linux-gnueabihf", "armeb-linux-musleabi", "armeb-linux-musleabihf",
          "hexagon-linux-musl", "loongarch64-linux-gnu", "loongarch64-linux-musl",
          "loongarch64-linux-muslf32", "loongarch64-linux-gnusf",
-         "loongarch64-linux-muslsf", "loongarch32-linux-gnu",
-         "loongarch32-linux-gnusf", "mips-linux-gnueabi",
+         "loongarch64-linux-muslsf", "mips-linux-gnueabi",
          "mips-linux-gnueabihf", "mips-linux-musleabi", "mips-linux-musleabihf",
          "mips64-linux-gnuabin32", "mips64-linux-gnuabi64",
          "mips64-linux-muslabin32", "mips64-linux-muslabi64",
