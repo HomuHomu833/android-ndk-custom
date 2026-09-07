@@ -394,10 +394,18 @@ build_pydeps() {
   fi
 
   if [ ! -f "$PYDEPS/lib/libffi.a" ]; then
-    # libffi's configure.host matches i?86, so our x86-* triples ("x86-unknown-
-    # linux-gnu" after config.sub) are read as an unported CPU.
-    local ffi_host="$TARGET"
-    case "$TARGET" in x86-*) ffi_host="i686-${TARGET#x86-}" ;; esac
+    # libffi matches configure.host against <cpu>-<vendor>-<os>, which neither
+    # of our triple shapes gives it:
+    #   x86-*             its table matches i?86, never a bare "x86"
+    #   <cpu>-<os>-none   leaves "none" in the OS slot, so *-freebsd* etc. miss
+    # Rewrite to the form its table expects. Everything else passes through.
+    local ffi_host ffi_cpu ffi_os
+    ffi_cpu="${TARGET%%-*}"
+    [ "$ffi_cpu" = x86 ] && ffi_cpu=i686
+    case "$TARGET" in
+      *-none) ffi_os="$(echo "$TARGET" | cut -d- -f2)"; ffi_host="$ffi_cpu-unknown-$ffi_os" ;;
+      *)      ffi_host="$ffi_cpu-${TARGET#*-}" ;;
+    esac
     # _ctypes is optional, and libffi does not build everywhere: it has no
     # hexagon port at all, and its loongarch64 assembly does not assemble for
     # the f32/sf ABI variants. Let those targets ship without _ctypes rather
