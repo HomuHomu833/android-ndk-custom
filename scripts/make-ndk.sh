@@ -585,10 +585,15 @@ MODULE_BUILDTYPE=static
     args+=( ZLIB_CFLAGS="-I$PYDEPS/include"    ZLIB_LIBS="-L$PYDEPS/lib -lz"
             BZIP2_CFLAGS="-I$PYDEPS/include"   BZIP2_LIBS="-L$PYDEPS/lib -lbz2"
             LIBLZMA_CFLAGS="$lzma_cf"          LIBLZMA_LIBS="-L$PYDEPS/lib -llzma" )
-    # _ctypes has no such pair: configure only exports LIBFFI_INCLUDEDIR (from
-    # pkg-config, which we disable) and setup.py finds ffi.h through it. The
-    # -L has to go on LDFLAGS since setup.py just adds -lffi.
-    args+=( LIBFFI_INCLUDEDIR="$PYDEPS/include" )
+    # _ctypes has no such pair, and LIBFFI_INCLUDEDIR cannot be passed in:
+    # configure assigns it unconditionally from pkg-config, which we disable,
+    # so any value we hand it is overwritten with "". setup.py's fallback is
+    # find_file('ffi.h', self.inc_dirs) plus find_library_file(self.lib_dirs,
+    # 'ffi'), and add_ldflags_cppflags() builds both of those from the CPPFLAGS
+    # -I and LDFLAGS -L recorded in the Makefile. The -L is already there, so
+    # this supplies the matching -I. $PYDEPS holds only our own cross-built
+    # headers, so it cannot pull anything of the host's in.
+    args+=( CPPFLAGS="-I$PYDEPS/include" )
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
