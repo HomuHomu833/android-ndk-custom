@@ -17,8 +17,8 @@
 #   REPO_OWNER  GitHub owner for the llvm-custom release download (default HomuHomu833)
 #   EXTRA_CMAKE_FLAGS  optional extra -D flags for the cmake (shaderc) configure
 #
-# Build make/yasm/shaderc/python, fetch the llvm-custom toolchain, splice into the
-# official NDK, then archive (xz; 7z for windows).
+# Build make/yasm/shaderc/python (and python's static deps), fetch the llvm-custom
+# toolchain, splice into the official NDK, then archive (xz; 7z for windows).
 set -euo pipefail
 
 ROOTDIR="${ROOTDIR:-$PWD}"
@@ -334,18 +334,16 @@ build_shaderc() {
 }
 
 # --- CPython dependencies ---------------------------------------------------
-# Static archives cross-built into $PYDEPS so CPython can build the modules the
-# official NDK ships that we otherwise lack: zlib and _bz2 (linux), _ctypes
-# (linux/windows) and _lzma (windows). Nothing here is found automatically --
-# PKG_CONFIG=/bin/false (see build_python) deliberately stops the host's copies
-# leaking into a cross build -- so each is wired up explicitly below.
+# Static archives cross-built into $PYDEPS for the modules the official NDK
+# ships and we otherwise lack: zlib, _bz2, _lzma, _ctypes and _uuid. Nothing
+# here is found automatically -- PKG_CONFIG=/bin/false (see build_python) keeps
+# the host's copies out of a cross build -- so each is wired up explicitly.
 #
-# Not attempted: nis, which the official linux build has and we cannot match.
-# zig ships rpcsvc/yp_prot.h only for freebsd and netbsd, never for glibc or
-# musl, so there is no header to build it against on any linux target.
+# Not attempted: nis. zig ships rpcsvc/yp_prot.h only for freebsd and netbsd,
+# never for glibc or musl, so there is no header to build it against.
 PYDEPS="$BUILD/pydeps"
 build_pydeps() {
-  log "Building CPython deps (zlib, bzip2, xz, libffi) for $TARGET"
+  log "Building CPython deps (zlib, bzip2, xz, libffi, libuuid) for $TARGET"
   mkdir -p "$PYDEPS/include" "$PYDEPS/lib"
   # -fno-sanitize=undefined: these are prebuilt archives, so the ubsan runtime
   # is never linked in and __ubsan_handle_* would be left undefined.
@@ -406,10 +404,9 @@ build_pydeps() {
       *-none) ffi_os="$(echo "$TARGET" | cut -d- -f2)"; ffi_host="$ffi_cpu-unknown-$ffi_os" ;;
       *)      ffi_host="$ffi_cpu-${TARGET#*-}" ;;
     esac
-    # _ctypes is optional, and libffi does not build everywhere: it has no
-    # hexagon port at all, and its loongarch64 assembly does not assemble for
-    # the f32/sf ABI variants. Let those targets ship without _ctypes rather
-    # than failing the whole NDK.
+    # libffi has no hexagon port, and its loongarch64 assembly rejects the
+    # f32/sf ABI variants. Those targets ship without _ctypes rather than
+    # failing the whole NDK.
     ( cd "$BUILD"
       fetch --dir=/tmp -o libffi.tar.gz https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz \
         && gzip -d < /tmp/libffi.tar.gz | tar -x && rm /tmp/libffi.tar.gz
@@ -424,10 +421,8 @@ build_pydeps() {
       : ) || log "libffi did not build for $TARGET; _ctypes will be absent"
   fi
 
-  # libuuid, for _uuid on linux and bionic only: BSD and macOS already get the
-  # module from libc (uuid.h + uuid_create), and windows uses rpcrt4. CPython
-  # needs uuid/uuid.h and uuid_generate_time; util-linux is where both live.
-  # Optional like libffi, so a target that will not build it still ships.
+  # libuuid: linux and bionic only -- BSD and macOS get _uuid from libc
+  # (uuid_create), windows from rpcrt4. Optional like libffi.
   case "$PLATFORM" in
     linux|bionic)
       if [ ! -f "$PYDEPS/lib/libuuid.a" ]; then
@@ -501,12 +496,10 @@ build_python() {
         done
       done
     fi
-    # windows: _uuid needs no library there -- Modules/_uuidmodule.c wraps
-    # rpcrt4's UuidCreate under MS_WINDOWS -- but configure only ever sets
-    # have_uuid from a libuuid/BSD-uuid.h probe, so the module is reported
-    # missing on mingw. Seed the answer just before the module is considered.
-    # (py_cv_module__uuid is no use here: PY_STDLIB_MOD overwrites any value
-    # other than n/a, so that knob can only disable a module, never enable one.)
+    # windows: _uuidmodule.c wraps rpcrt4's UuidCreate, but configure sets
+    # have_uuid only from a libuuid/BSD-uuid.h probe, so the module is reported
+    # missing. Seed the answer instead; py_cv_module__uuid cannot do it, since
+    # PY_STDLIB_MOD overwrites any value but n/a.
     if [ "$PLATFORM" = windows ]; then
       sed -i 's|^PY_STDLIB_MOD(\[_uuid\],|have_uuid=yes\nLIBUUID_LIBS="-lrpcrt4"\nPY_STDLIB_MOD([_uuid],|' configure.ac
       grep -q '^LIBUUID_LIBS="-lrpcrt4"' configure.ac \
@@ -594,8 +587,7 @@ MODULE_BUILDTYPE=static
       args+=( --disable-shared --disable-ipv6 LDSHARED="$CROSS_CC -shared -fPIC"
               _PYTHON_HOST_PLATFORM="$TARGET" )
     fi
-    # _ctypes_test: test-only, unused. (_ctypes has no knob; it self-skips when
-    # ffi.h is absent, which it always is since libffi is never built.)
+    # _ctypes_test: test-only, unused.
     args+=( py_cv_module__ctypes_test=n/a )
     # zlib/_bz2/_lzma: configure's pkg-config fallback reads these pairs, so the
     # archives build_pydeps made are picked up without anything reaching the
@@ -607,22 +599,15 @@ MODULE_BUILDTYPE=static
             BZIP2_CFLAGS="-I$PYDEPS/include"   BZIP2_LIBS="-L$PYDEPS/lib -lbz2"
             LIBLZMA_CFLAGS="$lzma_cf"          LIBLZMA_LIBS="-L$PYDEPS/lib -llzma" )
     # _ctypes has no such pair, and LIBFFI_INCLUDEDIR cannot be passed in:
-    # configure assigns it unconditionally from pkg-config, which we disable,
-    # so any value we hand it is overwritten with "". setup.py's fallback is
-    # find_file('ffi.h', self.inc_dirs) plus find_library_file(self.lib_dirs,
-    # 'ffi'), and add_ldflags_cppflags() builds both of those from the CPPFLAGS
-    # -I and LDFLAGS -L recorded in the Makefile. The -L is already there, so
-    # this supplies the matching -I. $PYDEPS holds only our own cross-built
-    # headers, so it cannot pull anything of the host's in.
+    # configure overwrites it from the (disabled) pkg-config. setup.py falls
+    # back to searching inc_dirs/lib_dirs, which it builds from the Makefile's
+    # CPPFLAGS -I and LDFLAGS -L. The -L is already there; supply the -I.
     args+=( CPPFLAGS="-I$PYDEPS/include" )
-    # _uuid needs no vars of its own, and must not be given any: setting both
-    # LIBUUID_CFLAGS and LIBUUID_LIBS makes PKG_CHECK_MODULES skip pkg-config
-    # and take its found branch, which defines HAVE_UUID_H -- the BSD spelling.
-    # _uuidmodule.c then includes <uuid.h>, which util-linux does not install,
-    # and the build dies on a header that was never there. Left unset,
-    # pkg-config fails as intended and the fallback checks uuid/uuid.h against
-    # CPPFLAGS and uuid_generate_time against LDFLAGS, both already pointing at
-    # $PYDEPS, and defines HAVE_UUID_UUID_H instead.
+    # _uuid gets no vars on purpose: setting both LIBUUID_CFLAGS and
+    # LIBUUID_LIBS makes PKG_CHECK_MODULES take its found branch, which defines
+    # HAVE_UUID_H -- the BSD spelling, a header util-linux does not install.
+    # Left unset, the fallback probes uuid/uuid.h and uuid_generate_time against
+    # the CPPFLAGS/LDFLAGS above and defines HAVE_UUID_UUID_H instead.
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
