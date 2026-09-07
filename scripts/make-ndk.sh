@@ -464,6 +464,17 @@ build_python() {
         done
       done
     fi
+    # windows: _uuid needs no library there -- Modules/_uuidmodule.c wraps
+    # rpcrt4's UuidCreate under MS_WINDOWS -- but configure only ever sets
+    # have_uuid from a libuuid/BSD-uuid.h probe, so the module is reported
+    # missing on mingw. Seed the answer just before the module is considered.
+    # (py_cv_module__uuid is no use here: PY_STDLIB_MOD overwrites any value
+    # other than n/a, so that knob can only disable a module, never enable one.)
+    if [ "$PLATFORM" = windows ]; then
+      sed -i 's|^PY_STDLIB_MOD(\[_uuid\],|have_uuid=yes\nLIBUUID_LIBS="-lrpcrt4"\nPY_STDLIB_MOD([_uuid],|' configure.ac
+      grep -q '^LIBUUID_LIBS="-lrpcrt4"' configure.ac \
+        || { echo "_uuid: PY_STDLIB_MOD([_uuid], ...) not found in configure.ac" >&2; exit 1; }
+    fi
     # windows: regenerate configure from the patched configure.ac
     [ "$PLATFORM" = windows ] && autoreconf -vfi
     # newer config.sub/config.guess (exotic triples); after autoreconf, which
