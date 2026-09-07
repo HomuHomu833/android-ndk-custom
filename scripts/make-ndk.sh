@@ -423,6 +423,27 @@ build_pydeps() {
       for h in "$PYDEPS"/lib/libffi-*/include/*.h; do [ -f "$h" ] && cp -f "$h" "$PYDEPS/include/"; done
       : ) || log "libffi did not build for $TARGET; _ctypes will be absent"
   fi
+
+  # libuuid, for _uuid on linux and bionic only: BSD and macOS already get the
+  # module from libc (uuid.h + uuid_create), and windows uses rpcrt4. CPython
+  # needs uuid/uuid.h and uuid_generate_time; util-linux is where both live.
+  # Optional like libffi, so a target that will not build it still ships.
+  case "$PLATFORM" in
+    linux|bionic)
+      if [ ! -f "$PYDEPS/lib/libuuid.a" ]; then
+        ( cd "$BUILD"
+          fetch --dir=/tmp -o util-linux.tar.xz https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.39/util-linux-2.39.3.tar.xz \
+            && xz -d < /tmp/util-linux.tar.xz | tar -x && rm /tmp/util-linux.tar.xz
+          cd util-linux-2.39.3
+          cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" config/
+          ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$TARGET" \
+            --disable-shared --enable-static --disable-all-programs --enable-libuuid \
+            --disable-nls --without-python --without-systemd --without-udev \
+            CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" CFLAGS="$dcf"
+          make -j"$(ncpu)" install ) \
+        || log "libuuid did not build for $TARGET; _uuid will be absent"
+      fi ;;
+  esac
 }
 
 # --- CPython (cross-compiled for every host, windows included) --------------
@@ -594,6 +615,14 @@ MODULE_BUILDTYPE=static
     # this supplies the matching -I. $PYDEPS holds only our own cross-built
     # headers, so it cannot pull anything of the host's in.
     args+=( CPPFLAGS="-I$PYDEPS/include" )
+    # _uuid on linux/bionic: configure's pkg-config fallback checks
+    # uuid/uuid.h and uuid_generate_time behind these two. Only set where
+    # build_pydeps actually builds libuuid -- BSD and macOS resolve _uuid from
+    # libc, and windows from rpcrt4, so pointing them here would be a lie.
+    case "$PLATFORM" in
+      linux|bionic) args+=( LIBUUID_CFLAGS="-I$PYDEPS/include"
+                            LIBUUID_LIBS="-L$PYDEPS/lib -luuid" ) ;;
+    esac
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
