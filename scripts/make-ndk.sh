@@ -603,11 +603,6 @@ MODULE_BUILDTYPE=static
     # back to searching inc_dirs/lib_dirs, which it builds from the Makefile's
     # CPPFLAGS -I and LDFLAGS -L. The -L is already there; supply the -I.
     args+=( CPPFLAGS="-I$PYDEPS/include" )
-    # _uuid gets no vars on purpose: setting both LIBUUID_CFLAGS and
-    # LIBUUID_LIBS makes PKG_CHECK_MODULES take its found branch, which defines
-    # HAVE_UUID_H -- the BSD spelling, a header util-linux does not install.
-    # Left unset, the fallback probes uuid/uuid.h and uuid_generate_time against
-    # the CPPFLAGS/LDFLAGS above and defines HAVE_UUID_UUID_H instead.
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
