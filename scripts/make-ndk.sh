@@ -615,14 +615,14 @@ MODULE_BUILDTYPE=static
     # this supplies the matching -I. $PYDEPS holds only our own cross-built
     # headers, so it cannot pull anything of the host's in.
     args+=( CPPFLAGS="-I$PYDEPS/include" )
-    # _uuid on linux/bionic: configure's pkg-config fallback checks
-    # uuid/uuid.h and uuid_generate_time behind these two. Only set where
-    # build_pydeps actually builds libuuid -- BSD and macOS resolve _uuid from
-    # libc, and windows from rpcrt4, so pointing them here would be a lie.
-    case "$PLATFORM" in
-      linux|bionic) args+=( LIBUUID_CFLAGS="-I$PYDEPS/include"
-                            LIBUUID_LIBS="-L$PYDEPS/lib -luuid" ) ;;
-    esac
+    # _uuid needs no vars of its own, and must not be given any: setting both
+    # LIBUUID_CFLAGS and LIBUUID_LIBS makes PKG_CHECK_MODULES skip pkg-config
+    # and take its found branch, which defines HAVE_UUID_H -- the BSD spelling.
+    # _uuidmodule.c then includes <uuid.h>, which util-linux does not install,
+    # and the build dies on a header that was never there. Left unset,
+    # pkg-config fails as intended and the fallback checks uuid/uuid.h against
+    # CPPFLAGS and uuid_generate_time against LDFLAGS, both already pointing at
+    # $PYDEPS, and defines HAVE_UUID_UUID_H instead.
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
