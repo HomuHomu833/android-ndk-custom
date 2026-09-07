@@ -333,6 +333,82 @@ build_shaderc() {
   cmake --build "$SH/build" --target install
 }
 
+# --- CPython dependencies ---------------------------------------------------
+# Static archives cross-built into $PYDEPS so CPython can build the modules the
+# official NDK ships that we otherwise lack: zlib and _bz2 (linux), _ctypes
+# (linux/windows) and _lzma (windows). Nothing here is found automatically --
+# PKG_CONFIG=/bin/false (see build_python) deliberately stops the host's copies
+# leaking into a cross build -- so each is wired up explicitly below.
+#
+# Not attempted: nis, which the official linux build has and we cannot match.
+# zig ships rpcsvc/yp_prot.h only for freebsd and netbsd, never for glibc or
+# musl, so there is no header to build it against on any linux target.
+PYDEPS="$BUILD/pydeps"
+build_pydeps() {
+  log "Building CPython deps (zlib, bzip2, xz, libffi) for $TARGET"
+  mkdir -p "$PYDEPS/include" "$PYDEPS/lib"
+  # -fno-sanitize=undefined: these are prebuilt archives, so the ubsan runtime
+  # is never linked in and __ubsan_handle_* would be left undefined.
+  # MIPS -mabicalls needs -fPIC (a clang warning otherwise trips zlib's configure).
+  local dcf="-fno-sanitize=undefined"
+  case "$TARGET" in mips*) dcf="-fPIC $dcf" ;; esac
+
+  if [ ! -f "$PYDEPS/lib/libz.a" ]; then
+    ( cd "$BUILD"
+      fetch --dir=/tmp -o zlib.tar.xz https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz \
+        && xz -d < /tmp/zlib.tar.xz | tar -x && rm /tmp/zlib.tar.xz
+      cd zlib-1.3.1
+      CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" CFLAGS="$dcf" \
+        ./configure --prefix="$PYDEPS" --static
+      make -j"$(ncpu)" install )
+  fi
+
+  if [ ! -f "$PYDEPS/lib/libbz2.a" ]; then
+    ( cd "$BUILD"
+      fetch --dir=/tmp -o bzip2.tar.gz https://www.sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz \
+        && gzip -d < /tmp/bzip2.tar.gz | tar -x && rm /tmp/bzip2.tar.gz
+      cd bzip2-1.0.8
+      make CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" CFLAGS="$dcf" libbz2.a
+      cp -f libbz2.a "$PYDEPS/lib/"; cp -f bzlib.h "$PYDEPS/include/" )
+  fi
+
+  if [ ! -f "$PYDEPS/lib/liblzma.a" ]; then
+    ( cd "$BUILD"
+      fetch --dir=/tmp -o xz.tar.gz https://github.com/tukaani-project/xz/releases/download/v5.4.5/xz-5.4.5.tar.gz \
+        && gzip -d < /tmp/xz.tar.gz | tar -x && rm /tmp/xz.tar.gz
+      cd xz-5.4.5
+      # xz's bundled config.sub predates several of our triples.
+      cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" build-aux/
+      # RC/WINDRES: liblzma builds a .rc resource on mingw, and without these
+      # libtool feeds compiler flags to the wrong tool ("libtool: error:
+      # unrecognised option: '-DHAVE_CONFIG_H'").
+      local rcargs=()
+      [ "$PLATFORM" = windows ] && rcargs=( RC="$TC/bin/${TARGET}-windres" WINDRES="$TC/bin/${TARGET}-windres" )
+      # liblzma only: the CLI tools need more of the host than we can give them.
+      ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$TARGET" \
+        --disable-shared --enable-static --disable-xz --disable-xzdec --disable-lzmadec \
+        --disable-lzmainfo --disable-lzma-links --disable-scripts --disable-doc --disable-nls \
+        CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" CFLAGS="$dcf" \
+        "${rcargs[@]}"
+      make -j"$(ncpu)" install )
+  fi
+
+  if [ ! -f "$PYDEPS/lib/libffi.a" ]; then
+    ( cd "$BUILD"
+      fetch --dir=/tmp -o libffi.tar.gz https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz \
+        && gzip -d < /tmp/libffi.tar.gz | tar -x && rm /tmp/libffi.tar.gz
+      cd libffi-3.4.6
+      cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" .
+      ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$TARGET" \
+        --disable-shared --enable-static --disable-docs --disable-multi-os-directory \
+        CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" CFLAGS="$dcf"
+      make -j"$(ncpu)" install
+      # libffi installs its headers under lib/libffi-*/include on some layouts.
+      for h in "$PYDEPS"/lib/libffi-*/include/*.h; do [ -f "$h" ] && cp -f "$h" "$PYDEPS/include/"; done
+      : )
+  fi
+}
+
 # --- CPython (cross-compiled for every host, windows included) --------------
 # windows builds the msys2-contrib cpython-mingw fork (vanilla CPython can't
 # build under mingw); every other host uses the upstream tarball.
@@ -473,6 +549,19 @@ MODULE_BUILDTYPE=static
     # _ctypes_test: test-only, unused. (_ctypes has no knob; it self-skips when
     # ffi.h is absent, which it always is since libffi is never built.)
     args+=( py_cv_module__ctypes_test=n/a )
+    # zlib/_bz2/_lzma: configure's pkg-config fallback reads these pairs, so the
+    # archives build_pydeps made are picked up without anything reaching the
+    # global CPPFLAGS. LZMA_API_STATIC: on windows lzma.h decorates its API
+    # __declspec(dllimport) unless told the library is static.
+    local lzma_cf="-I$PYDEPS/include"
+    [ "$PLATFORM" = windows ] && lzma_cf="$lzma_cf -DLZMA_API_STATIC"
+    args+=( ZLIB_CFLAGS="-I$PYDEPS/include"    ZLIB_LIBS="-L$PYDEPS/lib -lz"
+            BZIP2_CFLAGS="-I$PYDEPS/include"   BZIP2_LIBS="-L$PYDEPS/lib -lbz2"
+            LIBLZMA_CFLAGS="$lzma_cf"          LIBLZMA_LIBS="-L$PYDEPS/lib -llzma" )
+    # _ctypes has no such pair: configure only exports LIBFFI_INCLUDEDIR (from
+    # pkg-config, which we disable) and setup.py finds ffi.h through it. The
+    # -L has to go on LDFLAGS since setup.py just adds -lffi.
+    args+=( LIBFFI_INCLUDEDIR="$PYDEPS/include" )
     case "$PLATFORM" in
       bionic) # grp/pwd n/a below API 26.
               local grpna=""; [ "$API" -lt 26 ] && grpna="py_cv_module_grp=n/a"
@@ -488,11 +577,11 @@ MODULE_BUILDTYPE=static
               esac
               args+=( TOOLCHAIN="$TC" API="$API"
                       LD_LIBRARY_PATH="$TC/sysroot/usr/lib/$TARGET"
-                      LDFLAGS="-static $ndk_vs"
+                      LDFLAGS="-L$PYDEPS/lib -static $ndk_vs"
                       $grpna $pwdna $testna ) ;;
       linux)   args+=( CFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-Wno-error=date-time $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS" ) ;;
+                      LDFLAGS="-L$PYDEPS/lib $CROSS_LDFLAGS" ) ;;
       bsd)    # -fPIC: configure omits CCSHARED for the "unknown" platform tag,
               # so the shared stdlib .so fail to link (R_AARCH64_* "recompile
               # with -fPIC"); build everything PIC. OpenBSD: -D_BSD_SOURCE
@@ -502,13 +591,13 @@ MODULE_BUILDTYPE=static
               if [ "$SYSTEM_NAME" = OpenBSD ]; then obsd="-D_BSD_SOURCE"; nisna="py_cv_module_nis=n/a"; fi
               args+=( CFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
                       CXXFLAGS="-fPIC -Wno-error=date-time $obsd $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS" $nisna ) ;;
+                      LDFLAGS="-L$PYDEPS/lib $CROSS_LDFLAGS" $nisna ) ;;
       macos)  # _DARWIN_C_SOURCE: expose BSD extensions masked by _POSIX_C_SOURCE.
               # LDSHARED -bundle -undefined dynamic_lookup: defer Python API
               # symbols to the interpreter at dlopen().
               args+=( CFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
                       CXXFLAGS="-D_DARWIN_C_SOURCE -Wno-error=date-time $CROSS_CFLAGS"
-                      LDFLAGS="$CROSS_LDFLAGS"
+                      LDFLAGS="-L$PYDEPS/lib $CROSS_LDFLAGS"
                       LDSHARED="$CROSS_CC -bundle -undefined dynamic_lookup" ) ;;
       windows) # mingw shared interpreter. Static the compiler runtime so
                # python.exe/.dll don't drag in llvm-mingw DLLs; i686 wants
@@ -519,7 +608,7 @@ MODULE_BUILDTYPE=static
                args+=( --enable-shared
                        CFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
                        CXXFLAGS="-O2 -Wno-error=implicit-function-declaration -Wno-error=date-time -Wno-incompatible-pointer-types"
-                       LDFLAGS="-static-libstdc++ -static-libgcc$laa"
+                       LDFLAGS="-L$PYDEPS/lib -static-libstdc++ -static-libgcc$laa"
                        LDSHARED="$CROSS_CC -shared"
                        WINDRES="$TC/bin/${TARGET}-windres" ) ;;
     esac
@@ -984,6 +1073,7 @@ setup_toolchain
 build_make
 build_yasm
 build_shaderc
+build_pydeps
 build_python
 strip_deps
 fetch_llvm
