@@ -394,18 +394,26 @@ build_pydeps() {
   fi
 
   if [ ! -f "$PYDEPS/lib/libffi.a" ]; then
+    # libffi's configure.host matches i?86, so our x86-* triples ("x86-unknown-
+    # linux-gnu" after config.sub) are read as an unported CPU.
+    local ffi_host="$TARGET"
+    case "$TARGET" in x86-*) ffi_host="i686-${TARGET#x86-}" ;; esac
+    # _ctypes is optional, and libffi does not build everywhere: it has no
+    # hexagon port at all, and its loongarch64 assembly does not assemble for
+    # the f32/sf ABI variants. Let those targets ship without _ctypes rather
+    # than failing the whole NDK.
     ( cd "$BUILD"
       fetch --dir=/tmp -o libffi.tar.gz https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz \
         && gzip -d < /tmp/libffi.tar.gz | tar -x && rm /tmp/libffi.tar.gz
       cd libffi-3.4.6
       cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" .
-      ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$TARGET" \
+      ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$ffi_host" \
         --disable-shared --enable-static --disable-docs --disable-multi-os-directory \
         CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" CFLAGS="$dcf"
       make -j"$(ncpu)" install
       # libffi installs its headers under lib/libffi-*/include on some layouts.
       for h in "$PYDEPS"/lib/libffi-*/include/*.h; do [ -f "$h" ] && cp -f "$h" "$PYDEPS/include/"; done
-      : )
+      : ) || log "libffi did not build for $TARGET; _ctypes will be absent"
   fi
 }
 
