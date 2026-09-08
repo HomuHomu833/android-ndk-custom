@@ -33,7 +33,7 @@ This project is inspired by [Zongou’s build system](https://github.com/zongou/
 
 **Architectures**
 - **X86 Family**: `x86`, `x86_64`, `x32`
-- **ARM Family**: `armhf`, `armeb`, `aarch64`, `aarch64_be`
+- **ARM Family**: `arm`, `armeb`, `aarch64`, `aarch64_be`
 - **RISC-V**: `riscv32`, `riscv64`
 - **PowerPC**: `powerpc`, `powerpc64`, `powerpc64le`
 - **MIPS**: `mips`, `mipsel`, `mips64`, `mips64el`
