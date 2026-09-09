@@ -212,12 +212,12 @@ build_make() {
                  CC="$CROSS_CC" CXX="$CROSS_CXX" LD="$CROSS_LD" OBJCOPY="$CROSS_OBJCOPY" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP" )
     case "$PLATFORM" in
       bionic)  args+=( --disable-posix-spawn
-                       CFLAGS="-Wno-error=implicit-function-declaration"
-                       CXXFLAGS="-Wno-error=implicit-function-declaration"
+                       CFLAGS="-O2 -Wno-error=implicit-function-declaration"
+                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration"
                       LDFLAGS="-static -Wl,--undefined-version"
                        ac_cv_lib_elf_elf_begin=no am_cv_func_iconv=no ac_cv_func_pselect=yes ) ;;
-      linux)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
-                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+      linux)   args+=( CFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" )
 
         case "$TARGET" in
@@ -230,14 +230,14 @@ build_make() {
                        ac_cv_func_getloadavg=no ac_cv_have_decl_getloadavg=no) ;;
         esac
         ;;
-      bsd)     args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
-                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+      bsd)     args+=( CFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      macos)   args+=( CFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
-                       CXXFLAGS="-Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+      macos)   args+=( CFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
+                       CXXFLAGS="-O2 -Wno-error=incompatible-pointer-types $CROSS_CFLAGS"
                        LDFLAGS="$CROSS_LDFLAGS" ) ;;
-      windows) args+=( CFLAGS="-Wno-error=implicit-function-declaration"
-                       CXXFLAGS="-Wno-error=implicit-function-declaration" ) ;;
+      windows) args+=( CFLAGS="-O2 -Wno-error=implicit-function-declaration"
+                       CXXFLAGS="-O2 -Wno-error=implicit-function-declaration" ) ;;
     esac
     ./configure "${args[@]}"
     make -j"$(ncpu)" install
