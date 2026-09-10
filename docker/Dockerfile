@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
 # GitHub errors recover. make-ndk.sh defines an identical helper for standalone
 # runs.
 RUN printf '%s\n' '#!/bin/sh' \
-    'i=0; until aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 "$@"; do' \
+    'i=0; until aria2c --console-log-level=error --check-certificate=false --max-tries=5 --retry-wait=2 --connect-timeout=15 --allow-overwrite=true --auto-file-renaming=false "$@"; do' \
     '  i=$((i+1)); [ "$i" -ge 5 ] && { echo "fetch: giving up after $i attempts" >&2; exit 1; }' \
     '  echo "fetch: aria2c failed, retry $i/5 in 2s..." >&2; sleep 2' \
     'done' > /usr/local/bin/fetch && chmod +x /usr/local/bin/fetch

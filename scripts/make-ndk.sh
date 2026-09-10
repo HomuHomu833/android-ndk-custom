@@ -43,9 +43,50 @@ ncpu() { nproc 2>/dev/null || echo 4; }
 fetch() {
   local i=0
   until aria2c --console-log-level=error --check-certificate=false \
-               --max-tries=5 --retry-wait=2 --connect-timeout=15 "$@"; do
+               --max-tries=5 --retry-wait=2 --connect-timeout=15 \
+               --allow-overwrite=true --auto-file-renaming=false "$@"; do
     i=$((i + 1)); [ "$i" -ge 5 ] && { echo "fetch: giving up after $i attempts" >&2; return 1; }
     echo "fetch: aria2c failed, retry $i/5 in 2s..." >&2; sleep 2
+  done
+}
+
+# Unpack ARCHIVE into DEST, picking the tool from the extension.
+unpack() {
+  case "$1" in
+    *.tar.gz|*.tgz) tar -xzf "$1" -C "$2" ;;
+    *.tar.xz)       tar -xJf "$1" -C "$2" ;;
+    *.tar.bz2)      tar -xjf "$1" -C "$2" ;;
+    *.zip)          unzip -qq -o "$1" -d "$2" ;;
+    *) echo "unpack: don't know how to unpack $1" >&2; return 1 ;;
+  esac
+}
+
+# Download URL to ARCHIVE and unpack it into DEST (default: the current
+# directory), re-downloading when the unpack fails. ARCHIVE is removed on the
+# way out. Usage: fetch_unpack URL ARCHIVE [DEST]
+#
+# aria2c's own retries cannot see a truncated download. Endpoints that generate
+# archives on the fly -- gitiles' +archive, codeload -- stream them chunked with
+# no Content-Length (aria2 logs the size as "0B/0B"), so when the far end cuts
+# the stream short there is no expected size to compare against: aria2 prints
+# "(OK):download completed" and exits 0 on a 600KiB truncation of a 200MiB
+# archive, and the damage only surfaces further down as "gzip: stdin:
+# unexpected end of file". Unpacking is the only integrity check available, so
+# the retry has to wrap the download and the unpack together.
+fetch_unpack() {
+  local url="$1" archive="$2" dest="${3:-.}" i=0
+  mkdir -p "$dest"
+  while :; do
+    rm -f "$archive" "$archive.aria2"
+    if fetch --dir="$(dirname "$archive")" -o "$(basename "$archive")" "$url" \
+       && unpack "$archive" "$dest"; then
+      rm -f "$archive"
+      return 0
+    fi
+    i=$((i + 1))
+    [ "$i" -ge 5 ] && { echo "fetch_unpack: $url still incomplete after $i attempts" >&2; return 1; }
+    echo "fetch_unpack: $(basename "$archive") came down incomplete, retry $i/5 in $((5 * i))s..." >&2
+    sleep $((5 * i))
   done
 }
 
@@ -77,17 +118,13 @@ bsd_system_name() {
 download_official_ndk() {
   local base="https://dl.google.com/android/repository/${NDK_NAME}"
   log "Downloading official NDK (linux)"
-  fetch --dir="$BUILD" -o ndk-linux.zip "${base}-linux.zip"
-  unzip -qq "$BUILD/ndk-linux.zip" -d "$BUILD/ndk-linux"
-  rm -f "$BUILD/ndk-linux.zip"
+  fetch_unpack "${base}-linux.zip" "$BUILD/ndk-linux.zip" "$BUILD/ndk-linux"
   LINUX_NDK="$BUILD/ndk-linux/$NDK_NAME"
   NDK_LLVM_BIN="$LINUX_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
   if [ "$PLATFORM" = windows ]; then
     log "Downloading official NDK (windows)"
-    fetch --dir="$BUILD" -o ndk-windows.zip "${base}-windows.zip"
-    unzip -qq "$BUILD/ndk-windows.zip" -d "$ROOTDIR/ndk-windows"
-    rm -f "$BUILD/ndk-windows.zip"
+    fetch_unpack "${base}-windows.zip" "$BUILD/ndk-windows.zip" "$ROOTDIR/ndk-windows"
     NDK="$ROOTDIR/ndk-windows/$NDK_NAME"
   else
     NDK="$LINUX_NDK"
@@ -289,9 +326,9 @@ build_shaderc() {
   local SH="$BUILD/shaderc"
   local SHADERC_REF="$(resolve_shaderc_ref)"
   rm -rf "$SH"; mkdir -p "$SH"
-  ( cd "$SH" && fetch --dir=/tmp -o shaderc.tar.gz "$SHADERC_BASE/shaderc/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/shaderc.tar.gz && rm /tmp/shaderc.tar.gz )
+  ( cd "$SH" && fetch_unpack "$SHADERC_BASE/shaderc/+archive/$SHADERC_REF.tar.gz" /tmp/shaderc.tar.gz )
   mkdir -p "$SH/third_party/spirv-tools"
-  ( cd "$SH/third_party/spirv-tools" && fetch --dir=/tmp -o spirv-tools.tar.gz "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-tools.tar.gz && rm /tmp/spirv-tools.tar.gz )
+  ( cd "$SH/third_party/spirv-tools" && fetch_unpack "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" /tmp/spirv-tools.tar.gz )
   # small_vector.h uses std::alignment_of/std::aligned_storage but never includes
   # <type_traits> — it relied on a transitive include that newer libc++ dropped.
   sed -i 's|#include <cassert>|#include <cassert>\n#include <type_traits>|' "$SH/third_party/spirv-tools/source/util/small_vector.h"
@@ -300,9 +337,9 @@ build_shaderc() {
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
   fi
   mkdir -p "$SH/third_party/spirv-tools/external/spirv-headers"
-  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && fetch --dir=/tmp -o spirv-headers.tar.gz "$SHADERC_BASE/spirv-headers/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/spirv-headers.tar.gz && rm /tmp/spirv-headers.tar.gz )
+  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && fetch_unpack "$SHADERC_BASE/spirv-headers/+archive/$SHADERC_REF.tar.gz" /tmp/spirv-headers.tar.gz )
   mkdir -p "$SH/third_party/glslang"
-  ( cd "$SH/third_party/glslang" && fetch --dir=/tmp -o glslang.tar.gz "$SHADERC_BASE/glslang/+archive/$SHADERC_REF.tar.gz" && tar -xzf /tmp/glslang.tar.gz && rm /tmp/glslang.tar.gz )
+  ( cd "$SH/third_party/glslang" && fetch_unpack "$SHADERC_BASE/glslang/+archive/$SHADERC_REF.tar.gz" /tmp/glslang.tar.gz )
   if [ "$PLATFORM" = bionic ]; then
     sed -i '/^elseif(UNIX)$/,/^[[:space:]]*endif()$/d' "$SH/third_party/glslang/StandAlone/CMakeLists.txt"
   fi
@@ -353,8 +390,7 @@ build_pydeps() {
 
   if [ ! -f "$PYDEPS/lib/libz.a" ]; then
     ( cd "$BUILD"
-      fetch --dir=/tmp -o zlib.tar.xz https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz \
-        && xz -d < /tmp/zlib.tar.xz | tar -x && rm /tmp/zlib.tar.xz
+      fetch_unpack https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.xz /tmp/zlib.tar.xz
       cd zlib-1.3.1
       CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" CFLAGS="$dcf" \
         ./configure --prefix="$PYDEPS" --static
@@ -363,8 +399,7 @@ build_pydeps() {
 
   if [ ! -f "$PYDEPS/lib/libbz2.a" ]; then
     ( cd "$BUILD"
-      fetch --dir=/tmp -o bzip2.tar.gz https://www.sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz \
-        && gzip -d < /tmp/bzip2.tar.gz | tar -x && rm /tmp/bzip2.tar.gz
+      fetch_unpack https://www.sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz /tmp/bzip2.tar.gz
       cd bzip2-1.0.8
       make CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" CFLAGS="$dcf" libbz2.a
       cp -f libbz2.a "$PYDEPS/lib/"; cp -f bzlib.h "$PYDEPS/include/" )
@@ -372,8 +407,7 @@ build_pydeps() {
 
   if [ ! -f "$PYDEPS/lib/liblzma.a" ]; then
     ( cd "$BUILD"
-      fetch --dir=/tmp -o xz.tar.gz https://github.com/tukaani-project/xz/releases/download/v5.4.5/xz-5.4.5.tar.gz \
-        && gzip -d < /tmp/xz.tar.gz | tar -x && rm /tmp/xz.tar.gz
+      fetch_unpack https://github.com/tukaani-project/xz/releases/download/v5.4.5/xz-5.4.5.tar.gz /tmp/xz.tar.gz
       cd xz-5.4.5
       # xz's bundled config.sub predates several of our triples.
       cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" build-aux/
@@ -408,8 +442,7 @@ build_pydeps() {
     # f32/sf ABI variants. Those targets ship without _ctypes rather than
     # failing the whole NDK.
     ( cd "$BUILD"
-      fetch --dir=/tmp -o libffi.tar.gz https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz \
-        && gzip -d < /tmp/libffi.tar.gz | tar -x && rm /tmp/libffi.tar.gz
+      fetch_unpack https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz /tmp/libffi.tar.gz
       cd libffi-3.4.6
       cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" .
       ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$ffi_host" \
@@ -427,8 +460,7 @@ build_pydeps() {
     linux|bionic)
       if [ ! -f "$PYDEPS/lib/libuuid.a" ]; then
         ( cd "$BUILD"
-          fetch --dir=/tmp -o util-linux.tar.xz https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.39/util-linux-2.39.3.tar.xz \
-            && xz -d < /tmp/util-linux.tar.xz | tar -x && rm /tmp/util-linux.tar.xz
+          fetch_unpack https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.39/util-linux-2.39.3.tar.xz /tmp/util-linux.tar.xz
           cd util-linux-2.39.3
           cp "$ROOT/config/config.sub" "$ROOT/config/config.guess" config/
           ./configure --prefix="$PYDEPS" --build=x86_64-linux-gnu --host="$TARGET" \
@@ -450,10 +482,10 @@ build_python() {
     if [ "$PLATFORM" = windows ]; then
       # mingw-v3.11.4 branch = CPython 3.11.4 + msys2 mingw patches; its
       # generated configure is stale, regenerated via autoreconf below.
-      fetch --dir=/tmp -o python.tar.gz "https://codeload.github.com/msys2-contrib/cpython-mingw/tar.gz/refs/heads/mingw-v3.11.4" && tar -xzf /tmp/python.tar.gz && rm /tmp/python.tar.gz
+      fetch_unpack "https://codeload.github.com/msys2-contrib/cpython-mingw/tar.gz/refs/heads/mingw-v3.11.4" /tmp/python.tar.gz
       rm -rf python; mv cpython-mingw-mingw-v3.11.4 python
     else
-      fetch --dir=/tmp -o python.tar.xz https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz && xz -d < /tmp/python.tar.xz | tar -x && rm /tmp/python.tar.xz
+      fetch_unpack https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tar.xz /tmp/python.tar.xz
       rm -rf python; mv Python-3.11.4 python
     fi
     cd python
@@ -685,7 +717,8 @@ strip_deps() {
 fetch_llvm() {
   local name="${LLVM_PKG}-r${NDK_VERSION}${NDK_REVISION}-${TARGET}"
   log "Fetching LLVM ($name)"
-  fetch --dir=/tmp -o llvm-custom.tar.xz "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" && tar -xJf /tmp/llvm-custom.tar.xz -C "$BUILD" && rm /tmp/llvm-custom.tar.xz
+  fetch_unpack "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" \
+    /tmp/llvm-custom.tar.xz "$BUILD"
   HOST_TOOLCHAIN="$BUILD/$name"
 }
 
