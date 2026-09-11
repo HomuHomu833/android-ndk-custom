@@ -832,7 +832,11 @@ assemble_unix() {
     bname="$(basename "$file")"; echo "Replacing $bname"
     cp "$BUILD/shaderc/install/bin/$bname" "$file" || true
   done
-  rm -rf "$NDK/shader-tools/linux-x86_64/libc++.so"
+  # r23..r26 ship a libc++ beside the shader tools. Nothing above replaces it --
+  # our glslc/spirv-* are static -- so without this it rides along as a
+  # linux-x86_64 ELF inside a non-x86_64 NDK. Glob for the soname: the file is
+  # libc++.so.1, so matching "libc++.so" alone never hit it.
+  rm -f "$NDK/shader-tools/linux-x86_64"/libc++.so*
 
   rename_host
   patch_cmake_toolchain
