@@ -11,7 +11,7 @@
 #                 arm64-apple-darwin           (macos)
 #   NDK_VERSION   required (e.g. 30)
 #   NDK_REVISION  optional (e.g. b)
-#   ANDROID_PLATFORM  bionic API level (default 25, riscv64 forced to 35)
+#   ANDROID_PLATFORM  bionic API level (default 24, riscv64 forced to 35)
 #   ROOTDIR     work dir = checkout root (default: cwd); holds sources/ config/
 #               patches/. HOME is also set here in CI.
 #   REPO_OWNER  GitHub owner for the llvm-custom release download (default HomuHomu833)
@@ -192,7 +192,7 @@ setup_toolchain() {
   CROSS_CFLAGS="-fno-sanitize=undefined"; CROSS_LDFLAGS=""; SYSTEM_NAME=Linux
   case "$PLATFORM" in
     bionic)
-      API="${ANDROID_PLATFORM:-25}"; [ "$TARGET" = riscv64-linux-android ] && API=35
+      API="${ANDROID_PLATFORM:-24}"; [ "$TARGET" = riscv64-linux-android ] && API=35
       TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
       CROSS_CC="$TC/bin/${TARGET}${API}-clang"; CROSS_CXX="${CROSS_CC}++"
       CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/llvm-ar"; CROSS_RANLIB="$TC/bin/llvm-ranlib"
