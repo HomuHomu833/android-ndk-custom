@@ -31,7 +31,7 @@ BUILD="${BUILD:-$ROOTDIR/build}"      # scratch for tool source trees (NOT the c
 NDK_NAME="android-ndk-r${NDK_VERSION}${NDK_REVISION}"
 NDK_TAG="ndk-r${NDK_VERSION}${NDK_REVISION}"
 if [ "$PLATFORM" = windows ]; then MAKE_VERSION=4.4.1; else MAKE_VERSION=4.4; fi
-LLVM_PKG="${LLVM_PKG:-bolt+clang+clang-tools-extra+lld}"
+LLVM_PKG="${LLVM_PKG:-bolt+clang+clang-tools-extra+lld+polly}"
 SHADERC_BASE="https://android.googlesource.com/platform/external/shaderc"
 NDK_SRC_BASE="https://android.googlesource.com/platform/ndk"
 
