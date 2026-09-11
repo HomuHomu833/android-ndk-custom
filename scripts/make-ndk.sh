@@ -157,7 +157,7 @@ ndk_dir_in() {
   echo "$d"
 }
 
-# --- drop the debugger ------------------------------------------------------
+# --- drop the debuggers ------------------------------------------------------
 strip_debugger() {
   log "Removing debuggers"
   rm -f "$NDK"/ndk-lldb "$NDK"/ndk-lldb.cmd "$NDK"/ndk-gdb "$NDK"/ndk-gdb.cmd
