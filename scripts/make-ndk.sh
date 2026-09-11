@@ -811,7 +811,6 @@ assemble_unix() {
   rm -rf "$NDK_TOOLCHAIN/python3"
   rm -rf "$NDK_TOOLCHAIN/musl"
   rm -rf "$NDK/simpleperf"                 # can't build simpleperf as it requires AOSP sources
-  rm -rf "$NDK/prebuilt/linux_x86-64/bin/*asm"
   find "$NDK_TOOLCHAIN/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
   find "$NDK_TOOLCHAIN" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
@@ -1140,9 +1139,6 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   # remove unused resources
   rm -rf "$NDK_TOOLCHAIN/python3"
   rm -rf "$NDK/simpleperf"                 # can't build simpleperf as it requires AOSP sources
-  rm -rf "$NDK/prebuilt/windows_x86-64/bin/*asm.exe"
-  rm -rf "$NDK/prebuilt/windows_x86-64/bin/echo.exe"
-  rm -rf "$NDK/prebuilt/windows_x86-64/bin/cmp.exe"
   find "$NDK_TOOLCHAIN/lib" -maxdepth 1 -mindepth 1 -not -name clang -exec rm -rf {} \;
   find "$NDK_TOOLCHAIN" -maxdepth 5 -path "*/lib/clang/[0-9][0-9]/lib/*" -not -name linux -exec rm -rf {} \;
 
