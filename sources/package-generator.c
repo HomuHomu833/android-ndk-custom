@@ -2,30 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * Write the package.xml sdkmanager would have written for this NDK, so a
- * drop-in install is indistinguishable from one made through the SDK manager.
- * The official NDK archives ship no package.xml at all -- sdkmanager synthesises
- * it on install -- so the whole file has to be produced here.
- *
- * The output is byte-for-byte in sdkmanager's shape: a single line, no
- * indentation, no trailing newline, the ns2..ns15 block verbatim, and the real
- * licence text rather than a placeholder. Checked against the package.xml that a
- * genuine sdkmanager install leaves in platform-tools/, build-tools/ and
- * platforms/.
- *
- * Usage: package-generator <package.xml> <Pkg.Revision>
- *
- * Pkg.Revision comes straight from the NDK's own source.properties and is either
- * X.Y.Z or X.Y.Z-betaN. Only -beta ever appears there -- r24-rc1 and r26-rc1 are
- * the final beta republished under an rc filename and declare -beta3 / -beta2
- * inside -- but -rc is accepted too, so a preview can never be emitted as a
- * stable package if Google ever starts using it.
- */
-
-/* The two licence texts, exactly as sdkmanager writes them. Every SDK package
-   references one of these two ids, and the text is identical across
-   repository2-1/2/3, so one copy of each covers every NDK we build. */
 static const char LICENSE_STABLE[] =
     "Terms and Conditions\n"
     "\n"
