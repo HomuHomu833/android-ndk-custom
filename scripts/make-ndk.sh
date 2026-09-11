@@ -33,6 +33,7 @@ NDK_TAG="ndk-r${NDK_VERSION}${NDK_REVISION}"
 if [ "$PLATFORM" = windows ]; then MAKE_VERSION=4.4.1; else MAKE_VERSION=4.4; fi
 LLVM_PKG="${LLVM_PKG:-bolt+clang+clang-tools-extra+lld}"
 SHADERC_BASE="https://android.googlesource.com/platform/external/shaderc"
+NDK_SRC_BASE="https://android.googlesource.com/platform/ndk"
 
 mkdir -p "$BUILD"
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -104,6 +105,42 @@ resolve_shaderc_ref() {
   else
     echo "refs/heads/mirror-goog-main-ndk"
   fi
+}
+
+# Same tag-or-main dance for platform/ndk itself: the toolbox sources are
+# tagged for most releases but not all (ndk-r30-beta3, for one, has no tag).
+resolve_ndk_src_ref() {
+  local tag_url="$NDK_SRC_BASE/+archive/refs/tags/$NDK_TAG/sources/host-tools/toolbox.tar.gz"
+
+  if aria2c \
+      --console-log-level=error \
+      --check-certificate=false \
+      --max-tries=1 \
+      --connect-timeout=15 \
+      --dry-run=true \
+      "$tag_url" >/dev/null 2>&1; then
+    echo "refs/tags/$NDK_TAG"
+  else
+    echo "refs/heads/main"
+  fi
+}
+
+# --- cmp + echo, straight from AOSP ----------------------------------------
+# platform/ndk sources/host-tools/toolbox holds the cmp and echo the NDK ships.
+# They are Windows-only by construction -- CommandLineToArgvW, _wfopen, wprintf
+# out of <windows.h> -- which is why Google puts them in prebuilt/windows-x86_64
+# and nowhere else: every other host has a shell that supplies both. So this
+# only ever runs on the windows path. Builds into $1.
+build_toolbox() {
+  local dest="$1" ref
+  ref="$(resolve_ndk_src_ref)"
+  log "Building toolbox cmp/echo from AOSP ($ref)"
+  rm -rf "$BUILD/toolbox"; mkdir -p "$BUILD/toolbox"
+  ( cd "$BUILD/toolbox" \
+    && fetch_unpack "$NDK_SRC_BASE/+archive/$ref/sources/host-tools/toolbox.tar.gz" /tmp/toolbox.tar.gz )
+  # -lshell32 for CommandLineToArgvW; mingw links it by default, but say so.
+  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$BUILD/toolbox/cmp_win.c"  -lshell32 -o "$dest/cmp.exe"
+  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$BUILD/toolbox/echo_win.c" -lshell32 -o "$dest/echo.exe"
 }
 
 # BSD system name (FreeBSD/NetBSD/OpenBSD) from field 2 of the triple.
@@ -745,10 +782,9 @@ assemble_ndk() {
 assemble_unix() {
   local PREBUILT_BIN="$NDK/prebuilt/linux-x86_64/bin"
 
-  # build cmp/echo before the replace loop (bionic needs the official clang the
-  # loop later overwrites)
-  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp"
-  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo"
+  # No cmp/echo here: the NDK's own are Windows-only, and every other host has
+  # a shell that supplies both (ndk-build's HOST_CMP falls through to the
+  # system cmp when prebuilt/<host>/bin has none, which is what Google ships).
 
   # replace ELF tools with the rebuilt ones; convert bash shebangs; drop the rest
   find "$NDK_TOOLCHAIN/bin" -type f | while IFS= read -r file; do
@@ -1119,8 +1155,7 @@ HOST_ARCH=x86_64' "$NDK/build/tools/ndk_bin_common.sh"
   cp "$BUILD/yasm/build/bin/yasm.exe" "$NDK_TOOLCHAIN/bin"
   cp "$BUILD/yasm/build/bin/ytasm.exe" "$PREBUILT_BIN"
   cp "$BUILD/yasm/build/bin/vsyasm.exe" "$PREBUILT_BIN"
-  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$ROOT/sources/portable_cmp.c" -o "$PREBUILT_BIN/cmp.exe"
-  "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$ROOT/sources/portable_echo.c" -o "$PREBUILT_BIN/echo.exe"
+  build_toolbox "$PREBUILT_BIN"
   # python3: python.exe at the python3/ root (ndk-build's Windows layout);
   # libpython3.11.dll and the winpthread runtime ride next to it.
   mkdir -p "$NDK_TOOLCHAIN/python3/lib"
