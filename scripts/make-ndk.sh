@@ -161,6 +161,21 @@ ndk_dir_in() {
   echo "$d"
 }
 
+# --- drop lldb --------------------------------------------------------------
+# We do not build it: llvm-custom's PROJECTS is bolt;clang;clang-tools-extra;lld,
+# so the official lldb.exe/liblldb.* are dropped by the replace loops and nothing
+# takes their place. ndk-gdb probes bin/ for lldb.sh, lldb.cmd, lldb and
+# lldb.exe in that order and returns None when it finds none, so clear the lot
+# rather than leave wrappers pointing at a binary that is gone. lldb-server goes
+# with them: those are device-side, pushed by ndk-gdb, and of no use once there
+# is no host debugger to drive them.
+strip_lldb() {
+  log "Removing lldb (not built)"
+  rm -f "$NDK/ndk-lldb" "$NDK/ndk-lldb.cmd"
+  rm -f "$NDK_TOOLCHAIN/bin"/*lldb*
+  find "$NDK_TOOLCHAIN/lib" -name 'lldb-server' -delete 2>/dev/null || true
+}
+
 # --- download the official NDK(s) ------------------------------------------
 download_official_ndk() {
   local base="https://dl.google.com/android/repository/${NDK_NAME}"
@@ -782,9 +797,7 @@ assemble_ndk() {
 assemble_unix() {
   local PREBUILT_BIN="$NDK/prebuilt/linux-x86_64/bin"
 
-  # No cmp/echo here: the NDK's own are Windows-only, and every other host has
-  # a shell that supplies both (ndk-build's HOST_CMP falls through to the
-  # system cmp when prebuilt/<host>/bin has none, which is what Google ships).
+  strip_lldb
 
   # replace ELF tools with the rebuilt ones; convert bash shebangs; drop the rest
   find "$NDK_TOOLCHAIN/bin" -type f | while IFS= read -r file; do
@@ -799,7 +812,7 @@ assemble_unix() {
   done
 
   sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "$NDK/build/tools/ndk_bin_common.sh" "$NDK/build/tools/make_standalone_toolchain.py" "$NDK/build/ndk-build"
-  sed -i 's,#!/bin/bash,#!/bin/sh,' "$PREBUILT_BIN/ndk-gdb" "$PREBUILT_BIN/ndk-stack" "$PREBUILT_BIN/ndk-which" "$NDK_TOOLCHAIN/bin/lldb.sh"
+  sed -i 's,#!/bin/bash,#!/bin/sh,' "$PREBUILT_BIN/ndk-gdb" "$PREBUILT_BIN/ndk-stack" "$PREBUILT_BIN/ndk-which"
   cp "$ROOT/patches/ndk/scripts/clang-tidy.sh" "$NDK_TOOLCHAIN/bin"
   cp "$ROOT/patches/ndk/scripts/ndk-which" "$PREBUILT_BIN"
 
@@ -826,8 +839,6 @@ assemble_unix() {
   mkdir -p "$NDK_TOOLCHAIN/python3/bin" "$NDK_TOOLCHAIN/python3/lib"
   cp "$BUILD/python/build/bin/python3.11" "$NDK_TOOLCHAIN/python3/bin/python3"
   cp -R "$BUILD/python/build/lib/python3.11" "$NDK_TOOLCHAIN/python3/lib"
-  cp "$ROOT/patches/musl/llvm/lldb" "$NDK_TOOLCHAIN/bin/lldb"
-  chmod 755 "$NDK_TOOLCHAIN/bin/lldb"
   find "$NDK/shader-tools/linux-x86_64" -type f | while IFS= read -r file; do
     bname="$(basename "$file")"; echo "Replacing $bname"
     cp "$BUILD/shaderc/install/bin/$bname" "$file" || true
@@ -940,7 +951,7 @@ rename_host() {
     ( cd "$NDK/shader-tools" && ln -s "$tag" "$link" )
   fi
   local f
-  for f in "$NDK/ndk-gdb" "$NDK/ndk-lldb" "$NDK/ndk-stack" "$NDK/ndk-which"; do
+  for f in "$NDK/ndk-gdb" "$NDK/ndk-stack" "$NDK/ndk-which"; do
     sed -i "s|linux-x86_64|$tag|g" "$f"
   done
 }
@@ -1117,6 +1128,8 @@ endif()' "${files[@]}"
 
 assemble_windows() {
   local PREBUILT_BIN="$NDK/prebuilt/windows-x86_64/bin"
+
+  strip_lldb
 
   # llvm-custom ships some bin/ entries as symlinks; hard-link them so the copy
   # below picks up real PE files
