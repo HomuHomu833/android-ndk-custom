@@ -158,12 +158,8 @@ ndk_dir_in() {
 }
 
 # --- drop the debugger ------------------------------------------------------
-# We never build lldb, and ndk-gdb is only a driver for it -- no gdb has shipped
-# in the NDK for years -- so the whole chain goes: wrappers, the pyz, the
-# gdbrunner package, and the device-side lldb-server it would have pushed.
-# ndk-stack is untouched; it only needs llvm-symbolizer.
 strip_debugger() {
-  log "Removing lldb/ndk-gdb (not built)"
+  log "Removing debuggers"
   rm -f "$NDK"/ndk-lldb "$NDK"/ndk-lldb.cmd "$NDK"/ndk-gdb "$NDK"/ndk-gdb.cmd
   rm -f "$PREBUILT_BIN"/ndk-gdb "$PREBUILT_BIN"/ndk-gdb.cmd "$PREBUILT_BIN"/ndkgdb.pyz
   rm -f "$NDK_TOOLCHAIN/bin"/*lldb*
