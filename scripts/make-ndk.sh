@@ -157,14 +157,17 @@ ndk_dir_in() {
   echo "$d"
 }
 
-# --- drop lldb --------------------------------------------------------------
-# We never build it, so clear the wrappers too rather than leave them pointing
-# at a missing binary; ndk-gdb copes with finding none. lldb-server goes with
-# them, being useless without a host debugger.
-strip_lldb() {
-  log "Removing lldb (not built)"
-  rm -f "$NDK/ndk-lldb" "$NDK/ndk-lldb.cmd"
+# --- drop the debugger ------------------------------------------------------
+# We never build lldb, and ndk-gdb is only a driver for it -- no gdb has shipped
+# in the NDK for years -- so the whole chain goes: wrappers, the pyz, the
+# gdbrunner package, and the device-side lldb-server it would have pushed.
+# ndk-stack is untouched; it only needs llvm-symbolizer.
+strip_debugger() {
+  log "Removing lldb/ndk-gdb (not built)"
+  rm -f "$NDK"/ndk-lldb "$NDK"/ndk-lldb.cmd "$NDK"/ndk-gdb "$NDK"/ndk-gdb.cmd
+  rm -f "$PREBUILT_BIN"/ndk-gdb "$PREBUILT_BIN"/ndk-gdb.cmd "$PREBUILT_BIN"/ndkgdb.pyz
   rm -f "$NDK_TOOLCHAIN/bin"/*lldb*
+  rm -rf "$NDK/python-packages/gdbrunner"
   find "$NDK_TOOLCHAIN/lib" -name 'lldb-server' -delete 2>/dev/null || true
 }
 
@@ -789,7 +792,7 @@ assemble_ndk() {
 assemble_unix() {
   local PREBUILT_BIN="$NDK/prebuilt/linux-x86_64/bin"
 
-  strip_lldb
+  strip_debugger
 
   # replace ELF tools with the rebuilt ones; convert bash shebangs; drop the rest
   find "$NDK_TOOLCHAIN/bin" -type f | while IFS= read -r file; do
@@ -804,7 +807,7 @@ assemble_unix() {
   done
 
   sed -i 's,#!/usr/bin/env bash,#!/usr/bin/env sh,' "$NDK/build/tools/ndk_bin_common.sh" "$NDK/build/tools/make_standalone_toolchain.py" "$NDK/build/ndk-build"
-  sed -i 's,#!/bin/bash,#!/bin/sh,' "$PREBUILT_BIN/ndk-gdb" "$PREBUILT_BIN/ndk-stack" "$PREBUILT_BIN/ndk-which"
+  sed -i 's,#!/bin/bash,#!/bin/sh,' "$PREBUILT_BIN/ndk-stack" "$PREBUILT_BIN/ndk-which"
   cp "$ROOT/patches/ndk/scripts/clang-tidy.sh" "$NDK_TOOLCHAIN/bin"
   cp "$ROOT/patches/ndk/scripts/ndk-which" "$PREBUILT_BIN"
 
@@ -940,7 +943,7 @@ rename_host() {
     ( cd "$NDK/shader-tools" && ln -s "$tag" "$link" )
   fi
   local f
-  for f in "$NDK/ndk-gdb" "$NDK/ndk-stack" "$NDK/ndk-which"; do
+  for f in "$NDK/ndk-stack" "$NDK/ndk-which"; do
     sed -i "s|linux-x86_64|$tag|g" "$f"
   done
 }
@@ -1118,7 +1121,7 @@ endif()' "${files[@]}"
 assemble_windows() {
   local PREBUILT_BIN="$NDK/prebuilt/windows-x86_64/bin"
 
-  strip_lldb
+  strip_debugger
 
   # llvm-custom ships some bin/ entries as symlinks; hard-link them so the copy
   # below picks up real PE files
