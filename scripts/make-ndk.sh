@@ -114,18 +114,28 @@ bsd_system_name() {
   echo "$(tr '[:lower:]' '[:upper:]' <<<"$first")$middle$(tr '[:lower:]' '[:upper:]' <<<"$last")"
 }
 
+# r24-rc1 and r26-rc1 unpack to android-ndk-r24-beta3/ and -r26-beta2/, not to
+# $NDK_NAME. Resolve what landed and keep its name: archive() takes
+# basename "$NDK", so our tarball mirrors Google's own pairing.
+ndk_dir_in() {
+  local d
+  d="$(find "$1" -maxdepth 1 -mindepth 1 -type d -name 'android-ndk-*' | head -n1)"
+  [ -n "$d" ] || { echo "ndk_dir_in: no android-ndk-* directory in $1" >&2; return 1; }
+  echo "$d"
+}
+
 # --- download the official NDK(s) ------------------------------------------
 download_official_ndk() {
   local base="https://dl.google.com/android/repository/${NDK_NAME}"
   log "Downloading official NDK (linux)"
   fetch_unpack "${base}-linux.zip" "$BUILD/ndk-linux.zip" "$BUILD/ndk-linux"
-  LINUX_NDK="$BUILD/ndk-linux/$NDK_NAME"
+  LINUX_NDK="$(ndk_dir_in "$BUILD/ndk-linux")"
   NDK_LLVM_BIN="$LINUX_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
   if [ "$PLATFORM" = windows ]; then
     log "Downloading official NDK (windows)"
     fetch_unpack "${base}-windows.zip" "$BUILD/ndk-windows.zip" "$ROOTDIR/ndk-windows"
-    NDK="$ROOTDIR/ndk-windows/$NDK_NAME"
+    NDK="$(ndk_dir_in "$ROOTDIR/ndk-windows")"
   else
     NDK="$LINUX_NDK"
   fi
