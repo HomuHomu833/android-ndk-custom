@@ -107,8 +107,7 @@ resolve_shaderc_ref() {
   fi
 }
 
-# Same tag-or-main dance for platform/ndk itself: the toolbox sources are
-# tagged for most releases but not all (ndk-r30-beta3, for one, has no tag).
+# Same tag-or-main fallback for platform/ndk; not every release is tagged.
 resolve_ndk_src_ref() {
   local tag_url="$NDK_SRC_BASE/+archive/refs/tags/$NDK_TAG/sources/host-tools/toolbox.tar.gz"
 
@@ -126,11 +125,8 @@ resolve_ndk_src_ref() {
 }
 
 # --- cmp + echo, straight from AOSP ----------------------------------------
-# platform/ndk sources/host-tools/toolbox holds the cmp and echo the NDK ships.
-# They are Windows-only by construction -- CommandLineToArgvW, _wfopen, wprintf
-# out of <windows.h> -- which is why Google puts them in prebuilt/windows-x86_64
-# and nowhere else: every other host has a shell that supplies both. So this
-# only ever runs on the windows path. Builds into $1.
+# Windows-only by construction: they use <windows.h>, and every other host has
+# a shell that supplies both. Builds into $1.
 build_toolbox() {
   local dest="$1" ref
   ref="$(resolve_ndk_src_ref)"
@@ -162,13 +158,9 @@ ndk_dir_in() {
 }
 
 # --- drop lldb --------------------------------------------------------------
-# We do not build it: llvm-custom's PROJECTS is bolt;clang;clang-tools-extra;lld,
-# so the official lldb.exe/liblldb.* are dropped by the replace loops and nothing
-# takes their place. ndk-gdb probes bin/ for lldb.sh, lldb.cmd, lldb and
-# lldb.exe in that order and returns None when it finds none, so clear the lot
-# rather than leave wrappers pointing at a binary that is gone. lldb-server goes
-# with them: those are device-side, pushed by ndk-gdb, and of no use once there
-# is no host debugger to drive them.
+# We never build it, so clear the wrappers too rather than leave them pointing
+# at a missing binary; ndk-gdb copes with finding none. lldb-server goes with
+# them, being useless without a host debugger.
 strip_lldb() {
   log "Removing lldb (not built)"
   rm -f "$NDK/ndk-lldb" "$NDK/ndk-lldb.cmd"
@@ -843,10 +835,7 @@ assemble_unix() {
     bname="$(basename "$file")"; echo "Replacing $bname"
     cp "$BUILD/shaderc/install/bin/$bname" "$file" || true
   done
-  # r23..r26 ship a libc++ beside the shader tools. Nothing above replaces it --
-  # our glslc/spirv-* are static -- so without this it rides along as a
-  # linux-x86_64 ELF inside a non-x86_64 NDK. Glob for the soname: the file is
-  # libc++.so.1, so matching "libc++.so" alone never hit it.
+  # r23..r26 ship a libc++.so.1 here that nothing above replaces; glob the soname.
   rm -f "$NDK/shader-tools/linux-x86_64"/libc++.so*
 
   rename_host
