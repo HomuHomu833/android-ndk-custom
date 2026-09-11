@@ -163,7 +163,7 @@ strip_debugger() {
   rm -f "$NDK"/ndk-lldb "$NDK"/ndk-lldb.cmd "$NDK"/ndk-gdb "$NDK"/ndk-gdb.cmd
   rm -f "$PREBUILT_BIN"/ndk-gdb "$PREBUILT_BIN"/ndk-gdb.cmd "$PREBUILT_BIN"/ndkgdb.pyz
   rm -f "$NDK_TOOLCHAIN/bin"/*lldb*
-  rm -rf "$NDK/python-packages/gdbrunner"
+  rm -rf "$NDK/python-packages"
   find "$NDK_TOOLCHAIN/lib" -name 'lldb-server' -delete 2>/dev/null || true
 }
 
