@@ -67,7 +67,7 @@ unpack() {
 # way out. Usage: fetch_unpack URL ARCHIVE [DEST]
 #
 # aria2c's own retries cannot see a truncated download. Endpoints that generate
-# archives on the fly -- gitiles' +archive, codeload -- stream them chunked with
+# archives on the fly, such as codeload, stream them chunked with
 # no Content-Length (aria2 logs the size as "0B/0B"), so when the far end cuts
 # the stream short there is no expected size to compare against: aria2 prints
 # "(OK):download completed" and exits 0 on a 600KiB truncation of a 200MiB
@@ -91,16 +91,40 @@ fetch_unpack() {
   done
 }
 
-resolve_shaderc_ref() {
-  local tag_url="$SHADERC_BASE/shaderc/+archive/refs/tags/$NDK_TAG.tar.gz"
+# Check out REF of REPO into DEST, or only SUBDIR of it when SUBDIR is given.
+# gitiles builds its +archive tarballs on the fly and streams them with no
+# Content-Length, so a short read arrives as a silent truncation that only
+# surfaces at unpack time; a packfile carries its own checksum and a bad
+# transfer fails on the spot. SUBDIR pulls trees without blobs and checks out
+# sparsely, so a path inside a huge repo costs megabytes instead of gigabytes.
+# DEST is left without a .git. Usage: git_fetch REPO REF DEST [SUBDIR]
+git_fetch() {
+  local repo="$1" ref="$2" dest="$3" sub="${4:-}" work="$3" filter="" i=0
+  [ -n "$sub" ] && { work="$dest.gitsrc"; filter="--filter=blob:none"; }
+  rm -rf "$work" "$dest"
+  git init -q "$work"
+  git -C "$work" remote add origin "$repo"
+  if [ -n "$sub" ]; then
+    git -C "$work" config core.sparseCheckout true
+    printf '/%s/*\n' "$sub" > "$work/.git/info/sparse-checkout"
+  fi
+  until git -C "$work" fetch -q --depth 1 $filter origin "$ref"; do
+    i=$((i + 1))
+    [ "$i" -ge 5 ] && { echo "git_fetch: $repo $ref failed after $i attempts" >&2; return 1; }
+    echo "git_fetch: $repo $ref failed, retry $i/5 in $((5 * i))s..." >&2
+    sleep $((5 * i))
+  done
+  git -C "$work" checkout -q FETCH_HEAD
+  rm -rf "$work/.git"
+  if [ -n "$sub" ]; then
+    mkdir -p "$dest"
+    cp -a "$work/$sub/." "$dest/"
+    rm -rf "$work"
+  fi
+}
 
-  if aria2c \
-      --console-log-level=error \
-      --check-certificate=false \
-      --max-tries=1 \
-      --connect-timeout=15 \
-      --dry-run=true \
-      "$tag_url" >/dev/null 2>&1; then
+resolve_shaderc_ref() {
+  if git ls-remote --exit-code --tags "$SHADERC_BASE/shaderc" "refs/tags/$NDK_TAG" >/dev/null 2>&1; then
     echo "refs/tags/$NDK_TAG"
   else
     echo "refs/heads/mirror-goog-main-ndk"
@@ -109,15 +133,7 @@ resolve_shaderc_ref() {
 
 # Same tag-or-main fallback for platform/ndk; not every release is tagged.
 resolve_ndk_src_ref() {
-  local tag_url="$NDK_SRC_BASE/+archive/refs/tags/$NDK_TAG/sources/host-tools/toolbox.tar.gz"
-
-  if aria2c \
-      --console-log-level=error \
-      --check-certificate=false \
-      --max-tries=1 \
-      --connect-timeout=15 \
-      --dry-run=true \
-      "$tag_url" >/dev/null 2>&1; then
+  if git ls-remote --exit-code --tags "$NDK_SRC_BASE" "refs/tags/$NDK_TAG" >/dev/null 2>&1; then
     echo "refs/tags/$NDK_TAG"
   else
     echo "refs/heads/main"
@@ -131,9 +147,7 @@ build_toolbox() {
   local dest="$1" ref
   ref="$(resolve_ndk_src_ref)"
   log "Building toolbox cmp/echo from AOSP ($ref)"
-  rm -rf "$BUILD/toolbox"; mkdir -p "$BUILD/toolbox"
-  ( cd "$BUILD/toolbox" \
-    && fetch_unpack "$NDK_SRC_BASE/+archive/$ref/sources/host-tools/toolbox.tar.gz" /tmp/toolbox.tar.gz )
+  git_fetch "$NDK_SRC_BASE" "$ref" "$BUILD/toolbox" "sources/host-tools/toolbox"
   # -lshell32 for CommandLineToArgvW; mingw links it by default, but say so.
   "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$BUILD/toolbox/cmp_win.c"  -lshell32 -o "$dest/cmp.exe"
   "$CROSS_CC" $CROSS_CFLAGS $CROSS_LDFLAGS "$BUILD/toolbox/echo_win.c" -lshell32 -o "$dest/echo.exe"
@@ -378,10 +392,8 @@ build_shaderc() {
   log "Building shaderc"
   local SH="$BUILD/shaderc"
   local SHADERC_REF="$(resolve_shaderc_ref)"
-  rm -rf "$SH"; mkdir -p "$SH"
-  ( cd "$SH" && fetch_unpack "$SHADERC_BASE/shaderc/+archive/$SHADERC_REF.tar.gz" /tmp/shaderc.tar.gz )
-  mkdir -p "$SH/third_party/spirv-tools"
-  ( cd "$SH/third_party/spirv-tools" && fetch_unpack "$SHADERC_BASE/spirv-tools/+archive/$SHADERC_REF.tar.gz" /tmp/spirv-tools.tar.gz )
+  git_fetch "$SHADERC_BASE/shaderc" "$SHADERC_REF" "$SH"
+  git_fetch "$SHADERC_BASE/spirv-tools" "$SHADERC_REF" "$SH/third_party/spirv-tools"
   # small_vector.h uses std::alignment_of/std::aligned_storage but never includes
   # <type_traits> — it relied on a transitive include that newer libc++ dropped.
   sed -i 's|#include <cassert>|#include <cassert>\n#include <type_traits>|' "$SH/third_party/spirv-tools/source/util/small_vector.h"
@@ -389,10 +401,8 @@ build_shaderc() {
     # spirv-tools rejects unknown platforms; downgrade to a warning, assume Linux
     sed -i 's/message(FATAL_ERROR "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported!")/message(WARNING "Your platform '\''${CMAKE_SYSTEM_NAME}'\'' is not supported! Assuming Linux.")\n  add_definitions(-DSPIRV_LINUX)/' "$SH/third_party/spirv-tools/CMakeLists.txt"
   fi
-  mkdir -p "$SH/third_party/spirv-tools/external/spirv-headers"
-  ( cd "$SH/third_party/spirv-tools/external/spirv-headers" && fetch_unpack "$SHADERC_BASE/spirv-headers/+archive/$SHADERC_REF.tar.gz" /tmp/spirv-headers.tar.gz )
-  mkdir -p "$SH/third_party/glslang"
-  ( cd "$SH/third_party/glslang" && fetch_unpack "$SHADERC_BASE/glslang/+archive/$SHADERC_REF.tar.gz" /tmp/glslang.tar.gz )
+  git_fetch "$SHADERC_BASE/spirv-headers" "$SHADERC_REF" "$SH/third_party/spirv-tools/external/spirv-headers"
+  git_fetch "$SHADERC_BASE/glslang" "$SHADERC_REF" "$SH/third_party/glslang"
   if [ "$PLATFORM" = bionic ]; then
     sed -i '/^elseif(UNIX)$/,/^[[:space:]]*endif()$/d' "$SH/third_party/glslang/StandAlone/CMakeLists.txt"
   fi
