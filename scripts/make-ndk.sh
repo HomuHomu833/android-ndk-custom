@@ -409,10 +409,14 @@ build_shaderc() {
     windows) exelink="-static-libstdc++ -static-libgcc -pthread"; cflags="-Wno-error=implicit-function-declaration" ;;
   esac
   # pass CMAKE_OBJCOPY only when the toolchain has one (empty on macos).
+  # -fno-rtti/-fno-exceptions match the NDK's own shaderc build, but on the C++
+  # flags only: it puts them in both and then needs
+  # -Wno-unused-command-line-argument to stop clang complaining about them on the
+  # C files. Tests are off, so gtest/effcee/re2 never see them.
   cmake -S "$SH" -B "$SH/build" -G Ninja \
     -DCMAKE_INSTALL_PREFIX="$SH/install" \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DCMAKE_C_FLAGS="$cflags" -DCMAKE_CXX_FLAGS="$cflags" \
+    -DCMAKE_C_FLAGS="$cflags" -DCMAKE_CXX_FLAGS="$cflags -fno-rtti -fno-exceptions" \
     -DCMAKE_EXE_LINKER_FLAGS="$exelink" -DCMAKE_SHARED_LINKER_FLAGS="$exelink" \
     -DCMAKE_CROSSCOMPILING=True -DCMAKE_SYSTEM_NAME="$SYSTEM_NAME" \
     -DCMAKE_C_COMPILER="$CROSS_CC" -DCMAKE_CXX_COMPILER="$CROSS_CXX" -DCMAKE_ASM_COMPILER="$CROSS_CC" \
