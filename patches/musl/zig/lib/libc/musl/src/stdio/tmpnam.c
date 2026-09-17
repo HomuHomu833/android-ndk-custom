@@ -24,8 +24,11 @@ char *tmpnam(char *buf)
 #else
 		r = __syscall(SYS_readlinkat, AT_FDCWD, s, (char[1]){0}, 1);
 #endif
-		if (r == -ENOENT)
-			return strcpy(buf ? buf : internal, s);
+		if (r == -ENOENT) {
+			char *dst = buf ? buf : internal;
+			snprintf(dst, L_tmpnam, "%s", s);
+			return dst;
+		}
 	}
 	return 0;
 }
