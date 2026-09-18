@@ -212,7 +212,7 @@ setup_toolchain() {
       CROSS_LD="$TC/bin/ld"; CROSS_AR="$TC/bin/llvm-ar"; CROSS_RANLIB="$TC/bin/llvm-ranlib"
       CROSS_STRIP="$TC/bin/llvm-strip"; CROSS_OBJCOPY="$TC/bin/llvm-objcopy"
       NDK_HOST=linux-x86_64
-      CROSS_LDFLAGS="-static"
+      CROSS_LDFLAGS="-static -Wl,-z,max-page-size=16384"
       ;;
     linux)
       TC=/opt/zig-as-llvm; export ZIG_TARGET="$TARGET"
