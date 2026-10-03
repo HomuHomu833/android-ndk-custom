@@ -793,12 +793,9 @@ strip_deps() {
 fetch_llvm() {
   local name="${LLVM_PKG}-r${NDK_VERSION}${NDK_REVISION}-${TARGET}"
   log "Fetching LLVM ($name)"
-  # GitHub rewrites '+' to '.' in release asset names on upload.
-  local asset="${name//+/.}"
-  fetch_unpack "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${asset}.tar.xz" \
+  fetch_unpack "https://github.com/${REPO_OWNER}/llvm-custom/releases/download/llvm-r${NDK_VERSION}/${name}.tar.xz" \
     /tmp/llvm-custom.tar.xz "$BUILD"
   HOST_TOOLCHAIN="$BUILD/$name"
-  [ -d "$HOST_TOOLCHAIN" ] || HOST_TOOLCHAIN="$BUILD/$asset"
 }
 
 # --- splice everything into the official NDK --------------------------------
